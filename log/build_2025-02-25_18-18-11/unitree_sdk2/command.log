@@ -1,4 +1,0 @@
-Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2': /usr/bin/cmake --build /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2 -- -j8 -l8
-Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2' returned '0': /usr/bin/cmake --build /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2 -- -j8 -l8
-Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2': /usr/bin/cmake --install /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2
-Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2' returned '0': /usr/bin/cmake --install /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2

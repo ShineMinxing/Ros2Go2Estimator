@@ -10,6 +10,13 @@ class JoystickControlNode : public rclcpp::Node
 public:
     JoystickControlNode() : Node("joystick_control_node")
     {
+        // 通过参数获取网络接口名称，设置默认值为 "enxc8a3627ff10b" 或其他有效接口
+        this->declare_parameter<std::string>("network_interface", "enxc8a3627ff10b");
+        std::string network_interface = this->get_parameter("network_interface").as_string();
+
+        // 初始化Unitree通道工厂
+        unitree::robot::ChannelFactory::Instance()->Init(0, network_interface);
+
         // 初始化句子
         Last_Operation = "Joystick Control Start";
 
@@ -20,13 +27,14 @@ public:
         // 记录初始化时的时间
         Last_Operation_Time = this->get_clock()->now();
 
-        sport_client.SetTimeout(10.0f);
-        sport_client.Init();
+        sport_client = std::make_unique<unitree::robot::go2::SportClient>();
+        sport_client->SetTimeout(10.0f);
+        sport_client->Init();
     }
 
 private:
 
-    unitree::robot::go2::SportClient sport_client;
+    std::unique_ptr<unitree::robot::go2::SportClient> sport_client;
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
 
     // 获取按钮输入状态
@@ -132,7 +140,7 @@ private:
             JoystickEnable = 0;
             Last_Operation = "Pause. ";
             Last_Operation_Time = this->get_clock()->now();
-            sport_client.Damp();
+            sport_client->Damp();
         }
 
         if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable) // 按住RT键
@@ -179,7 +187,7 @@ private:
     
                 std::cout << "Moving... " << std::endl;
     
-                sport_client.Move(Forward_Speed, Leftward_Speed, Turning_Speed);
+                sport_client->Move(Forward_Speed, Leftward_Speed, Turning_Speed);
             }
         }
         else if(Axes[2] < -0.5 && Axes[5] > 0.9 && Last_Operation_Duration_Time > 1 && JoystickEnable) // 按住LT键
@@ -188,31 +196,31 @@ private:
             {
                 Last_Operation = "Stand up. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client.RecoveryStand();
+                sport_client->RecoveryStand();
             }
             else if(Buttons[1])
             {
                 Last_Operation = "Sit Down. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client.StandDown();
+                sport_client->StandDown();
             }
             else if(Buttons[2])
             {
                 Last_Operation = "Idel Pattern. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client.SwitchGait(0);
+                sport_client->SwitchGait(0);
             }
             else if(Buttons[3])
             {
                 Last_Operation = "Trot Runing Pattern. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client.SwitchGait(2);
+                sport_client->SwitchGait(2);
             }
             else if(Buttons[7])
             {
                 Last_Operation = "Start. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client.BalanceStand();
+                sport_client->BalanceStand();
             }
         }
         else if(Buttons[4] && Last_Operation_Duration_Time > 0.5 && JoystickEnable) // 按住LR键
@@ -221,25 +229,25 @@ private:
             {
                 Last_Operation = "Motion 1 Hello. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client.Hello();
+                sport_client->Hello();
             }
             else if(Buttons[1])
             {
                 Last_Operation = "Motion 2 Scrape. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client.Scrape();
+                sport_client->Scrape();
             }
             else if(Buttons[2])
             {
                 Last_Operation = "Motion 3 FrontJump. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client.FrontJump();
+                sport_client->FrontJump();
             }
             else if(Buttons[3])
             {
                 Last_Operation = "Motion 4 Dance1. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client.Dance1();
+                sport_client->Dance1();
             }
         }
     }
@@ -247,20 +255,9 @@ private:
 
 int main(int argc, char *argv[])
 {
-    // 初始化ChannelFactory
-    if (argc < 2) {
-        std::cout << "Usage: " << argv[0] << " networkInterface" << std::endl;
-        return -1;
-    }
-    unitree::robot::ChannelFactory::Instance()->Init(0, argv[1]);
-
-    // 初始化 ROS 2
     rclcpp::init(argc, argv);
-
-    // 创建节点
-    rclcpp::spin(std::make_shared<JoystickControlNode>());
-
-    // 清理 ROS 2
+    auto node = std::make_shared<JoystickControlNode>();
+    rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
 }

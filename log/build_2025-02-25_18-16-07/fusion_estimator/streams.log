@@ -1,0 +1,146 @@
+[0.012s] Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --build /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator -- -j8 -l8
+[0.067s] [  9%] Built target fusion_estimator__rosidl_generator_c
+[0.071s] [ 12%] Built target fusion_estimator__cpp
+[0.084s] [ 12%] Built target ament_cmake_python_copy_fusion_estimator
+[0.104s] [ 27%] Built target fusion_estimator__rosidl_typesupport_fastrtps_c
+[0.104s] [ 30%] Built target fusion_estimator__rosidl_typesupport_c
+[0.110s] [ 39%] Built target fusion_estimator__rosidl_typesupport_fastrtps_cpp
+[0.110s] [ 48%] Built target fusion_estimator__rosidl_typesupport_introspection_c
+[0.112s] [ 57%] Built target fusion_estimator__rosidl_typesupport_cpp
+[0.115s] [ 66%] Built target fusion_estimator__rosidl_typesupport_introspection_cpp
+[0.138s] [ 66%] Built target fusion_estimator
+[0.148s] [ 72%] Built target fusion_estimator_node
+[0.158s] [ 75%] Built target fusion_estimator__py
+[0.178s] [ 81%] Built target fusion_estimator__rosidl_generator_py
+[0.203s] [ 87%] Built target fusion_estimator__rosidl_typesupport_c__pyext
+[0.204s] [ 93%] Built target fusion_estimator__rosidl_typesupport_fastrtps_c__pyext
+[0.208s] [100%] Built target fusion_estimator__rosidl_typesupport_introspection_c__pyext
+[0.353s] running egg_info
+[0.354s] writing fusion_estimator.egg-info/PKG-INFO
+[0.354s] writing dependency_links to fusion_estimator.egg-info/dependency_links.txt
+[0.354s] writing top-level names to fusion_estimator.egg-info/top_level.txt
+[0.356s] reading manifest file 'fusion_estimator.egg-info/SOURCES.txt'
+[0.357s] writing manifest file 'fusion_estimator.egg-info/SOURCES.txt'
+[0.385s] [100%] Built target ament_cmake_python_build_fusion_estimator_egg
+[0.395s] Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator' returned '0': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --build /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator -- -j8 -l8
+[0.396s] Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --install /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator
+[0.404s] -- Install configuration: ""
+[0.404s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/ament_index/resource_index/rosidl_interfaces/fusion_estimator
+[0.404s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator
+[0.404s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg
+[0.404s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/fusion_estimator_test.h
+[0.405s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail
+[0.405s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__type_support.h
+[0.405s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__struct.h
+[0.405s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__functions.h
+[0.405s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__functions.c
+[0.405s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/rosidl_generator_c__visibility_control.h
+[0.405s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/environment/library_path.sh
+[0.405s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/environment/library_path.dsv
+[0.405s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/libfusion_estimator__rosidl_generator_c.so
+[0.405s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator
+[0.405s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__rosidl_typesupport_fastrtps_c.h
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/libfusion_estimator__rosidl_typesupport_fastrtps_c.so
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/rosidl_generator_cpp__visibility_control.hpp
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__struct.hpp
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__builder.hpp
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__type_support.hpp
+[0.406s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__traits.hpp
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/fusion_estimator_test.hpp
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__rosidl_typesupport_fastrtps_cpp.hpp
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/dds_fastrtps
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/libfusion_estimator__rosidl_typesupport_fastrtps_cpp.so
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[0.407s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__rosidl_typesupport_introspection_c.h
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__type_support.c
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/libfusion_estimator__rosidl_typesupport_introspection_c.so
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/libfusion_estimator__rosidl_typesupport_c.so
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__type_support.cpp
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/include/fusion_estimator/fusion_estimator/msg/detail/fusion_estimator_test__rosidl_typesupport_introspection_cpp.hpp
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/libfusion_estimator__rosidl_typesupport_introspection_cpp.so
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/libfusion_estimator__rosidl_typesupport_cpp.so
+[0.408s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/environment/pythonpath.sh
+[0.409s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/environment/pythonpath.dsv
+[0.409s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator-0.0.0-py3.10.egg-info
+[0.409s] -- Installing: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator-0.0.0-py3.10.egg-info/PKG-INFO
+[0.409s] -- Installing: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator-0.0.0-py3.10.egg-info/dependency_links.txt
+[0.409s] -- Installing: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator-0.0.0-py3.10.egg-info/top_level.txt
+[0.409s] -- Installing: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator-0.0.0-py3.10.egg-info/SOURCES.txt
+[0.409s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator
+[0.409s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/_fusion_estimator_s.ep.rosidl_typesupport_c.c
+[0.409s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/fusion_estimator_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[0.410s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/__init__.py
+[0.410s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/msg
+[0.410s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/msg/__init__.py
+[0.410s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/msg/_fusion_estimator_test.py
+[0.410s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/msg/_fusion_estimator_test_s.c
+[0.410s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/_fusion_estimator_s.ep.rosidl_typesupport_fastrtps_c.c
+[0.410s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/fusion_estimator_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[0.410s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/_fusion_estimator_s.ep.rosidl_typesupport_introspection_c.c
+[0.410s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/libfusion_estimator__rosidl_generator_py.so
+[0.410s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/fusion_estimator_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[0.442s] Listing '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator'...
+[0.442s] Listing '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/msg'...
+[0.446s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/fusion_estimator_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[0.446s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/fusion_estimator_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[0.446s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/local/lib/python3.10/dist-packages/fusion_estimator/fusion_estimator_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[0.447s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/libfusion_estimator__rosidl_generator_py.so
+[0.447s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/msg/FusionEstimatorTest.idl
+[0.447s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/msg/FusionEstimatorTest.msg
+[0.447s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/fusion_estimator/fusion_estimator_node
+[0.447s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/ament_index/resource_index/package_run_dependencies/fusion_estimator
+[0.447s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/ament_index/resource_index/parent_prefix_path/fusion_estimator
+[0.447s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/environment/ament_prefix_path.sh
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/environment/ament_prefix_path.dsv
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/environment/path.sh
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/environment/path.dsv
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/local_setup.bash
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/local_setup.sh
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/local_setup.zsh
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/local_setup.dsv
+[0.448s] -- Installing: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.dsv
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/ament_index/resource_index/packages/fusion_estimator
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/export_fusion_estimator__rosidl_generator_cExport.cmake
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/export_fusion_estimator__rosidl_generator_cExport-noconfig.cmake
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/export_fusion_estimator__rosidl_typesupport_fastrtps_cExport.cmake
+[0.448s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/export_fusion_estimator__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/export_fusion_estimator__rosidl_generator_cppExport.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/export_fusion_estimator__rosidl_typesupport_fastrtps_cppExport.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/export_fusion_estimator__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/fusion_estimator__rosidl_typesupport_introspection_cExport.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/fusion_estimator__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/fusion_estimator__rosidl_typesupport_cExport.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/fusion_estimator__rosidl_typesupport_cExport-noconfig.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/fusion_estimator__rosidl_typesupport_introspection_cppExport.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/fusion_estimator__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/fusion_estimator__rosidl_typesupport_cppExport.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/fusion_estimator__rosidl_typesupport_cppExport-noconfig.cmake
+[0.449s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/export_fusion_estimator__rosidl_generator_pyExport.cmake
+[0.450s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/export_fusion_estimator__rosidl_generator_pyExport-noconfig.cmake
+[0.450s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/rosidl_cmake-extras.cmake
+[0.450s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/ament_cmake_export_dependencies-extras.cmake
+[0.450s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/ament_cmake_export_include_directories-extras.cmake
+[0.450s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/ament_cmake_export_libraries-extras.cmake
+[0.450s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/ament_cmake_export_targets-extras.cmake
+[0.450s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[0.450s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[0.450s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/fusion_estimatorConfig.cmake
+[0.450s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/cmake/fusion_estimatorConfig-version.cmake
+[0.450s] -- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.xml
+[0.452s] Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator' returned '0': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --install /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator

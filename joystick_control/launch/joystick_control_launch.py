@@ -1,6 +1,7 @@
 import launch
+from launch_ros.actions import Node
 from launch import LaunchDescription
-from launch_ros.actions import Node  # 修改这里，使用 launch_ros.actions
+from launch.actions import ExecuteProcess
 
 def generate_launch_description():
     return LaunchDescription([
@@ -13,11 +14,23 @@ def generate_launch_description():
         ),
         
         # 启动 joystick_control_node
+        ExecuteProcess(
+            cmd=[
+                "tilix",
+                "-e",
+                "ros2", "run", "joystick_control", "joystick_control_node",
+                "--ros-args",
+                "-p", "network_interface:=enxc8a3627ff10b"
+            ],
+            output="screen",
+        ),
+        
+        # 启动 fusion_estimator_node
         Node(
-            package='joystick_control',
-            executable='joystick_control_node',
-            name='joystick_control_node',
+            package='fusion_estimator',
+            executable='fusion_estimator_node',
+            name='fusion_estimator_node',
             output='screen',
-            arguments=['enxc8a3627ff10b']  # 替换为您的实际网络接口名称
+            parameters=[{'network_interface': "enxc8a3627ff10b"}],
         ),
     ])

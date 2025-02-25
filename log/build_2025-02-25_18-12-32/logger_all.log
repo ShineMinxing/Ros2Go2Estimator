@@ -1,0 +1,262 @@
+[0.089s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build']
+[0.089s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=False, symlink_install=False, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=8, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, verb_parser=<colcon_defaults.argument_parser.defaults.DefaultArgumentsDecorator object at 0x7dbe0182ab60>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7dbe0192bfa0>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7dbe0192bfa0>>)
+[0.214s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.214s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.214s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.214s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.214s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.214s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.214s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws'
+[0.214s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.214s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.214s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.214s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.214s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.214s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.214s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.215s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.215s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.223s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.223s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.223s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.223s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.223s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(fusion_estimator) by extensions ['ignore', 'ignore_ament_install']
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(fusion_estimator) by extension 'ignore'
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(fusion_estimator) by extension 'ignore_ament_install'
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(fusion_estimator) by extensions ['colcon_pkg']
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(fusion_estimator) by extension 'colcon_pkg'
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(fusion_estimator) by extensions ['colcon_meta']
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(fusion_estimator) by extension 'colcon_meta'
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(fusion_estimator) by extensions ['ros']
+[0.224s] Level 1:colcon.colcon_core.package_identification:_identify(fusion_estimator) by extension 'ros'
+[0.226s] DEBUG:colcon.colcon_core.package_identification:Package 'fusion_estimator' with type 'ros.ament_cmake' and name 'fusion_estimator'
+[0.226s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.226s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.226s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.226s] Level 1:colcon.colcon_core.package_identification:_identify(joystick_control) by extensions ['ignore', 'ignore_ament_install']
+[0.226s] Level 1:colcon.colcon_core.package_identification:_identify(joystick_control) by extension 'ignore'
+[0.226s] Level 1:colcon.colcon_core.package_identification:_identify(joystick_control) by extension 'ignore_ament_install'
+[0.227s] Level 1:colcon.colcon_core.package_identification:_identify(joystick_control) by extensions ['colcon_pkg']
+[0.227s] Level 1:colcon.colcon_core.package_identification:_identify(joystick_control) by extension 'colcon_pkg'
+[0.227s] Level 1:colcon.colcon_core.package_identification:_identify(joystick_control) by extensions ['colcon_meta']
+[0.227s] Level 1:colcon.colcon_core.package_identification:_identify(joystick_control) by extension 'colcon_meta'
+[0.227s] Level 1:colcon.colcon_core.package_identification:_identify(joystick_control) by extensions ['ros']
+[0.227s] Level 1:colcon.colcon_core.package_identification:_identify(joystick_control) by extension 'ros'
+[0.227s] DEBUG:colcon.colcon_core.package_identification:Package 'joystick_control' with type 'ros.ament_cmake' and name 'joystick_control'
+[0.227s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.227s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.227s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.228s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extensions ['ignore', 'ignore_ament_install']
+[0.228s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extension 'ignore'
+[0.228s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extension 'ignore_ament_install'
+[0.228s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extensions ['colcon_pkg']
+[0.228s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extension 'colcon_pkg'
+[0.228s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extensions ['colcon_meta']
+[0.228s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extension 'colcon_meta'
+[0.228s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extensions ['ros']
+[0.228s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extension 'ros'
+[0.228s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extensions ['cmake', 'python']
+[0.228s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extension 'cmake'
+[0.232s] Level 1:colcon.colcon_core.package_identification:_identify(unitree_sdk2) by extension 'python'
+[0.232s] DEBUG:colcon.colcon_core.package_identification:Package 'unitree_sdk2' with type 'cmake' and name 'unitree_sdk2'
+[0.232s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.232s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.232s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.232s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.232s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.247s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.247s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.248s] WARNING:colcon.colcon_ros.prefix_path.ament:The path '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control' in the environment variable AMENT_PREFIX_PATH doesn't exist
+[0.248s] WARNING:colcon.colcon_ros.prefix_path.ament:The path '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator' in the environment variable AMENT_PREFIX_PATH doesn't exist
+[0.248s] WARNING:colcon.colcon_ros.prefix_path.catkin:The path '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control' in the environment variable CMAKE_PREFIX_PATH doesn't exist
+[0.248s] WARNING:colcon.colcon_ros.prefix_path.catkin:The path '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator' in the environment variable CMAKE_PREFIX_PATH doesn't exist
+[0.248s] WARNING:colcon.colcon_ros.prefix_path.catkin:The path '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2' in the environment variable CMAKE_PREFIX_PATH doesn't exist
+[0.248s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 0 installed packages in /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install
+[0.249s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 273 installed packages in /opt/ros/humble
+[0.251s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.298s] Level 5:colcon.colcon_core.verb:set package 'unitree_sdk2' build argument 'cmake_args' from command line to 'None'
+[0.298s] Level 5:colcon.colcon_core.verb:set package 'unitree_sdk2' build argument 'cmake_target' from command line to 'None'
+[0.298s] Level 5:colcon.colcon_core.verb:set package 'unitree_sdk2' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.298s] Level 5:colcon.colcon_core.verb:set package 'unitree_sdk2' build argument 'cmake_clean_cache' from command line to 'False'
+[0.298s] Level 5:colcon.colcon_core.verb:set package 'unitree_sdk2' build argument 'cmake_clean_first' from command line to 'False'
+[0.298s] Level 5:colcon.colcon_core.verb:set package 'unitree_sdk2' build argument 'cmake_force_configure' from command line to 'False'
+[0.298s] Level 5:colcon.colcon_core.verb:set package 'unitree_sdk2' build argument 'ament_cmake_args' from command line to 'None'
+[0.298s] Level 5:colcon.colcon_core.verb:set package 'unitree_sdk2' build argument 'catkin_cmake_args' from command line to 'None'
+[0.298s] Level 5:colcon.colcon_core.verb:set package 'unitree_sdk2' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.298s] DEBUG:colcon.colcon_core.verb:Building package 'unitree_sdk2' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2', 'merge_install': False, 'path': '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/unitree_sdk2', 'symlink_install': False, 'test_result_base': None}
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'fusion_estimator' build argument 'cmake_args' from command line to 'None'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'fusion_estimator' build argument 'cmake_target' from command line to 'None'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'fusion_estimator' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'fusion_estimator' build argument 'cmake_clean_cache' from command line to 'False'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'fusion_estimator' build argument 'cmake_clean_first' from command line to 'False'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'fusion_estimator' build argument 'cmake_force_configure' from command line to 'False'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'fusion_estimator' build argument 'ament_cmake_args' from command line to 'None'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'fusion_estimator' build argument 'catkin_cmake_args' from command line to 'None'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'fusion_estimator' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.299s] DEBUG:colcon.colcon_core.verb:Building package 'fusion_estimator' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator', 'merge_install': False, 'path': '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/fusion_estimator', 'symlink_install': False, 'test_result_base': None}
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'joystick_control' build argument 'cmake_args' from command line to 'None'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'joystick_control' build argument 'cmake_target' from command line to 'None'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'joystick_control' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'joystick_control' build argument 'cmake_clean_cache' from command line to 'False'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'joystick_control' build argument 'cmake_clean_first' from command line to 'False'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'joystick_control' build argument 'cmake_force_configure' from command line to 'False'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'joystick_control' build argument 'ament_cmake_args' from command line to 'None'
+[0.299s] Level 5:colcon.colcon_core.verb:set package 'joystick_control' build argument 'catkin_cmake_args' from command line to 'None'
+[0.300s] Level 5:colcon.colcon_core.verb:set package 'joystick_control' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.300s] DEBUG:colcon.colcon_core.verb:Building package 'joystick_control' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/joystick_control', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control', 'merge_install': False, 'path': '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/joystick_control', 'symlink_install': False, 'test_result_base': None}
+[0.300s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.301s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.301s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/unitree_sdk2'
+[0.302s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.303s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.303s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.310s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2': /usr/bin/cmake /home/smx/unitree_ros2_250221/unitree_sdk2_ws/unitree_sdk2 -DCMAKE_INSTALL_PREFIX=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2
+[0.724s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2' returned '0': /usr/bin/cmake /home/smx/unitree_ros2_250221/unitree_sdk2_ws/unitree_sdk2 -DCMAKE_INSTALL_PREFIX=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2
+[0.726s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2': /usr/bin/cmake --build /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2 -- -j8 -l8
+[17.235s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2' returned '0': /usr/bin/cmake --build /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2 -- -j8 -l8
+[17.243s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2': /usr/bin/cmake --install /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2
+[17.345s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(unitree_sdk2)
+[17.346s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2' returned '0': /usr/bin/cmake --install /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/unitree_sdk2
+[17.347s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2' for CMake module files
+[17.348s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2' for CMake config files
+[17.348s] Level 1:colcon.colcon_core.shell:create_environment_hook('unitree_sdk2', 'cmake_prefix_path')
+[17.348s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/unitree_sdk2/hook/cmake_prefix_path.ps1'
+[17.348s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/unitree_sdk2/hook/cmake_prefix_path.dsv'
+[17.349s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/unitree_sdk2/hook/cmake_prefix_path.sh'
+[17.349s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib'
+[17.349s] Level 1:colcon.colcon_core.shell:create_environment_hook('unitree_sdk2', 'ld_library_path_lib')
+[17.350s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/unitree_sdk2/hook/ld_library_path_lib.ps1'
+[17.350s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/unitree_sdk2/hook/ld_library_path_lib.dsv'
+[17.350s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/unitree_sdk2/hook/ld_library_path_lib.sh'
+[17.350s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/bin'
+[17.350s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib/pkgconfig/unitree_sdk2.pc'
+[17.351s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib/python3.10/site-packages'
+[17.351s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/bin'
+[17.351s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/unitree_sdk2/package.ps1'
+[17.352s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/unitree_sdk2/package.dsv'
+[17.352s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/unitree_sdk2/package.sh'
+[17.352s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/unitree_sdk2/package.bash'
+[17.353s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/unitree_sdk2/package.zsh'
+[17.354s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/share/colcon-core/packages/unitree_sdk2)
+[17.354s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/fusion_estimator' with build type 'ament_cmake'
+[17.354s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/fusion_estimator'
+[17.354s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[17.354s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[17.357s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/joystick_control' with build type 'ament_cmake'
+[17.357s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/joystick_control'
+[17.357s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[17.357s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[17.363s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake /home/smx/unitree_ros2_250221/unitree_sdk2_ws/fusion_estimator -DCMAKE_INSTALL_PREFIX=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator
+[17.365s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/joystick_control': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake /home/smx/unitree_ros2_250221/unitree_sdk2_ws/joystick_control -DCMAKE_INSTALL_PREFIX=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control
+[18.363s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/joystick_control' returned '0': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake /home/smx/unitree_ros2_250221/unitree_sdk2_ws/joystick_control -DCMAKE_INSTALL_PREFIX=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control
+[18.365s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/joystick_control': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --build /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/joystick_control -- -j8 -l8
+[19.043s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator' returned '0': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake /home/smx/unitree_ros2_250221/unitree_sdk2_ws/fusion_estimator -DCMAKE_INSTALL_PREFIX=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator
+[19.045s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --build /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator -- -j8 -l8
+[27.783s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator' returned '0': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --build /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator -- -j8 -l8
+[27.785s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --install /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator
+[27.854s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(fusion_estimator)
+[27.855s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator' for CMake module files
+[27.855s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator' returned '0': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --install /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/fusion_estimator
+[27.856s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator' for CMake config files
+[27.856s] Level 1:colcon.colcon_core.shell:create_environment_hook('fusion_estimator', 'cmake_prefix_path')
+[27.856s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/cmake_prefix_path.ps1'
+[27.857s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/cmake_prefix_path.dsv'
+[27.857s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/cmake_prefix_path.sh'
+[27.857s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib'
+[27.857s] Level 1:colcon.colcon_core.shell:create_environment_hook('fusion_estimator', 'ld_library_path_lib')
+[27.858s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/ld_library_path_lib.ps1'
+[27.858s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/ld_library_path_lib.dsv'
+[27.858s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/ld_library_path_lib.sh'
+[27.859s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/bin'
+[27.859s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/pkgconfig/fusion_estimator.pc'
+[27.859s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/python3.10/site-packages'
+[27.859s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/bin'
+[27.860s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.ps1'
+[27.860s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.dsv'
+[27.861s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.sh'
+[27.861s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.bash'
+[27.861s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.zsh'
+[27.862s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/colcon-core/packages/fusion_estimator)
+[27.862s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(fusion_estimator)
+[27.863s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator' for CMake module files
+[27.863s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator' for CMake config files
+[27.864s] Level 1:colcon.colcon_core.shell:create_environment_hook('fusion_estimator', 'cmake_prefix_path')
+[27.864s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/cmake_prefix_path.ps1'
+[27.864s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/cmake_prefix_path.dsv'
+[27.865s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/cmake_prefix_path.sh'
+[27.865s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib'
+[27.865s] Level 1:colcon.colcon_core.shell:create_environment_hook('fusion_estimator', 'ld_library_path_lib')
+[27.865s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/ld_library_path_lib.ps1'
+[27.866s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/ld_library_path_lib.dsv'
+[27.866s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/hook/ld_library_path_lib.sh'
+[27.866s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/bin'
+[27.867s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/pkgconfig/fusion_estimator.pc'
+[27.867s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib/python3.10/site-packages'
+[27.867s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/bin'
+[27.867s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.ps1'
+[27.868s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.dsv'
+[27.868s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.sh'
+[27.869s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.bash'
+[27.869s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/fusion_estimator/package.zsh'
+[27.869s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/share/colcon-core/packages/fusion_estimator)
+[28.759s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/joystick_control' returned '0': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --build /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/joystick_control -- -j8 -l8
+[28.760s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/joystick_control': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --install /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/joystick_control
+[28.774s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(joystick_control)
+[28.775s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/joystick_control' returned '0': CMAKE_PREFIX_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator:/opt/ros/humble LD_LIBRARY_PATH=/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/unitree_sdk2/lib:/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/fusion_estimator/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib /usr/bin/cmake --install /home/smx/unitree_ros2_250221/unitree_sdk2_ws/build/joystick_control
+[28.775s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control' for CMake module files
+[28.776s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control' for CMake config files
+[28.776s] Level 1:colcon.colcon_core.shell:create_environment_hook('joystick_control', 'cmake_prefix_path')
+[28.776s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/hook/cmake_prefix_path.ps1'
+[28.776s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/hook/cmake_prefix_path.dsv'
+[28.777s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/hook/cmake_prefix_path.sh'
+[28.777s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/lib'
+[28.777s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/bin'
+[28.777s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/lib/pkgconfig/joystick_control.pc'
+[28.778s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/lib/python3.10/site-packages'
+[28.778s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/bin'
+[28.778s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.ps1'
+[28.778s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.dsv'
+[28.779s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.sh'
+[28.779s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.bash'
+[28.779s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.zsh'
+[28.780s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/colcon-core/packages/joystick_control)
+[28.780s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(joystick_control)
+[28.780s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control' for CMake module files
+[28.781s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control' for CMake config files
+[28.781s] Level 1:colcon.colcon_core.shell:create_environment_hook('joystick_control', 'cmake_prefix_path')
+[28.781s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/hook/cmake_prefix_path.ps1'
+[28.782s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/hook/cmake_prefix_path.dsv'
+[28.782s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/hook/cmake_prefix_path.sh'
+[28.782s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/lib'
+[28.782s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/bin'
+[28.782s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/lib/pkgconfig/joystick_control.pc'
+[28.783s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/lib/python3.10/site-packages'
+[28.783s] Level 1:colcon.colcon_core.environment:checking '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/bin'
+[28.783s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.ps1'
+[28.783s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.dsv'
+[28.784s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.sh'
+[28.784s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.bash'
+[28.785s] INFO:colcon.colcon_core.shell:Creating package script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.zsh'
+[28.785s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/colcon-core/packages/joystick_control)
+[28.785s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[28.785s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[28.785s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[28.785s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[28.790s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[28.790s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[28.790s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[28.801s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[28.801s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/local_setup.ps1'
+[28.802s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/_local_setup_util_ps1.py'
+[28.804s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/setup.ps1'
+[28.805s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/local_setup.sh'
+[28.805s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/_local_setup_util_sh.py'
+[28.806s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/setup.sh'
+[28.807s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/local_setup.bash'
+[28.807s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/setup.bash'
+[28.808s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/local_setup.zsh'
+[28.809s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/setup.zsh'

@@ -1,0 +1,20 @@
+[100%] Built target joystick_control_node
+-- Install configuration: ""
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/lib/joystick_control/joystick_control_node
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/launch
+-- Installing: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/launch/joystick_control_launch.py
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/ament_index/resource_index/package_run_dependencies/joystick_control
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/ament_index/resource_index/parent_prefix_path/joystick_control
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/environment/ament_prefix_path.sh
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/environment/ament_prefix_path.dsv
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/environment/path.sh
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/environment/path.dsv
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/local_setup.bash
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/local_setup.sh
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/local_setup.zsh
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/local_setup.dsv
+-- Installing: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.dsv
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/ament_index/resource_index/packages/joystick_control
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/cmake/joystick_controlConfig.cmake
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/cmake/joystick_controlConfig-version.cmake
+-- Up-to-date: /home/smx/unitree_ros2_250221/unitree_sdk2_ws/install/joystick_control/share/joystick_control/package.xml

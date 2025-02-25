@@ -1,0 +1,11 @@
+builtin_interfaces/Time stamp
+float64[12] parameter
+float64[12] feet_based_position
+float64[12] feet_based_velocity
+float64[9] estimated_xyz
+float64[9] estimated_rpy
+float64[12] data_check_a
+float64[12] data_check_b
+float64[12] data_check_c
+float64[12] data_check_d
+float64[12] data_check_e

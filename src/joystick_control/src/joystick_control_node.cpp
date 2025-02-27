@@ -4,6 +4,7 @@
 #include <cstdlib>   // 引入 system
 #include <chrono>    // 引入 chrono，用于计算时间差
 #include <unitree/robot/go2/sport/sport_client.hpp>
+#include <unitree/robot/b2/motion_switcher/motion_switcher_client.hpp>
 
 class JoystickControlNode : public rclcpp::Node
 {
@@ -30,20 +31,31 @@ public:
         sport_client = std::make_unique<unitree::robot::go2::SportClient>();
         sport_client->SetTimeout(10.0f);
         sport_client->Init();
+
+        motion_client = std::make_unique<unitree::robot::b2::MotionSwitcherClient>();
     }
 
 private:
 
     std::unique_ptr<unitree::robot::go2::SportClient> sport_client;
+    std::unique_ptr<unitree::robot::b2::MotionSwitcherClient> motion_client;
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
 
     // 获取按钮输入状态
     int Buttons[8] = {0};
     float Axes[8] = {0};
 
+    int32_t ErrorCode = 0;
+
     bool JoystickEnable = 0;
+    bool AIModeEnable = 0;
+    bool WalkUprightEnable = 0;
+    bool FreeJumpEnable = 0;
+    bool FreeAvoidEnable = 0;
+    bool FreeBoundEnable = 0;
     float MotionEnable = 0;
     float SpeedScalse = 0.25;
+    std::string MotionMode = "normal";
 
     std::string Last_Operation;
     rclcpp::Time Last_Operation_Time;
@@ -88,6 +100,7 @@ private:
         // 打印时间差及上次动作
         rclcpp::Duration elapsed_time = this->get_clock()->now() - Last_Operation_Time;
         Last_Operation_Duration_Time = elapsed_time.seconds();
+        std::cout << "Error Code: " << ErrorCode << std::endl;
         std::cout << "Last Operation: " << Last_Operation << "   " << Last_Operation_Duration_Time << "s passed." << std::endl;
         
         if(Axes[2]<-0.9 && Axes[5]<-0.9 && Last_Operation_Duration_Time > 0.5)
@@ -99,6 +112,14 @@ private:
                 Last_Operation = "Unlock the joystick.";
             else
                 Last_Operation = "Lock the joystick.";
+
+            AIModeEnable = 0;
+            WalkUprightEnable = 0;
+            FreeJumpEnable = 0;
+            FreeAvoidEnable = 0;
+            FreeBoundEnable = 0;
+            MotionMode = "normal";
+            ErrorCode = motion_client->SelectMode(MotionMode);
         }
 
         if(!JoystickEnable)
@@ -140,36 +161,20 @@ private:
             JoystickEnable = 0;
             Last_Operation = "Pause. ";
             Last_Operation_Time = this->get_clock()->now();
-            sport_client->Damp();
+            ErrorCode = sport_client->Damp();
         }
 
-        if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable) // 按住RT键
+        if(Buttons[4] && Buttons[5] && Last_Operation_Duration_Time > 0.5) // 急停
         {
-            if(Buttons[0])
-            {
-                Last_Operation = "Speed Scale 25%. ";
-                Last_Operation_Time = this->get_clock()->now();
-                SpeedScalse = 0.25;
-            }
-            else if(Buttons[1])
-            {
-                Last_Operation = "Speed Scale 50%. ";
-                Last_Operation_Time = this->get_clock()->now();
-                SpeedScalse = 0.5;
-            }
-            else if(Buttons[2])
-            {
-                Last_Operation = "Speed Scale 75%. ";
-                Last_Operation_Time = this->get_clock()->now();
-                SpeedScalse = 0.75;
-            }
-            else if(Buttons[3])
-            {
-                Last_Operation = "Speed Scale 100%. ";
-                Last_Operation_Time = this->get_clock()->now();
-                SpeedScalse = 1.0;
-            }
+            AIModeEnable = 1;
+            Last_Operation = "AI Mode Start. ";
+            Last_Operation_Time = this->get_clock()->now();
+            MotionMode = "AI";
+            ErrorCode = motion_client->SelectMode(MotionMode);
+        }
 
+        if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable)
+        {
             if(abs(Axes[1])>0.1 || abs(Axes[0])>0.1 || abs(Axes[3])>0.1)
             {
                 float Forward_Speed = 2.5 * SpeedScalse * Axes[1];
@@ -187,67 +192,160 @@ private:
     
                 std::cout << "Moving... " << std::endl;
     
-                sport_client->Move(Forward_Speed, Leftward_Speed, Turning_Speed);
+                ErrorCode = sport_client->Move(Forward_Speed, Leftward_Speed, Turning_Speed);
             }
         }
-        else if(Axes[2] < -0.5 && Axes[5] > 0.9 && Last_Operation_Duration_Time > 1 && JoystickEnable) // 按住LT键
+
+        if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable && !AIModeEnable && Last_Operation_Duration_Time > 0.5) // 按住RT键
         {
+            if(Axes[7]==-1)
+            {
+                Last_Operation = "Speed Scale 25%. ";
+                Last_Operation_Time = this->get_clock()->now();
+                SpeedScalse = 0.25;
+            }
+            else if(Axes[6]==1)
+            {
+                Last_Operation = "Speed Scale 50%. ";
+                Last_Operation_Time = this->get_clock()->now();
+                SpeedScalse = 0.5;
+            }
+            else if(Axes[6]==-1)
+            {
+                Last_Operation = "Speed Scale 75%. ";
+                Last_Operation_Time = this->get_clock()->now();
+                SpeedScalse = 0.75;
+            }
+            else if(Axes[7]==1)
+            {
+                Last_Operation = "Speed Scale 100%. ";
+                Last_Operation_Time = this->get_clock()->now();
+                SpeedScalse = 1.0;
+            }
             if(Buttons[0])
             {
                 Last_Operation = "Stand up. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client->RecoveryStand();
+                ErrorCode = sport_client->RecoveryStand();
             }
             else if(Buttons[1])
             {
                 Last_Operation = "Sit Down. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client->StandDown();
+                ErrorCode = sport_client->StandDown();
             }
             else if(Buttons[2])
             {
                 Last_Operation = "Idel Pattern. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client->SwitchGait(0);
+                ErrorCode = sport_client->SwitchGait(0);
             }
             else if(Buttons[3])
             {
                 Last_Operation = "Trot Runing Pattern. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client->SwitchGait(2);
+                ErrorCode = sport_client->SwitchGait(2);
             }
             else if(Buttons[7])
             {
                 Last_Operation = "Start. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client->BalanceStand();
+                ErrorCode = sport_client->BalanceStand();
             }
         }
-        else if(Buttons[4] && Last_Operation_Duration_Time > 0.5 && JoystickEnable) // 按住LR键
+        else if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable && AIModeEnable && Last_Operation_Duration_Time > 0.5) // 按住RT键
+        {
+            if(Buttons[0])
+            {
+                WalkUprightEnable = 1 - WalkUprightEnable;
+                if(WalkUprightEnable)
+                    Last_Operation = "WalkUpright Start. ";
+                else
+                    Last_Operation = "WalkUpright Stop. ";
+                Last_Operation_Time = this->get_clock()->now();
+                ErrorCode = sport_client->WalkUpright(WalkUprightEnable);
+            }
+            else if(Buttons[1])
+            {
+                FreeJumpEnable = 1 - FreeJumpEnable;
+                if(FreeJumpEnable)
+                    Last_Operation = "FreeJump Start. ";
+                else
+                    Last_Operation = "FreeJump Stop. ";
+                Last_Operation_Time = this->get_clock()->now();
+                ErrorCode = sport_client->FreeJump(FreeJumpEnable);
+            }
+            else if(Buttons[2])
+            {
+                FreeBoundEnable = 1 - FreeBoundEnable;
+                if(FreeBoundEnable)
+                    Last_Operation = "FreeBound Start. ";
+                else
+                    Last_Operation = "FreeBound Stop. ";
+                Last_Operation_Time = this->get_clock()->now();
+                ErrorCode = sport_client->FreeBound(FreeBoundEnable);
+            }
+            else if(Buttons[3])
+            {
+                FreeAvoidEnable = 1 - FreeAvoidEnable;
+                if(FreeAvoidEnable)
+                    Last_Operation = "FreeAvoid Start. ";
+                else
+                    Last_Operation = "FreeAvoid Stop. ";
+                Last_Operation_Time = this->get_clock()->now();
+                ErrorCode = sport_client->FreeAvoid(FreeAvoidEnable);
+            }
+
+            if(Axes[7]==-1)
+            {
+                Last_Operation = "BackFlip. ";
+                Last_Operation_Time = this->get_clock()->now();
+                ErrorCode = sport_client->BackFlip();
+            }
+            else if(Axes[6]==1)
+            {
+                Last_Operation = "LeftFlip. ";
+                Last_Operation_Time = this->get_clock()->now();
+                ErrorCode = sport_client->LeftFlip();
+            }
+            else if(Axes[6]==-1)
+            {
+                Last_Operation = "LeftFlip. ";
+                Last_Operation_Time = this->get_clock()->now();
+                ErrorCode = sport_client->LeftFlip();
+            }
+            else if(Axes[7]==1)
+            {
+                Last_Operation = "FrontFlip. ";
+                Last_Operation_Time = this->get_clock()->now();
+                ErrorCode = sport_client->FrontFlip();
+            }
+        }
+        else if(Axes[2] < -0.5 && Axes[5] > 0.9 && Last_Operation_Duration_Time > 1 && JoystickEnable && Last_Operation_Duration_Time > 0.5) // 按住LT键
         {
             if(Buttons[0])
             {
                 Last_Operation = "Motion 1 Hello. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client->Hello();
+                ErrorCode = sport_client->Hello();
             }
             else if(Buttons[1])
             {
                 Last_Operation = "Motion 2 Scrape. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client->Scrape();
+                ErrorCode = sport_client->Scrape();
             }
             else if(Buttons[2])
             {
                 Last_Operation = "Motion 3 FrontJump. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client->FrontJump();
+                ErrorCode = sport_client->FrontJump();
             }
             else if(Buttons[3])
             {
                 Last_Operation = "Motion 4 Dance1. ";
                 Last_Operation_Time = this->get_clock()->now();
-                sport_client->Dance1();
+                ErrorCode = sport_client->Dance1();
             }
         }
     }

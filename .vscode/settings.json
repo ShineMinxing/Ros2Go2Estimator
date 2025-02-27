@@ -1,5 +1,7 @@
 {
     "files.associations": {
+        "functional": "cpp",
+        "system_error": "cpp",
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
@@ -35,7 +37,6 @@
         "vector": "cpp",
         "exception": "cpp",
         "algorithm": "cpp",
-        "functional": "cpp",
         "iterator": "cpp",
         "memory": "cpp",
         "memory_resource": "cpp",
@@ -45,7 +46,6 @@
         "ratio": "cpp",
         "regex": "cpp",
         "string_view": "cpp",
-        "system_error": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
         "utility": "cpp",

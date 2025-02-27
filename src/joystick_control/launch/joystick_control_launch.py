@@ -5,6 +5,7 @@ from launch.actions import ExecuteProcess
 
 def generate_launch_description():
     return LaunchDescription([
+
         # 自动启动 joy_node
         Node(
             package='joy',           # 包名
@@ -17,14 +18,13 @@ def generate_launch_description():
         ExecuteProcess(
             cmd=[
                 "tilix",
+                "--new-process",
                 "-e",
-                "ros2", "run", "joystick_control", "joystick_control_node",
-                "--ros-args",
-                "-p", "network_interface:=enxc8a3627ff10b"
+                "bash", "-c", "source ~/.bashrc && ros2 run joystick_control joystick_control_node --ros-args -p network_interface:=enxc8a3627ff10b"
             ],
             output="screen",
         ),
-
+        
         # 启动 fusion_estimator_node
         Node(
             package='fusion_estimator',

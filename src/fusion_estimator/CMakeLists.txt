@@ -15,11 +15,17 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   DEPENDENCIES builtin_interfaces
 )
 
+# 获取 src/Estimator 目录下的所有 .cpp
+file(GLOB_RECURSE ESTIMATOR_SOURCES
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+)
+
 # 获取C++类型支持目标
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 # 创建可执行文件
-add_executable(fusion_estimator_node src/fusion_estimator_node.cpp)
+add_executable(fusion_estimator_node ${ESTIMATOR_SOURCES})
 
 # 包含目录
 target_include_directories(fusion_estimator_node PRIVATE
@@ -27,6 +33,7 @@ target_include_directories(fusion_estimator_node PRIVATE
   ${sensor_msgs_INCLUDE_DIRS}
   ${unitree_sdk2_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}/rosidl_generator_cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 # 声明依赖

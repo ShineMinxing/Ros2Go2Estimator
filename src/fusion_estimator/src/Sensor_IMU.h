@@ -10,11 +10,11 @@ namespace DataFusion
   {
     public:
 
-      SensorIMUAcc(EstimatorPortN* StateSpaceModel_):Sensors(StateSpaceModel_)
-      {
-      }
+    SensorIMUAcc(EstimatorPortN* StateSpaceModel_):Sensors(StateSpaceModel_)
+    {
+    }
 
-      void SensorDataHandle(const unitree_go::msg::dds_::LowState_& low_state) override;
+    void SensorDataHandle(double* Message, double Time)  override;
 
     protected:
 
@@ -24,11 +24,12 @@ namespace DataFusion
   {
     public:
 
-      SensorIMUMagGyro(EstimatorPortN* StateSpaceModel_):Sensors(StateSpaceModel_)
-      {
-      }
+    SensorIMUMagGyro(EstimatorPortN* StateSpaceModel_):Sensors(StateSpaceModel_)
+    {
+    }
 
-      void SensorDataHandle(const unitree_go::msg::dds_::LowState_& low_state) override;
+    void SensorDataHandle(double* Message, double Time) override;
+    void OrientationCorrect();
 
     protected:
 

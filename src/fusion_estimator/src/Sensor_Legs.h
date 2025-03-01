@@ -13,24 +13,28 @@ namespace DataFusion
   {
     public:
 
-      SensorLegs(EstimatorPortN* StateSpaceModel_):Sensors(StateSpaceModel_)
-      {
-        ObtainUrdfParameter();
-      }
+    SensorLegs(EstimatorPortN* StateSpaceModel_):Sensors(StateSpaceModel_)
+    {
+      ObtainUrdfParameter();
+    }
 
-      void SensorDataHandle(const unitree_go::msg::dds_::LowState_& low_state) override;
+    void SensorDataHandle(const unitree_go::msg::dds_::LowState_& low_state) override;
 
-      // 默认值
-      Eigen::Vector3d KinematicPar_FLHipJoint = {0.1934, 0.0465, 0.001};
-      Eigen::Vector3d KinematicPar_FLThighJoint = {0, 0.0955, 0};
-      Eigen::Vector3d KinematicPar_FLCalfJoint = {0, 0, -0.213};
-      Eigen::Vector3d KinematicPar_FLFootJoint = {0, 0, -0.213};
-      double KinematicPar__FLFoot = 0.022;
-
-
-      void ObtainUrdfParameter();
+    void ObtainUrdfParameter();
+    double FootHipCorrectPar[6] = {1, 1, 1, 1, 1, 1};
 
     protected:
+
+    Eigen::Matrix<double, 4, 13> KinematicParams;
+    double LatestJointAngle[4][3]={0}, LatestJointVelocity[4][3]={0};
+    double LastJointAngle[4][3]={0}, LastJointVelocity[4][3]={0};
+    double FootEffortThreshold = 1;
+    bool FootIsOnGround = true, FootWasOnGround = true, FootLanding = false;
+    int FootfallPositionRecordIsInitiated = 0;
+    double FootfallPositionRecord[4][3]={0};
+    double Par_HipLength, Par_ThighLength, Par_CalfLength, Par_FootLength;
+
+    void Joint2HipFoot(int LegNumber, double *Observation);
 
   };
 }

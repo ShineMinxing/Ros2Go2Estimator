@@ -170,8 +170,8 @@ EXPORT void StateSpaceModel1_Initialization(EstimatorPortN *estimator)
     0,0,0,0,0,0,0,1,0,\
     0,0,0,0,0,0,0,0,1\
     };
-    double Int_Par[6] = {0,0,0,0,0,0};
-    double Double_Par[6] = {0,0,0,0,0,0};
+    double Int_Par[100] = {0};
+    double Double_Par[100] = {0};
 
     estimator->Nx = StateSpaceModel1_NX;
     estimator->Nz = StateSpaceModel1_NZ;
@@ -218,8 +218,8 @@ EXPORT void StateSpaceModel1_Initialization(EstimatorPortN *estimator)
     memcpy(estimator->Matrix_P, P, estimator->Nx * estimator->Nx * sizeof(double));
     memcpy(estimator->Matrix_Q, Q, estimator->Nx * estimator->Nx * sizeof(double));
     memcpy(estimator->Matrix_R, R, estimator->Nz * estimator->Nz * sizeof(double));
-    memcpy(estimator->Int_Par, Int_Par, 1 * sizeof(int));
-    memcpy(estimator->Double_Par, Double_Par, 1 * sizeof(double));
+    memcpy(estimator->Int_Par, Int_Par, 100 * sizeof(int));
+    memcpy(estimator->Double_Par, Double_Par, 100 * sizeof(double));
 
     // Initiate pointer
     estimator->StateTransitionEquation = StateSpaceModel1_StateTransitionFunction;

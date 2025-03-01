@@ -79,6 +79,13 @@ private:
         for(int i=0; i<9; i++){
             fusion_msg.data_check_c[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
         }
+        Sensor_Legs->SensorDataHandle(low_state);
+        for(int i=0; i<4; i++){
+            for(int j=0; j<3; j++){
+                fusion_msg.data_check_d[3*i+j] = StateSpaceModel1_Sensors[0]->Double_Par[9*i+3*j];
+                fusion_msg.data_check_e[3*i+j] = StateSpaceModel1_Sensors[0]->Double_Par[9*i+3*j+1];
+            }
+        }
 
         publisher_->publish(fusion_msg);
     }

@@ -18,6 +18,8 @@
   <depend>sensor_msgs</depend>
   <depend>unitree_sdk2</depend>
   <depend>builtin_interfaces</depend>
+  <depend>urdfdom</depend>
+  <depend>urdfdom_parser</depend>
 
 
   <test_depend>ament_lint_auto</test_depend>

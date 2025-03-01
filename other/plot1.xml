@@ -1,24 +1,66 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
- <tabbed_widget name="Main Window" parent="main_window">
-  <Tab containers="1" tab_name="tab39">
+ <tabbed_widget parent="main_window" name="Main Window">
+  <Tab tab_name="tab39" containers="1">
    <Container>
-    <DockSplitter count="1" sizes="1" orientation="-">
-     <DockSplitter count="2" sizes="0.500566;0.499434" orientation="-">
+    <DockSplitter count="3" sizes="0.333333;0.333333;0.333333" orientation="-">
+     <DockSplitter count="2" sizes="0.500236;0.499764" orientation="|">
       <DockArea name="...">
-       <plot flip_y="false" flip_x="false" style="Lines" mode="TimeSeries">
-        <range top="0.150758" bottom="-0.158509" left="40.638068" right="45.636420"/>
+       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="1740735926.430439" bottom="-20911.716718" left="1740735921.430923" top="434598.487351"/>
         <limitY/>
-        <curve color="#ff7f0e" name="A1"/>
-        <curve color="#1ac938" name="A0"/>
+        <curve color="#ff0c00" name="/fusion_estimator_data/data_check_b[0]"/>
+        <curve color="#fffb00" name="/fusion_estimator_data/data_check_b[3]"/>
+        <curve color="#0021ff" name="/fusion_estimator_data/data_check_b[6]"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot flip_y="false" flip_x="false" style="Lines" mode="TimeSeries">
-        <range top="0.121982" bottom="-0.118107" left="40.638068" right="45.636420"/>
+       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="1740735926.430439" bottom="-0.107399" left="1740735921.430923" top="-0.003081"/>
         <limitY/>
-        <curve color="#1f77b4" name="A3"/>
-        <curve color="#d62728" name="A4"/>
+        <curve color="#ff1300" name="/fusion_estimator_data/data_check_c[0]"/>
+        <curve color="#ffda00" name="/fusion_estimator_data/data_check_c[3]"/>
+        <curve color="#0016ff" name="/fusion_estimator_data/data_check_c[6]"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter count="2" sizes="0.500236;0.499764" orientation="|">
+      <DockArea name="...">
+       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="1740735926.430439" bottom="-82.651524" left="1740735921.430923" top="2902.019954"/>
+        <limitY/>
+        <curve color="#ff0700" name="/fusion_estimator_data/data_check_b[1]"/>
+        <curve color="#f3ff00" name="/fusion_estimator_data/data_check_b[4]"/>
+        <curve color="#0024ff" name="/fusion_estimator_data/data_check_b[7]"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="1740735926.430439" bottom="-0.022091" left="1740735921.430923" top="0.010949"/>
+        <limitY/>
+        <curve color="#ff0400" name="/fusion_estimator_data/data_check_c[1]"/>
+        <curve color="#fff500" name="/fusion_estimator_data/data_check_c[4]"/>
+        <curve color="#0017ff" name="/fusion_estimator_data/data_check_c[7]"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter count="2" sizes="0.500236;0.499764" orientation="|">
+      <DockArea name="...">
+       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="1740735926.430439" bottom="-0.370980" left="1740735921.430923" top="9.789520"/>
+        <limitY/>
+        <curve color="#ff0700" name="/fusion_estimator_data/data_check_b[2]"/>
+        <curve color="#ffff00" name="/fusion_estimator_data/data_check_b[5]"/>
+        <curve color="#0200ff" name="/fusion_estimator_data/data_check_b[8]"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="1740735926.430439" bottom="-0.016690" left="1740735921.430923" top="0.017336"/>
+        <limitY/>
+        <curve color="#ff0001" name="/fusion_estimator_data/data_check_c[2]"/>
+        <curve color="#fcff00" name="/fusion_estimator_data/data_check_c[5]"/>
+        <curve color="#0007ff" name="/fusion_estimator_data/data_check_c[8]"/>
        </plot>
       </DockArea>
      </DockSplitter>
@@ -27,7 +69,7 @@
   </Tab>
   <currentTabIndex index="0"/>
  </tabbed_widget>
- <use_relative_time_offset enabled="1"/>
+ <use_relative_time_offset enabled="0"/>
  <!-- - - - - - - - - - - - - - - -->
  <!-- - - - - - - - - - - - - - - -->
  <Plugins>
@@ -68,28 +110,7 @@
  <previouslyLoaded_Datafiles/>
  <previouslyLoaded_Streamer name="ROS2 Topic Subscriber"/>
  <!-- - - - - - - - - - - - - - - -->
- <customMathEquations>
-  <snippet name="A1">
-   <global></global>
-   <function>return value</function>
-   <linked_source>/fusion_estimator_data/data_check_a[1]</linked_source>
-  </snippet>
-  <snippet name="A0">
-   <global></global>
-   <function>return value</function>
-   <linked_source>/fusion_estimator_data/data_check_a[0]</linked_source>
-  </snippet>
-  <snippet name="A3">
-   <global></global>
-   <function>return value</function>
-   <linked_source>/fusion_estimator_data/data_check_a[3]</linked_source>
-  </snippet>
-  <snippet name="A4">
-   <global></global>
-   <function>return value</function>
-   <linked_source>/fusion_estimator_data/data_check_a[2]</linked_source>
-  </snippet>
- </customMathEquations>
+ <customMathEquations/>
  <snippets/>
  <!-- - - - - - - - - - - - - - - -->
 </root>

@@ -8,6 +8,8 @@ find_package(sensor_msgs REQUIRED)
 find_package(unitree_sdk2 REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(builtin_interfaces REQUIRED)
+find_package(urdfdom_headers REQUIRED)
+find_package(urdfdom REQUIRED)
 
 # 生成消息接口
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -34,6 +36,8 @@ target_include_directories(fusion_estimator_node PRIVATE
   ${unitree_sdk2_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}/rosidl_generator_cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${urdfdom_headers_INCLUDE_DIRS}
+  ${urdfdom_INCLUDE_DIRS}
 )
 
 # 声明依赖
@@ -42,12 +46,13 @@ ament_target_dependencies(fusion_estimator_node
   sensor_msgs
 )
 
-# 链接库（关键修改）
+# 链接库
 target_link_libraries(fusion_estimator_node
   ${ament_LIBRARIES}
   unitree_sdk2
   ddsc ddscxx
   ${cpp_typesupport_target}
+  ${urdfdom_LIBRARIES}
 )
 
 # 安装目标

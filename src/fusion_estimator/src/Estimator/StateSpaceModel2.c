@@ -16,13 +16,16 @@ void StateSpaceModel2_StateTransitionFunction(double *In_State, double *Out_Stat
 		Out_State[i * 3 + 1] = In_State[i * 3 + 1] + In_State[i * 3 + 2] * estimator->Intervel;
 		Out_State[i * 3 + 2] = In_State[i * 3 + 2];
 	}
+    printf("Error");
 }
 
 void StateSpaceModel2_ObservationFunction(double *In_State, double *Out_Observation, EstimatorPortN *estimator) {
-        
+
     Out_Observation[0] = In_State[0];
     Out_Observation[1] = In_State[3];
     Out_Observation[2] = In_State[6];
+
+    printf("Error");
 }
 
 void StateSpaceModel2_PredictionFunction(double *In_State, double *Out_PredictedState, EstimatorPortN *estimator) {
@@ -32,6 +35,7 @@ void StateSpaceModel2_PredictionFunction(double *In_State, double *Out_Predicted
 		Out_PredictedState[i * 3 + 1] = In_State[i * 3 + 1] + In_State[i * 3 + 2] * estimator->PredictTime;
 		Out_PredictedState[i * 3 + 2] = In_State[i * 3 + 2];
 	}
+    printf("Error");
 }
 
 EXPORT void StateSpaceModel2_EstimatorPort(double *In_Observation, double In_Observation_Timestamp, struct EstimatorPortN *estimator) {
@@ -40,11 +44,13 @@ EXPORT void StateSpaceModel2_EstimatorPort(double *In_Observation, double In_Obs
 		estimator->CurrentObservation[i] = In_Observation[i];
 	}
     estimator->ObservationTimestamp = In_Observation_Timestamp;
-    Estimator2002_Estimation(estimator);
+    estimator->CurrentTimestamp = In_Observation_Timestamp;
+    Estimator2001_Estimation(estimator);
+    estimator->StateUpdateTimestamp = estimator->CurrentTimestamp;
 }
 
 EXPORT void StateSpaceModel2_EstimatorPortTermination(struct EstimatorPortN *estimator) {
-    Estimator2002_Termination();
+    Estimator2001_Termination();
 
     free(estimator->PortName);
     estimator->PortName = NULL;
@@ -86,7 +92,7 @@ EXPORT void StateSpaceModel2_Initialization(EstimatorPortN *estimator)
     char *PortIntroductionTemp = "For Reference";
 
     #define StateSpaceModel2_NX 9
-    #define StateSpaceModel2_NZ 3
+    #define StateSpaceModel2_NZ 9
     #define StateSpaceModel2_PredictStep 0
     #define StateSpaceModel2_Interval 0.0015
     #define StateSpaceModel2_PredictTime 0
@@ -123,6 +129,12 @@ EXPORT void StateSpaceModel2_Initialization(EstimatorPortN *estimator)
     double H[StateSpaceModel2_NZ*StateSpaceModel2_NX] = {\
     0,0,0,0,0,0,0,0,0,\
     0,0,0,0,0,0,0,0,0,\
+    0,0,0,0,0,0,0,0,0,\
+    0,0,0,0,0,0,0,0,0,\
+    0,0,0,0,0,0,0,0,0,\
+    0,0,0,0,0,0,0,0,0,\
+    0,0,0,0,0,0,0,0,0,\
+    0,0,0,0,0,0,0,0,0,\
     0,0,0,0,0,0,0,0,0\
     };
     double P[StateSpaceModel2_NX*StateSpaceModel2_NX] = {\
@@ -148,9 +160,15 @@ EXPORT void StateSpaceModel2_Initialization(EstimatorPortN *estimator)
     0,0,0,0,0,0,0,0,1\
     };
     double R[StateSpaceModel2_NZ*StateSpaceModel2_NZ] = {\
-    1,0,0,\
-    0,1,0,\
-    0,0,1\
+    1,0,0,0,0,0,0,0,0,\
+    0,1,0,0,0,0,0,0,0,\
+    0,0,1,0,0,0,0,0,0,\
+    0,0,0,1,0,0,0,0,0,\
+    0,0,0,0,1,0,0,0,0,\
+    0,0,0,0,0,1,0,0,0,\
+    0,0,0,0,0,0,1,0,0,\
+    0,0,0,0,0,0,0,1,0,\
+    0,0,0,0,0,0,0,0,1\
     };
     double Int_Par[6] = {0,0,0,0,0,0};
     double Double_Par[6] = {0,0,0,0,0,0};
@@ -210,5 +228,5 @@ EXPORT void StateSpaceModel2_Initialization(EstimatorPortN *estimator)
 
     printf("%s is initialized\n", estimator->PortName);
 
-    Estimator2002_Init(estimator);
+    Estimator2001_Init(estimator);
 }

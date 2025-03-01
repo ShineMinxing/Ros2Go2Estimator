@@ -1,10 +1,14 @@
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
 #include <iostream>
-#include <unitree/robot/channel/channel_subscriber.hpp>
+#include "unitree/robot/channel/channel_subscriber.hpp"
 #include "unitree/idl/go2/LowState_.hpp"
-#include "fusion_estimator/msg/fusion_estimator_test.hpp" 
 #include "Estimator/EstimatorPortN.h"
+#include "fusion_estimator/msg/fusion_estimator_test.hpp" 
+#include "Sensor_IMU.h" 
+#include "Sensor_Legs.h" 
+
+using namespace DataFusion;
 
 class FusionEstimatorNode : public rclcpp::Node
 {
@@ -28,21 +32,17 @@ public:
         publisher_ = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
             "fusion_estimator_data", 10);
 
-        EstimatorPortN* StateSpaceModel1_SensorsPtrs = new EstimatorPortN; // 创建新的结构体实例
-        StateSpaceModel1_Initialization(StateSpaceModel1_SensorsPtrs);     // 调用初始化函数
-        StateSpaceModel1_Sensors.push_back(StateSpaceModel1_SensorsPtrs);  // 将指针添加到容器中
-       
-        EstimatorPortN* StateSpaceModel2_SensorsPtrs = new EstimatorPortN; // 创建新的结构体实例
-        StateSpaceModel2_Initialization(StateSpaceModel2_SensorsPtrs);     // 调用初始化函数
-        StateSpaceModel2_Sensors.push_back(StateSpaceModel2_SensorsPtrs);  // 将指针添加到容器中
+        for(int i = 0; i < 2; i++)
+        {
+            EstimatorPortN* StateSpaceModel1_SensorsPtrs = new EstimatorPortN; // 创建新的结构体实例
+            StateSpaceModel1_Initialization(StateSpaceModel1_SensorsPtrs);     // 调用初始化函数
+            StateSpaceModel1_Sensors.push_back(StateSpaceModel1_SensorsPtrs);  // 将指针添加到容器中
+        }
 
-        for (int j = 0; j < StateSpaceModel1_Sensors[0]->Nz; ++j) {
-            StateSpaceModel1_Sensors[0]->Matrix_R[j*StateSpaceModel1_Sensors[0]->Nz+j] = 100;  // 传感器噪声
-        }
-        for (int j = 0; j < StateSpaceModel2_Sensors[0]->Nz; ++j) {
-            StateSpaceModel2_Sensors[0]->Matrix_R[j*StateSpaceModel2_Sensors[0]->Nz+j] = 100;  // 传感器噪声
-        }
-        
+        Sensor_IMUAcc = std::make_shared<DataFusion::SensorIMUAcc>(StateSpaceModel1_Sensors[0]);
+        Sensor_IMUMagGyro = std::make_shared<DataFusion::SensorIMUMagGyro>(StateSpaceModel1_Sensors[1]);
+        Sensor_Legs = std::make_shared<DataFusion::SensorLegs>(StateSpaceModel1_Sensors[0]);
+
         RCLCPP_INFO(this->get_logger(), "Fusion Estimator Node Initialized");
     }
 
@@ -62,48 +62,32 @@ private:
         
         fusion_msg.stamp = this->get_clock()->now();
 
-        for(int i=0; i<12; i++){
-            fusion_msg.data_check_a[i] = low_state.motor_state()[i].q();
-            fusion_msg.data_check_b[i] = low_state.motor_state()[i].dq();
-        }
 
         for(int i=0; i<3; i++){
-            fusion_msg.data_check_c[0+i] = low_state.imu_state().accelerometer()[i];
-            fusion_msg.data_check_c[3+i] = low_state.imu_state().rpy()[i];
-            fusion_msg.data_check_c[6+i] = low_state.imu_state().gyroscope()[i];
-        }
-        for(int i=0; i<4; i++){
-            fusion_msg.data_check_d[0+i] = low_state.imu_state().quaternion()[i];
+            fusion_msg.data_check_a[0+i] = low_state.imu_state().accelerometer()[i];
+            fusion_msg.data_check_a[3+i] = low_state.imu_state().rpy()[i];
+            fusion_msg.data_check_a[6+i] = low_state.imu_state().gyroscope()[i];
         }
 
         // Start Estimation
-        rclcpp::Time Current_Time = this->get_clock()->now(); 
-        double Current_Timestamp = Current_Time.seconds();
-        double ObservastionTemp[StateSpaceModel1_Sensors[0]->Nz];
-
-        for(int i=0; i<3; i++){
-            ObservastionTemp[i] = low_state.imu_state().accelerometer()[i];
+ 
+        Sensor_IMUAcc->SensorDataHandle(low_state);
+        for(int i=0; i<9; i++){
+            fusion_msg.data_check_b[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i];
         }
-        StateSpaceModel1_EstimatorPort(ObservastionTemp, Current_Timestamp, StateSpaceModel1_Sensors[0]);
-        for(int i=0; i<3; i++){
-            fusion_msg.data_check_e[0+i] = StateSpaceModel1_Sensors[0]->EstimatedState[3*i];
+        Sensor_IMUMagGyro->SensorDataHandle(low_state);
+        for(int i=0; i<9; i++){
+            fusion_msg.data_check_c[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
         }
-
-
-        for(int i=0; i<3; i++){
-            ObservastionTemp[i] = low_state.imu_state().gyroscope()[i];
-        }
-        StateSpaceModel2_EstimatorPort(ObservastionTemp, Current_Timestamp, StateSpaceModel2_Sensors[0]);
-        for(int i=0; i<3; i++){
-            fusion_msg.data_check_e[6+i] = StateSpaceModel2_Sensors[0]->EstimatedState[3*i];
-        }
-
 
         publisher_->publish(fusion_msg);
     }
 
     rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr publisher_;
     unitree::robot::ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> lowstate_subscriber_;
+    std::shared_ptr<DataFusion::SensorIMUAcc> Sensor_IMUAcc; 
+    std::shared_ptr<DataFusion::SensorIMUMagGyro> Sensor_IMUMagGyro; 
+    std::shared_ptr<DataFusion::SensorLegs> Sensor_Legs; 
 };
 
 int main(int argc, char** argv)

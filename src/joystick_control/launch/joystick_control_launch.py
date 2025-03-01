@@ -20,17 +20,18 @@ def generate_launch_description():
                 "tilix",
                 "--new-process",
                 "-e",
-                "bash", "-c", "source ~/.bashrc && ros2 run joystick_control joystick_control_node --ros-args -p network_interface:=enxc8a3627ff10b"
+                "bash", "-c", "source ~/.bashrc && ros2 run joystick_control joystick_control_node --ros-args -p network_interface:=enx00e04c8d0eff"
             ],
             output="screen",
         ),
-        
-        # 启动 fusion_estimator_node
-        Node(
-            package='fusion_estimator',
-            executable='fusion_estimator_node',
-            name='fusion_estimator_node',
-            output='screen',
-            parameters=[{'network_interface': "enxc8a3627ff10b"}],
+
+        ExecuteProcess(
+            cmd=[
+                "tilix",
+                "--new-process",
+                "-e",
+                "bash", "-c", "source ~/.bashrc && ros2 run fusion_estimator fusion_estimator_node --ros-args -p network_interface:=enx00e04c8d0eff"
+            ],
+            output="screen",
         ),
     ])

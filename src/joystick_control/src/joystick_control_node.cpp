@@ -19,7 +19,7 @@ public:
         unitree::robot::ChannelFactory::Instance()->Init(0, network_interface);
 
         // 初始化句子
-        Last_Operation = "Joystick Control Start";
+        Last_Operation = "Joystick Control Init";
 
         // 创建订阅者，订阅/joy话题
         subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
@@ -33,6 +33,8 @@ public:
         sport_client->Init();
 
         motion_client = std::make_unique<unitree::robot::b2::MotionSwitcherClient>();
+        motion_client->SetTimeout(10.0f); 
+        motion_client->Init();
     }
 
 private:
@@ -55,7 +57,6 @@ private:
     bool FreeBoundEnable = 0;
     float MotionEnable = 0;
     float SpeedScalse = 0.25;
-    std::string MotionMode = "normal";
 
     std::string Last_Operation;
     rclcpp::Time Last_Operation_Time;
@@ -113,13 +114,23 @@ private:
             else
                 Last_Operation = "Lock the joystick.";
 
-            AIModeEnable = 0;
-            WalkUprightEnable = 0;
-            FreeJumpEnable = 0;
-            FreeAvoidEnable = 0;
-            FreeBoundEnable = 0;
-            MotionMode = "normal";
-            ErrorCode = motion_client->SelectMode(MotionMode);
+            if(AIModeEnable)
+            {
+                AIModeEnable = 0;
+                if(WalkUprightEnable)
+                    ErrorCode = sport_client->WalkUpright(0);
+                WalkUprightEnable = 0;
+                if(FreeJumpEnable)
+                    ErrorCode = sport_client->FreeJump(0);
+                FreeJumpEnable = 0;
+                if(FreeAvoidEnable)
+                    ErrorCode = sport_client->FreeBound(0);
+                FreeAvoidEnable = 0;
+                if(FreeBoundEnable)
+                    ErrorCode = sport_client->FreeAvoid(0);
+                FreeBoundEnable = 0;
+                ErrorCode = motion_client->SelectMode("normal");
+            }
         }
 
         if(!JoystickEnable)
@@ -166,14 +177,16 @@ private:
 
         if(Buttons[4] && Buttons[5] && Last_Operation_Duration_Time > 0.5) // 急停
         {
-            AIModeEnable = 1;
-            Last_Operation = "AI Mode Start. ";
+            AIModeEnable = 1 - AIModeEnable;
+            if(AIModeEnable)
+                Last_Operation = "AI Mode Start. ";
+            else
+                Last_Operation = "AI Mode Stop. ";
             Last_Operation_Time = this->get_clock()->now();
-            MotionMode = "AI";
-            ErrorCode = motion_client->SelectMode(MotionMode);
+            ErrorCode = motion_client->SelectMode("ai");
         }
 
-        if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable)
+        if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable) //运动
         {
             if(abs(Axes[1])>0.1 || abs(Axes[0])>0.1 || abs(Axes[3])>0.1)
             {

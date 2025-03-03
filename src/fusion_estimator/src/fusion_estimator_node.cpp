@@ -57,8 +57,8 @@ public:
         Sensor_Legs->KinematicParams  << 
         0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
         0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
-        -0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
-        -0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022;
+        -0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
+        -0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022;
     
         std::string urdf_path = "/home/smx/unitree_ros2_250221/unitree_sdk2_ws/src/fusion_estimator/cfg/go2_description.urdf";
         std::ifstream urdf_file(urdf_path);
@@ -145,10 +145,10 @@ public:
                 }
             }
     
-            Sensor_Legs->Par_HipLength = std::sqrt(Sensor_Legs->KinematicParams(0, 0)*Sensor_Legs->KinematicParams(0, 0) + Sensor_Legs->KinematicParams(0, 1)*Sensor_Legs->KinematicParams(0, 1) + Sensor_Legs->KinematicParams(0, 2)*Sensor_Legs->KinematicParams(0, 2));
-            Sensor_Legs->Par_ThighLength = std::sqrt(Sensor_Legs->KinematicParams(0, 3)*Sensor_Legs->KinematicParams(0, 3) + Sensor_Legs->KinematicParams(0, 4)*Sensor_Legs->KinematicParams(0, 4) + Sensor_Legs->KinematicParams(0, 5)*Sensor_Legs->KinematicParams(0, 5));
-            Sensor_Legs->Par_CalfLength = std::sqrt(Sensor_Legs->KinematicParams(0, 6)*Sensor_Legs->KinematicParams(0, 6) + Sensor_Legs->KinematicParams(0, 7)*Sensor_Legs->KinematicParams(0, 7) + Sensor_Legs->KinematicParams(0, 8)*Sensor_Legs->KinematicParams(0, 8));
-            Sensor_Legs->Par_FootLength = abs(Sensor_Legs->KinematicParams(0, 9));
+            Sensor_Legs->Par_HipLength = std::sqrt(Sensor_Legs->KinematicParams(0, 3)*Sensor_Legs->KinematicParams(0, 3) + Sensor_Legs->KinematicParams(0, 4)*Sensor_Legs->KinematicParams(0, 4) + Sensor_Legs->KinematicParams(0, 5)*Sensor_Legs->KinematicParams(0, 5));
+            Sensor_Legs->Par_ThighLength = std::sqrt(Sensor_Legs->KinematicParams(0, 6)*Sensor_Legs->KinematicParams(0, 6) + Sensor_Legs->KinematicParams(0, 7)*Sensor_Legs->KinematicParams(0, 7) + Sensor_Legs->KinematicParams(0, 8)*Sensor_Legs->KinematicParams(0, 8));
+            Sensor_Legs->Par_CalfLength = std::sqrt(Sensor_Legs->KinematicParams(0, 9)*Sensor_Legs->KinematicParams(0, 9) + Sensor_Legs->KinematicParams(0, 10)*Sensor_Legs->KinematicParams(0, 10) + Sensor_Legs->KinematicParams(0, 11)*Sensor_Legs->KinematicParams(0, 11));
+            Sensor_Legs->Par_FootLength = abs(Sensor_Legs->KinematicParams(0, 12));
         }
     }
 
@@ -175,11 +175,11 @@ private:
             fusion_msg.data_check_a[0+i] = low_state.imu_state().accelerometer()[i];
             fusion_msg.data_check_a[3+i] = low_state.imu_state().rpy()[i];
             fusion_msg.data_check_a[6+i] = low_state.imu_state().gyroscope()[i];
-            fusion_msg.data_check_a[9+i] = low_state.foot_force()[i];;
         }
 
         // Start Estimation
-        double Message[100]={0};
+        double LatestMessage[3][100]={0};
+        static double LastMessage[3][100]={0};
 
         rclcpp::Clock ros_clock(RCL_SYSTEM_TIME);
         rclcpp::Time CurrentTime = ros_clock.now();
@@ -187,22 +187,44 @@ private:
 
         for(int i = 0; i < 3; i++)
         {
-            Message[3*i+2] = low_state.imu_state().accelerometer()[i];
+            LatestMessage[0][3*i+2] = low_state.imu_state().accelerometer()[i];
         }
-        Sensor_IMUAcc->SensorDataHandle(Message, CurrentTimestamp);
+        for(int i = 0; i < 9; i++)
+        {
+            if(LastMessage[0][i] != LatestMessage[0][i])
+            {
+                Sensor_IMUAcc->SensorDataHandle(LatestMessage[0], CurrentTimestamp);
+                for(int j = 0; j < 9; j++)
+                {
+                    LastMessage[0][j] = LatestMessage[0][j];
+                }
+                break;
+            }
+        }
         for(int i=0; i<9; i++){
             fusion_msg.data_check_b[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i];
         }
 
         for(int i = 0; i < 3; i++)
         {
-            Message[3*i] = low_state.imu_state().rpy()[i];
+            LatestMessage[1][3*i] = low_state.imu_state().rpy()[i];
         }
         for(int i = 0; i < 3; i++)
         {
-            Message[3*i+1] = low_state.imu_state().gyroscope()[i];
+            LatestMessage[1][3*i+1] = low_state.imu_state().gyroscope()[i];
         }
-        Sensor_IMUMagGyro->SensorDataHandle(Message, CurrentTimestamp);
+        for(int i = 0; i < 9; i++)
+        {
+            if(LastMessage[1][i] != LatestMessage[1][i])
+            {
+                Sensor_IMUMagGyro->SensorDataHandle(LatestMessage[1], CurrentTimestamp);
+                for(int j = 0; j < 9; j++)
+                {
+                    LastMessage[1][j] = LatestMessage[1][j];
+                }
+                break;
+            }
+        }
         for(int i=0; i<9; i++){
             fusion_msg.data_check_c[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
         }
@@ -211,12 +233,25 @@ private:
         {
             for(int i = 0; i < 3; i++)
             {
-                Message[LegNumber*3+i] = low_state.motor_state()[LegNumber*3+i].q();
-                Message[12+ LegNumber*3+i] = low_state.motor_state()[LegNumber*3+i].dq();
+                LatestMessage[2][LegNumber*3+i] = low_state.motor_state()[LegNumber*3+i].q();
+                LatestMessage[2][12+ LegNumber*3+i] = low_state.motor_state()[LegNumber*3+i].dq();
             }
-            Message[24 + LegNumber] = low_state.foot_force()[LegNumber];
+            LatestMessage[2][24 + LegNumber] = low_state.foot_force()[LegNumber];
+            fusion_msg.parameter[LegNumber] = low_state.foot_force()[LegNumber];
+            fusion_msg.parameter[LegNumber] = fusion_msg.parameter[LegNumber] / 100;
         }
-        Sensor_Legs->SensorDataHandle(Message, CurrentTimestamp);
+        for(int i = 0; i < 28; i++)
+        {
+            if(LastMessage[2][i] != LatestMessage[2][i])
+            {
+                Sensor_Legs->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
+                for(int j = 0; j < 28; j++)
+                {
+                    LastMessage[2][j] = LatestMessage[2][j];
+                }
+                break;
+            }
+        }
         for(int i=0; i<4; i++){
             for(int j=0; j<3; j++){
                 fusion_msg.data_check_d[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[6 * i + j];

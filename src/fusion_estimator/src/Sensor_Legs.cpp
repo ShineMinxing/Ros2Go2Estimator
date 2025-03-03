@@ -14,69 +14,38 @@ namespace DataFusion
                 Observation[3*i] = Message[LegNumber*3+i];
                 Observation[3*i+1] = Message[12+LegNumber*3+i];
             }
-
             for(int i = 0; i < 3; i++)
             {
                 SensorPosition[i] = KinematicParams(LegNumber, i) ;
             }
-
-            bool EstimationFlag = true;
-            int16_t LatestFeetEffort = Message[24 + LegNumber];
+            LatestFeetEffort = Message[24 + LegNumber];
 
             //Obtain foot hip relative position and velocity
-            
             Joint2HipFoot(LegNumber);
-
-            //Detect the moment of foot falling on the ground
-            if(LatestFeetEffort >= FootEffortThreshold)
-            {
-                FootIsOnGround[LegNumber] = true;
-            }
-            else
-            {
-                FootIsOnGround[LegNumber] = false;
-            }
-
-            if(FootIsOnGround[LegNumber] && !FootWasOnGround[LegNumber]) //1 vs 0
-            {
-                FootLanding[LegNumber] = true;
-                std::cout << FootLanding[LegNumber] <<" leg" << LegNumber << std::endl;
-            }
-            else
-                FootLanding[LegNumber] = false;
-
-            FootWasOnGround[LegNumber] = FootIsOnGround[LegNumber];
-
-            //Estimation flag
-            if(EstimationFlag && FootIsOnGround[LegNumber])
-                EstimationFlag = true;
-            else
-                EstimationFlag = false;
-
-            ObservationCorrect_Position();
-            ObservationCorrect_Velocity();
-
             for(int i = 0; i < 3; i++)
             {
                 StateSpaceModel->Double_Par[6 * LegNumber + i] = Observation[3 * i];
                 StateSpaceModel->Double_Par[6 * LegNumber + 3 + i] = Observation[3 * i + 1];
             }
+            ObservationCorrect_Position();
+            ObservationCorrect_Velocity();
 
-            PositionCorrect(LegNumber);
 
             for(int i = 0; i < StateSpaceModel->Nx * StateSpaceModel->Nz; i++)
             {
                 StateSpaceModel->Matrix_H[i] = 0;
             }
-
             for(int i = 0; i < 3; i++)
             {
                 StateSpaceModel->Matrix_H[(3 * i + 0) * StateSpaceModel->Nx + (3 * i + 0)] = 1;
                 StateSpaceModel->Matrix_H[(3 * i + 1) * StateSpaceModel->Nx + (3 * i + 1)] = 1;
             }
 
-            StateSpaceModel1_EstimatorPort(Observation, ObservationTime, StateSpaceModel);
-
+            if(FootIsOnGround[LegNumber])
+            {
+                PositionCorrect(LegNumber);
+                StateSpaceModel1_EstimatorPort(Observation, ObservationTime, StateSpaceModel);
+            }
 
             for(int i = 0; i < 3; i++){
                 StateSpaceModel->Double_Par[24 + 6 * LegNumber + i] = Observation[3 * i];
@@ -90,10 +59,10 @@ namespace DataFusion
         double s1, s2, s3, c1, c2, c3, c23, s23, dq1, dq2, dq3;
         int SideSign;
 
-        if (LegNumber == 1 || LegNumber == 3)
-            SideSign = -1;
-        else
+        if (LegNumber == 1 || LegNumber == 2)
             SideSign = 1;
+        else
+            SideSign = -1;
 
         s1 = sin(Observation[0]);
         s2 = sin(Observation[3]);
@@ -118,6 +87,32 @@ namespace DataFusion
         Observation[7] = ((Par_CalfLength + Par_FootLength) *s1*c23 + Par_ThighLength * c2*s1 + Par_HipLength*SideSign*c1)*dq1\
         + ((Par_CalfLength + Par_FootLength) *c1*s23 + Par_ThighLength * c1*s2)*dq2\
         + ((Par_CalfLength + Par_FootLength) *c1*s23)*dq3;
+
+        Observation[0] = -Observation[0];
+        Observation[1] = -Observation[1];
+
+        //Detect the moment of foot falling on the ground
+        if(LatestFeetEffort >= FootEffortThreshold)
+        {
+            FootIsOnGround[LegNumber] = true;
+        }
+        else
+        {
+            FootIsOnGround[LegNumber] = false;
+        }
+        if(FootIsOnGround[LegNumber] && !FootWasOnGround[LegNumber])
+        {
+            FootLanding[LegNumber] = true;
+            std::cout << FootLanding[LegNumber] <<" leg" << LegNumber << std::endl;
+        }
+        else
+            FootLanding[LegNumber] = false;
+
+        if(LatestFeetEffort>10&&LatestFeetEffort<FootEffortThreshold&&Observation[6]<0&&Observation[6]>-0.12) //趴着
+            FootIsOnGround[LegNumber] = true;
+
+        FootWasOnGround[LegNumber] = FootIsOnGround[LegNumber];
+
     }
 
     void SensorLegs::PositionCorrect(int LegNumber){

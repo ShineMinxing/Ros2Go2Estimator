@@ -22,17 +22,14 @@ namespace DataFusion
 
     void SensorDataHandle(double* Message, double Time)  override;
 
-    double FootHipCorrectPar[6] = {1, 1, 1, 1, 1, 1};
     Eigen::Matrix<double, 4, 13> KinematicParams;
     double Par_HipLength, Par_ThighLength, Par_CalfLength, Par_FootLength;
 
     protected:
 
-    double LatestJointAngle[4][3]={0}, LatestJointVelocity[4][3]={0};
-    double LastJointAngle[4][3]={0}, LastJointVelocity[4][3]={0};
     double FootEffortThreshold = 20;
     bool FootIsOnGround[4], FootWasOnGround[4], FootLanding[4];
-    int FootfallPositionRecordIsInitiated = 0;
+    int LatestFeetEffort, FootfallPositionRecordIsInitiated = 0;
     double FootfallPositionRecord[4][3]={0};
 
     void Joint2HipFoot(int LegNumber);

@@ -10,9 +10,9 @@ namespace DataFusion
 
     void Sensors::UpdateEst_Quaternion(){
 
-        Est_Quaternion = Eigen::AngleAxisd(StateSpaceModel->EstimatedState[0], Eigen::Vector3d::UnitX()) *
+        Est_Quaternion = Eigen::AngleAxisd(StateSpaceModel->EstimatedState[6], Eigen::Vector3d::UnitZ()) *
         Eigen::AngleAxisd(StateSpaceModel->EstimatedState[3], Eigen::Vector3d::UnitY()) *
-        Eigen::AngleAxisd(StateSpaceModel->EstimatedState[6], Eigen::Vector3d::UnitZ());
+        Eigen::AngleAxisd(StateSpaceModel->EstimatedState[0], Eigen::Vector3d::UnitX());
         Est_QuaternionInv = Est_Quaternion.inverse();
 
     }

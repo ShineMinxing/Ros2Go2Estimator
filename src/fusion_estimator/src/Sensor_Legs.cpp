@@ -50,13 +50,12 @@ namespace DataFusion
 
             if(FootIsOnGround[LegNumber])
             {
+                for(int i = 0; i < 3; i++){
+                    StateSpaceModel->Double_Par[48 + 6 * LegNumber + i] = Observation[3 * i];
+                    StateSpaceModel->Double_Par[48 + 6 * LegNumber + 3 + i] = Observation[3 * i + 1];
+                }
                 PositionCorrect(LegNumber);
                 StateSpaceModel1_EstimatorPort(Observation, ObservationTime, StateSpaceModel);
-            }
-
-            for(int i = 0; i < 3; i++){
-                StateSpaceModel->Double_Par[48 + 6 * LegNumber + i] = Observation[3 * i];
-                StateSpaceModel->Double_Par[48 + 6 * LegNumber + 3 + i] = Observation[3 * i + 1];
             }
         }
     }

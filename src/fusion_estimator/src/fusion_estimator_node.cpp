@@ -150,6 +150,29 @@ public:
             Sensor_Legs->Par_CalfLength = std::sqrt(Sensor_Legs->KinematicParams(0, 9)*Sensor_Legs->KinematicParams(0, 9) + Sensor_Legs->KinematicParams(0, 10)*Sensor_Legs->KinematicParams(0, 10) + Sensor_Legs->KinematicParams(0, 11)*Sensor_Legs->KinematicParams(0, 11));
             Sensor_Legs->Par_FootLength = abs(Sensor_Legs->KinematicParams(0, 12));
         }
+
+        // 获得IMU安装位置
+
+        Eigen::Vector3d IMUPosition(-0.02557, 0, 0.04232);
+        std::string jointName = "imu_joint";
+        urdf::JointConstSharedPtr joint = model->getJoint(jointName);
+        if (!joint)
+        {
+            std::cout << "未找到关节: " << jointName << ", 使用默认值： ";
+            std::cout << IMUPosition.transpose() << std::endl;
+        }
+        else
+        {
+            urdf::Vector3 pos = joint->parent_to_joint_origin_transform.position;
+            std::cout << "Obtained Position for " << jointName << ": ";
+            std::cout << IMUPosition.transpose() << std::endl;
+        }
+        Sensor_IMUAcc->SensorPosition[0] = IMUPosition(0);
+        Sensor_IMUAcc->SensorPosition[1] = IMUPosition(1);
+        Sensor_IMUAcc->SensorPosition[2] = IMUPosition(2);
+        Sensor_IMUMagGyro->SensorPosition[0] = IMUPosition(0);
+        Sensor_IMUMagGyro->SensorPosition[1] = IMUPosition(1);
+        Sensor_IMUMagGyro->SensorPosition[2] = IMUPosition(2);
     }
 
 private:
@@ -177,6 +200,15 @@ private:
             fusion_msg.data_check_a[6+i] = low_state.imu_state().gyroscope()[i];
         }
 
+        for(int LegNumber = 0; LegNumber<4; LegNumber++)
+        {
+            for(int i = 0; i < 3; i++)
+            {
+                fusion_msg.data_check_b[LegNumber*3+i] = low_state.motor_state()[LegNumber*3+i].q();
+                fusion_msg.data_check_c[LegNumber*3+i] = low_state.motor_state()[LegNumber*3+i].dq();
+            }
+        }
+
         // Start Estimation
         double LatestMessage[3][100]={0};
         static double LastMessage[3][100]={0};
@@ -202,7 +234,7 @@ private:
             }
         }
         for(int i=0; i<9; i++){
-            fusion_msg.data_check_b[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i];
+            fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i];
         }
 
         for(int i = 0; i < 3; i++)
@@ -226,7 +258,7 @@ private:
             }
         }
         for(int i=0; i<9; i++){
-            fusion_msg.data_check_c[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
+            fusion_msg.estimated_rpy[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
         }
 
         for(int LegNumber = 0; LegNumber<4; LegNumber++)
@@ -255,9 +287,9 @@ private:
         for(int i=0; i<4; i++){
             for(int j=0; j<3; j++){
                 fusion_msg.data_check_d[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[6 * i + j];
-                fusion_msg.data_check_e[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[6 * i + j + 3];
-                fusion_msg.feet_based_position[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[24 + 6 * i + j];
-                fusion_msg.feet_based_velocity[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[24 + 6 * i + j + 3];
+                fusion_msg.data_check_e[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[24 + 6 * i + j];
+                fusion_msg.feet_based_position[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[48 + 6 * i + j];
+                fusion_msg.feet_based_velocity[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[48 + 6 * i + j + 3];
             }
         }
 

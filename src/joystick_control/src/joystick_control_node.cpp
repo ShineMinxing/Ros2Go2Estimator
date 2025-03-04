@@ -55,6 +55,7 @@ private:
     bool FreeJumpEnable = 0;
     bool FreeAvoidEnable = 0;
     bool FreeBoundEnable = 0;
+    bool ContinuousGaitEnable = 0;
     float MotionEnable = 0;
     float SpeedScalse = 0.25;
 
@@ -129,6 +130,9 @@ private:
                 if(FreeBoundEnable)
                     ErrorCode = sport_client->FreeAvoid(0);
                 FreeBoundEnable = 0;
+                if(ContinuousGaitEnable)
+                    ErrorCode = sport_client->ContinuousGait(0);
+                ContinuousGaitEnable = 0;
                 ErrorCode = motion_client->SelectMode("normal");
             }
         }
@@ -255,9 +259,13 @@ private:
             }
             else if(Buttons[3])
             {
-                Last_Operation = "Trot Runing Pattern. ";
+                ContinuousGaitEnable = 1 - ContinuousGaitEnable;
+                if(ContinuousGaitEnable)
+                    Last_Operation = "Continuous Gait Start. ";
+                else
+                    Last_Operation = "Continuous Gait Stop. ";
                 Last_Operation_Time = this->get_clock()->now();
-                ErrorCode = sport_client->SwitchGait(2);
+                ErrorCode = sport_client->ContinuousGait(ContinuousGaitEnable);
             }
             else if(Buttons[7])
             {

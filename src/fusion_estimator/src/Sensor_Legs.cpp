@@ -19,17 +19,24 @@ namespace DataFusion
                 SensorPosition[i] = KinematicParams(LegNumber, i) ;
             }
             LatestFeetEffort = Message[24 + LegNumber];
-
+            
             //Obtain foot hip relative position and velocity
             Joint2HipFoot(LegNumber);
+
             for(int i = 0; i < 3; i++)
             {
                 StateSpaceModel->Double_Par[6 * LegNumber + i] = Observation[3 * i];
                 StateSpaceModel->Double_Par[6 * LegNumber + 3 + i] = Observation[3 * i + 1];
             }
+
             ObservationCorrect_Position();
             ObservationCorrect_Velocity();
 
+            for(int i = 0; i < 3; i++)
+            {
+                StateSpaceModel->Double_Par[24 + 6 * LegNumber + i] = Observation[3 * i];
+                StateSpaceModel->Double_Par[24 + 6 * LegNumber + 3 + i] = Observation[3 * i + 1];
+            }
 
             for(int i = 0; i < StateSpaceModel->Nx * StateSpaceModel->Nz; i++)
             {
@@ -48,8 +55,8 @@ namespace DataFusion
             }
 
             for(int i = 0; i < 3; i++){
-                StateSpaceModel->Double_Par[24 + 6 * LegNumber + i] = Observation[3 * i];
-                StateSpaceModel->Double_Par[24 + 6 * LegNumber + 3 + i] = Observation[3 * i + 1];
+                StateSpaceModel->Double_Par[48 + 6 * LegNumber + i] = Observation[3 * i];
+                StateSpaceModel->Double_Par[48 + 6 * LegNumber + 3 + i] = Observation[3 * i + 1];
             }
         }
     }
@@ -103,7 +110,6 @@ namespace DataFusion
         if(FootIsOnGround[LegNumber] && !FootWasOnGround[LegNumber])
         {
             FootLanding[LegNumber] = true;
-            std::cout << FootLanding[LegNumber] <<" leg" << LegNumber << std::endl;
         }
         else
             FootLanding[LegNumber] = false;
@@ -157,12 +163,14 @@ namespace DataFusion
 
                     if(abs(MapHeightStore[0][i] - FootfallPositionRecord[LegNumber][2]) <= Scope)
                     {
-                        MapHeightStore[1][i] *= exp(- (ObservationTime - MapHeightStore[2][i]) / (DataAvailablePeriod / 3)); //Confidence fading
+                        std::cout <<"Recorded: " << MapHeightStore[0][i];
+                        std::cout <<", input: " << FootfallPositionRecord[LegNumber][2];
+                        MapHeightStore[1][i] *= exp(- (ObservationTime - MapHeightStore[2][i]) / (DataAvailablePeriod)); //Confidence fading
                         MapHeightStore[0][i] = (MapHeightStore[0][i] * MapHeightStore[1][i] + FootfallPositionRecord[LegNumber][2]) / (MapHeightStore[1][i] + 1);
                         MapHeightStore[1][i] += 1;
                         MapHeightStore[2][i] = ObservationTime;
                         Zdifference = FootfallPositionRecord[LegNumber][2] - MapHeightStore[0][i];
-                        std::cout <<"New height confidence is " << MapHeightStore[1][i] << std::endl;
+                        std::cout <<", height correct to " << MapHeightStore[0][i] << " confidence is " << MapHeightStore[1][i] << std::endl;
                         break;
                     }
                 }
@@ -175,6 +183,7 @@ namespace DataFusion
                             MapHeightStore[0][i] = FootfallPositionRecord[LegNumber][2];
                             MapHeightStore[1][i] = 1;
                             MapHeightStore[2][i] = ObservationTime;
+                            std::cout <<"New height recorded: " << MapHeightStore[0][i] << std::endl;
                             break;
                         }
                     }

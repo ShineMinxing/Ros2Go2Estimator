@@ -8,6 +8,7 @@
 #include "Sensor_Legs.h" 
 #include "Sensor_IMU.h" 
 #include "unitree/idl/go2/LowState_.hpp"
+#include "rcl_interfaces/msg/parameter_event.hpp"
 #include <urdf_parser/urdf_parser.h>
 
 using namespace DataFusion;
@@ -45,6 +46,13 @@ public:
         Sensor_IMUMagGyro = std::make_shared<DataFusion::SensorIMUMagGyro>(StateSpaceModel1_Sensors[1]);
         Sensor_Legs = std::make_shared<DataFusion::SensorLegs>(StateSpaceModel1_Sensors[0]);
 
+        this->declare_parameter<double>("Modify_Par_1", 0.0);
+        this->declare_parameter<double>("Modify_Par_2", 0.0);
+        this->declare_parameter<double>("Modify_Par_3", 0.0);
+        parameter_callback_handle_ = this->add_on_set_parameters_callback(
+            std::bind(&FusionEstimatorNode::Modify_Par_Fun, this, std::placeholders::_1)
+          );
+
         RCLCPP_INFO(this->get_logger(), "Fusion Estimator Node Initialized");
     }
 
@@ -52,128 +60,7 @@ public:
     std::vector<EstimatorPortN*> StateSpaceModel1_Sensors = {};// 容器声明
     std::vector<EstimatorPortN*> StateSpaceModel2_Sensors = {};// 容器声明
 
-    void Init()
-    {
-        Sensor_Legs->KinematicParams  << 
-        0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
-        0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
-        -0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
-        -0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022;
-    
-        std::string urdf_path = "/home/smx/unitree_ros2_250221/unitree_sdk2_ws/src/fusion_estimator/cfg/go2_description.urdf";
-        std::ifstream urdf_file(urdf_path);
-        if (!urdf_file.is_open())
-        {
-            std::cout << "无法打开文件: " << urdf_path << "，使用默认值。" << std::endl;
-            return;
-        }
-    
-        // 读入文件内容
-        std::string urdf_xml((std::istreambuf_iterator<char>(urdf_file)), std::istreambuf_iterator<char>());
-        urdf_file.close();
-    
-        urdf::ModelInterfaceSharedPtr model = urdf::parseURDF(urdf_xml);
-        if (!model)
-        {
-            std::cout << "解析URDF失败: " << urdf_path << "，使用默认值。" << std::endl;
-            return;
-        }
-    
-        // 设置输出格式：固定小数点，保留四位小数
-        std::cout << std::fixed << std::setprecision(4);
-    
-        // 定义腿名称顺序，与 KinematicParams 的行对应
-        std::vector<std::string> legs = {"FL", "FR", "RL", "RR"};
-    
-        // 定义关节映射结构，每个关节在 13 维向量中的起始列号（每个关节占 3 列）
-        struct JointMapping {
-            std::string suffix; // 关节后缀，如 "hip_joint"
-            int col;            // 起始列号
-        };
-    
-        // 对每条腿，映射 hip, thigh, calf, foot_joint 对应的参数
-        std::vector<JointMapping> jointMappings = {
-            { "hip_joint",   0 },
-            { "thigh_joint", 3 },
-            { "calf_joint",  6 },
-            { "foot_joint",  9 }
-        };
-    
-        // 对每条腿更新各关节参数
-        for (size_t i = 0; i < legs.size(); i++)
-        {
-            const std::string& leg = legs[i];
-            for (const auto& jm : jointMappings)
-            {
-                // 拼接完整关节名称，如 "FL_hip_joint"
-                std::string jointName = leg + "_" + jm.suffix;
-                urdf::JointConstSharedPtr joint = model->getJoint(jointName);
-                if (!joint)
-                {
-                    std::cout << "未找到关节: " << jointName << " (" << leg << ")，使用默认值: ";
-                    std::cout << Sensor_Legs->KinematicParams.row(i).segment(jm.col, 3) << std::endl;
-                }
-                else
-                {
-                    urdf::Vector3 pos = joint->parent_to_joint_origin_transform.position;
-                    Sensor_Legs->KinematicParams(i, jm.col)     = pos.x;
-                    Sensor_Legs->KinematicParams(i, jm.col + 1) = pos.y;
-                    Sensor_Legs->KinematicParams(i, jm.col + 2) = pos.z;
-                    std::cout << "Obtained KinematicPar for " << jointName << ": ";
-                    std::cout << Sensor_Legs->KinematicParams.row(i).segment(jm.col, 3) << std::endl;
-                }
-            }
-    
-            // 更新该腿 foot 连杆 collision 的球半径（存储在列 12）
-            std::string footLinkName = leg + "_foot";
-            urdf::LinkConstSharedPtr footLink = model->getLink(footLinkName);
-            if (!footLink)
-            {
-                std::cout << "未找到连杆: " << footLinkName << " (" << leg << ")，使用默认值: " << Sensor_Legs->KinematicParams(i, 12) << std::endl;
-            }
-            else
-            {
-                if (footLink->collision && footLink->collision->geometry &&
-                    footLink->collision->geometry->type == urdf::Geometry::SPHERE)
-                {
-                    urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(footLink->collision->geometry.get());
-                    if (sphere)
-                    {
-                        Sensor_Legs->KinematicParams(i, 12) = sphere->radius;
-                        std::cout << "Obtained KinematicPar for " << footLinkName << ": " << Sensor_Legs->KinematicParams(i, 12) << std::endl;
-                    }
-                }
-            }
-    
-            Sensor_Legs->Par_HipLength = std::sqrt(Sensor_Legs->KinematicParams(0, 3)*Sensor_Legs->KinematicParams(0, 3) + Sensor_Legs->KinematicParams(0, 4)*Sensor_Legs->KinematicParams(0, 4) + Sensor_Legs->KinematicParams(0, 5)*Sensor_Legs->KinematicParams(0, 5));
-            Sensor_Legs->Par_ThighLength = std::sqrt(Sensor_Legs->KinematicParams(0, 6)*Sensor_Legs->KinematicParams(0, 6) + Sensor_Legs->KinematicParams(0, 7)*Sensor_Legs->KinematicParams(0, 7) + Sensor_Legs->KinematicParams(0, 8)*Sensor_Legs->KinematicParams(0, 8));
-            Sensor_Legs->Par_CalfLength = std::sqrt(Sensor_Legs->KinematicParams(0, 9)*Sensor_Legs->KinematicParams(0, 9) + Sensor_Legs->KinematicParams(0, 10)*Sensor_Legs->KinematicParams(0, 10) + Sensor_Legs->KinematicParams(0, 11)*Sensor_Legs->KinematicParams(0, 11));
-            Sensor_Legs->Par_FootLength = abs(Sensor_Legs->KinematicParams(0, 12));
-        }
-
-        // 获得IMU安装位置
-
-        Eigen::Vector3d IMUPosition(-0.02557, 0, 0.04232);
-        std::string jointName = "imu_joint";
-        urdf::JointConstSharedPtr joint = model->getJoint(jointName);
-        if (!joint)
-        {
-            std::cout << "未找到关节: " << jointName << ", 使用默认值： ";
-            std::cout << IMUPosition.transpose() << std::endl;
-        }
-        else
-        {
-            urdf::Vector3 pos = joint->parent_to_joint_origin_transform.position;
-            std::cout << "Obtained Position for " << jointName << ": ";
-            std::cout << IMUPosition.transpose() << std::endl;
-        }
-        Sensor_IMUAcc->SensorPosition[0] = IMUPosition(0);
-        Sensor_IMUAcc->SensorPosition[1] = IMUPosition(1);
-        Sensor_IMUAcc->SensorPosition[2] = IMUPosition(2);
-        Sensor_IMUMagGyro->SensorPosition[0] = IMUPosition(0);
-        Sensor_IMUMagGyro->SensorPosition[1] = IMUPosition(1);
-        Sensor_IMUMagGyro->SensorPosition[2] = IMUPosition(2);
-    }
+    void Init();
 
 private:
 
@@ -182,6 +69,36 @@ private:
     std::shared_ptr<DataFusion::SensorIMUAcc> Sensor_IMUAcc; 
     std::shared_ptr<DataFusion::SensorIMUMagGyro> Sensor_IMUMagGyro; 
     std::shared_ptr<DataFusion::SensorLegs> Sensor_Legs; 
+
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
+    rcl_interfaces::msg::SetParametersResult Modify_Par_Fun(
+    const std::vector<rclcpp::Parameter> & parameters)
+    {
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+        result.reason = "Sensor_IMUMagGyro->SensorQuaternion is corrected.";
+        double AngleCorrect[3] = {0};
+
+        for (const auto & param : parameters)
+        {
+            if (param.get_name() == "Modify_Par_1")
+                AngleCorrect[0] = param.as_double() * M_PI / 180.0;
+            if (param.get_name() == "Modify_Par_2")
+                AngleCorrect[1] = param.as_double() * M_PI / 180.0;
+            if (param.get_name() == "Modify_Par_3")
+                AngleCorrect[2] = param.as_double() * M_PI / 180.0;
+        }
+
+        Eigen::AngleAxisd rollAngle(AngleCorrect[2], Eigen::Vector3d::UnitZ());  // 绕 X 轴旋转
+        Eigen::AngleAxisd pitchAngle(AngleCorrect[1], Eigen::Vector3d::UnitY()); // 绕 Y 轴旋转
+        Eigen::AngleAxisd yawAngle(AngleCorrect[0], Eigen::Vector3d::UnitX());   // 绕 Z 轴旋转
+
+        Sensor_IMUMagGyro->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
+        Sensor_IMUMagGyro->SensorQuaternionInv = Sensor_IMUMagGyro->SensorQuaternion.inverse();
+        std::cout <<"Sensor_IMUMagGyro->SensorQuaternion: " << Sensor_IMUMagGyro->SensorQuaternion.coeffs().transpose() << std::endl;
+
+        return result;
+    }
 
     void LowStateCallback(const void* message)
     {
@@ -269,8 +186,8 @@ private:
                 LatestMessage[2][12+ LegNumber*3+i] = low_state.motor_state()[LegNumber*3+i].dq();
             }
             LatestMessage[2][24 + LegNumber] = low_state.foot_force()[LegNumber];
-            fusion_msg.parameter[LegNumber] = low_state.foot_force()[LegNumber];
-            fusion_msg.parameter[LegNumber] = fusion_msg.parameter[LegNumber] / 100;
+            fusion_msg.others[LegNumber] = low_state.foot_force()[LegNumber];
+            fusion_msg.others[LegNumber] = fusion_msg.others[LegNumber];
         }
         for(int i = 0; i < 28; i++)
         {
@@ -296,6 +213,129 @@ private:
         publisher_->publish(fusion_msg);
     }
 };
+
+void FusionEstimatorNode::Init()
+{
+    Sensor_Legs->KinematicParams  << 
+    0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
+    0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
+    -0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
+    -0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022;
+
+    std::string urdf_path = "/home/smx/unitree_ros2_250221/unitree_sdk2_ws/src/fusion_estimator/cfg/go2_description.urdf";
+    std::ifstream urdf_file(urdf_path);
+    if (!urdf_file.is_open())
+    {
+        std::cout << "无法打开文件: " << urdf_path << "，使用默认值。" << std::endl;
+        return;
+    }
+
+    // 读入文件内容
+    std::string urdf_xml((std::istreambuf_iterator<char>(urdf_file)), std::istreambuf_iterator<char>());
+    urdf_file.close();
+
+    urdf::ModelInterfaceSharedPtr model = urdf::parseURDF(urdf_xml);
+    if (!model)
+    {
+        std::cout << "解析URDF失败: " << urdf_path << "，使用默认值。" << std::endl;
+        return;
+    }
+
+    // 设置输出格式：固定小数点，保留四位小数
+    std::cout << std::fixed << std::setprecision(4);
+
+    // 定义腿名称顺序，与 KinematicParams 的行对应
+    std::vector<std::string> legs = {"FL", "FR", "RL", "RR"};
+
+    // 定义关节映射结构，每个关节在 13 维向量中的起始列号（每个关节占 3 列）
+    struct JointMapping {
+        std::string suffix; // 关节后缀，如 "hip_joint"
+        int col;            // 起始列号
+    };
+
+    // 对每条腿，映射 hip, thigh, calf, foot_joint 对应的参数
+    std::vector<JointMapping> jointMappings = {
+        { "hip_joint",   0 },
+        { "thigh_joint", 3 },
+        { "calf_joint",  6 },
+        { "foot_joint",  9 }
+    };
+
+    // 对每条腿更新各关节参数
+    for (size_t i = 0; i < legs.size(); i++)
+    {
+        const std::string& leg = legs[i];
+        for (const auto& jm : jointMappings)
+        {
+            // 拼接完整关节名称，如 "FL_hip_joint"
+            std::string jointName = leg + "_" + jm.suffix;
+            urdf::JointConstSharedPtr joint = model->getJoint(jointName);
+            if (!joint)
+            {
+                std::cout << "未找到关节: " << jointName << " (" << leg << ")，使用默认值: ";
+                std::cout << Sensor_Legs->KinematicParams.row(i).segment(jm.col, 3) << std::endl;
+            }
+            else
+            {
+                urdf::Vector3 pos = joint->parent_to_joint_origin_transform.position;
+                Sensor_Legs->KinematicParams(i, jm.col)     = pos.x;
+                Sensor_Legs->KinematicParams(i, jm.col + 1) = pos.y;
+                Sensor_Legs->KinematicParams(i, jm.col + 2) = pos.z;
+                std::cout << "Obtained KinematicPar for " << jointName << ": ";
+                std::cout << Sensor_Legs->KinematicParams.row(i).segment(jm.col, 3) << std::endl;
+            }
+        }
+
+        // 更新该腿 foot 连杆 collision 的球半径（存储在列 12）
+        std::string footLinkName = leg + "_foot";
+        urdf::LinkConstSharedPtr footLink = model->getLink(footLinkName);
+        if (!footLink)
+        {
+            std::cout << "未找到连杆: " << footLinkName << " (" << leg << ")，使用默认值: " << Sensor_Legs->KinematicParams(i, 12) << std::endl;
+        }
+        else
+        {
+            if (footLink->collision && footLink->collision->geometry &&
+                footLink->collision->geometry->type == urdf::Geometry::SPHERE)
+            {
+                urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(footLink->collision->geometry.get());
+                if (sphere)
+                {
+                    Sensor_Legs->KinematicParams(i, 12) = sphere->radius;
+                    std::cout << "Obtained KinematicPar for " << footLinkName << ": " << Sensor_Legs->KinematicParams(i, 12) << std::endl;
+                }
+            }
+        }
+
+        Sensor_Legs->Par_HipLength = std::sqrt(Sensor_Legs->KinematicParams(0, 3)*Sensor_Legs->KinematicParams(0, 3) + Sensor_Legs->KinematicParams(0, 4)*Sensor_Legs->KinematicParams(0, 4) + Sensor_Legs->KinematicParams(0, 5)*Sensor_Legs->KinematicParams(0, 5));
+        Sensor_Legs->Par_ThighLength = std::sqrt(Sensor_Legs->KinematicParams(0, 6)*Sensor_Legs->KinematicParams(0, 6) + Sensor_Legs->KinematicParams(0, 7)*Sensor_Legs->KinematicParams(0, 7) + Sensor_Legs->KinematicParams(0, 8)*Sensor_Legs->KinematicParams(0, 8));
+        Sensor_Legs->Par_CalfLength = std::sqrt(Sensor_Legs->KinematicParams(0, 9)*Sensor_Legs->KinematicParams(0, 9) + Sensor_Legs->KinematicParams(0, 10)*Sensor_Legs->KinematicParams(0, 10) + Sensor_Legs->KinematicParams(0, 11)*Sensor_Legs->KinematicParams(0, 11));
+        Sensor_Legs->Par_FootLength = abs(Sensor_Legs->KinematicParams(0, 12));
+    }
+
+    // 获得IMU安装位置
+
+    Eigen::Vector3d IMUPosition(-0.02557, 0, 0.04232);
+    std::string jointName = "imu_joint";
+    urdf::JointConstSharedPtr joint = model->getJoint(jointName);
+    if (!joint)
+    {
+        std::cout << "未找到关节: " << jointName << ", 使用默认值： ";
+        std::cout << IMUPosition.transpose() << std::endl;
+    }
+    else
+    {
+        urdf::Vector3 pos = joint->parent_to_joint_origin_transform.position;
+        std::cout << "Obtained Position for " << jointName << ": ";
+        std::cout << IMUPosition.transpose() << std::endl;
+    }
+    Sensor_IMUAcc->SensorPosition[0] = IMUPosition(0);
+    Sensor_IMUAcc->SensorPosition[1] = IMUPosition(1);
+    Sensor_IMUAcc->SensorPosition[2] = IMUPosition(2);
+    Sensor_IMUMagGyro->SensorPosition[0] = IMUPosition(0);
+    Sensor_IMUMagGyro->SensorPosition[1] = IMUPosition(1);
+    Sensor_IMUMagGyro->SensorPosition[2] = IMUPosition(2);
+}
 
 int main(int argc, char** argv)
 {

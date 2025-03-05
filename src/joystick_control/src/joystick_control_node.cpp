@@ -55,6 +55,7 @@ private:
     bool FreeJumpEnable = 0;
     bool FreeAvoidEnable = 0;
     bool FreeBoundEnable = 0;
+    bool ForwardClimbingEnable = 0;
     bool ContinuousGaitEnable = 0;
     float MotionEnable = 0;
     float SpeedScalse = 0.25;
@@ -179,13 +180,14 @@ private:
             ErrorCode = sport_client->Damp();
         }
 
-        if(Buttons[4] && Buttons[5] && Last_Operation_Duration_Time > 0.5) // 急停
+        if(Buttons[4] && Buttons[5] && JoystickEnable && Last_Operation_Duration_Time > 0.5) // AI模式
         {
             AIModeEnable = 1 - AIModeEnable;
             if(AIModeEnable)
                 Last_Operation = "AI Mode Start. ";
             else
                 Last_Operation = "AI Mode Stop. ";
+            SpeedScalse = 0.1;
             Last_Operation_Time = this->get_clock()->now();
             ErrorCode = motion_client->SelectMode("ai");
         }
@@ -253,9 +255,18 @@ private:
             }
             else if(Buttons[2])
             {
-                Last_Operation = "Idel Pattern. ";
+                ForwardClimbingEnable = 1 - ForwardClimbingEnable;
+                if(ForwardClimbingEnable)
+                {
+                    ErrorCode = sport_client->SwitchGait(3);
+                    Last_Operation = "Forward Climbing Pattern Start. ";
+                }
+                else
+                {
+                    ErrorCode = sport_client->SwitchGait(3);
+                    Last_Operation = "Trot Running Pattern Start. ";
+                }
                 Last_Operation_Time = this->get_clock()->now();
-                ErrorCode = sport_client->SwitchGait(0);
             }
             else if(Buttons[3])
             {

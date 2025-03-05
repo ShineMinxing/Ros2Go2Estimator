@@ -50,12 +50,13 @@ namespace DataFusion
 
             if(FootIsOnGround[LegNumber])
             {
+                PositionCorrect(LegNumber);
+                StateSpaceModel1_EstimatorPort(Observation, ObservationTime, StateSpaceModel);
+
                 for(int i = 0; i < 3; i++){
                     StateSpaceModel->Double_Par[48 + 6 * LegNumber + i] = Observation[3 * i];
                     StateSpaceModel->Double_Par[48 + 6 * LegNumber + 3 + i] = Observation[3 * i + 1];
                 }
-                PositionCorrect(LegNumber);
-                StateSpaceModel1_EstimatorPort(Observation, ObservationTime, StateSpaceModel);
             }
         }
     }
@@ -131,7 +132,7 @@ namespace DataFusion
             FootfallPositionRecord[LegNumber][2] = StateSpaceModel->EstimatedState[6] + Observation[6];
 
             static double MapHeightStore[3][100] = {0};   
-            double Scope = 0.1, DataAvailablePeriod = 60;
+            double Scope = 0.05, DataAvailablePeriod = 60;
             int i = 0;
             double distance = 0, Zdifference = 0, Temp[4] = {0,0,0,0};
             double AngleA = atan(abs(Observation[3]) / abs(Observation[0]));
@@ -163,8 +164,8 @@ namespace DataFusion
                     if(abs(MapHeightStore[0][i] - FootfallPositionRecord[LegNumber][2]) <= Scope)
                     {
                         std::cout <<"Recorded: " << MapHeightStore[0][i];
-                        std::cout <<", input: " << FootfallPositionRecord[LegNumber][2];
-                        MapHeightStore[1][i] *= exp(- (ObservationTime - MapHeightStore[2][i]) / (DataAvailablePeriod)); //Confidence fading
+                        std::cout <<", input: " << FootfallPositionRecord[LegNumber][2] <<" after " << ObservationTime - MapHeightStore[2][i];
+                        MapHeightStore[1][i] *= exp(- (ObservationTime - MapHeightStore[2][i]) / (10 * DataAvailablePeriod)); //Confidence fading
                         MapHeightStore[0][i] = (MapHeightStore[0][i] * MapHeightStore[1][i] + FootfallPositionRecord[LegNumber][2]) / (MapHeightStore[1][i] + 1);
                         MapHeightStore[1][i] += 1;
                         MapHeightStore[2][i] = ObservationTime;
@@ -188,6 +189,7 @@ namespace DataFusion
                     }
                 }  
             }
+            FootfallPositionRecord[LegNumber][2] = FootfallPositionRecord[LegNumber][2] - Zdifference;
         }
 
         Observation[0] = FootfallPositionRecord[LegNumber][0] - Observation[0];

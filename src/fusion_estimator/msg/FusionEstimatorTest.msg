@@ -1,5 +1,5 @@
 builtin_interfaces/Time stamp
-float64[12] parameter
+float64[20] others
 float64[12] feet_based_position
 float64[12] feet_based_velocity
 float64[9] estimated_xyz

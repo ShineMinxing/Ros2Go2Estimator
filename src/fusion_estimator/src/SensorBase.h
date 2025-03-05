@@ -43,12 +43,12 @@ extern Eigen::Quaterniond Est_Quaternion;    // Body Orientation Quaternion
       virtual ~Sensors() = default;  
       virtual void SensorDataHandle(double* Message, double Time) {}
       double SensorPosition[3] = {0,0,0};
+      Eigen::Quaterniond SensorQuaternion;
+      Eigen::Quaterniond SensorQuaternionInv;
 
     protected:
 
       EstimatorPortN* StateSpaceModel;
-      Eigen::Quaterniond SensorQuaternion;
-      Eigen::Quaterniond SensorQuaternionInv;
       Eigen::Quaterniond Est_QuaternionTemp1, Est_QuaternionTemp2, Est_QuaternionTemp3;
       Eigen::Vector3d Est_BodyAngleVel, Est_SensorWorldPosition, Est_SensorWorldVelocity, Est_SensorPosition, Est_Vector3dTemp1, Est_Vector3dTemp2;
 

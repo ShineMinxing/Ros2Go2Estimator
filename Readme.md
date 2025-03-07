@@ -20,9 +20,9 @@
 
 #### 实验记录
 2. 爬楼梯高度误差小于5cm
-[![实验1](https://i0.hdslb.com/bfs/archive/c469a3dd37522f6b7dcdbdbb2c135be599eefa7b.jpg@308w_174h)](https://www.bilibili.com/video/BV1VV9ZYZEcH/)
+[![实验1](https://i0.hdslb.com/bfs/archive/c469a3dd37522f6b7dcdbdbb2c135be599eefa7b.jpg)](https://www.bilibili.com/video/BV1VV9ZYZEcH/)
 
-3. 长距离测试，受磁场变化影响，380米偏差3.3%
+3. 长距离测试，受磁场变化影响，380米运动偏差3.3%
 [![实验2](https://i0.hdslb.com/bfs/archive/481731d2db755bbe087f44aeb3f48db29c159ada.jpg)](https://www.bilibili.com/video/BV1BhRAYDEsV/)
 
 ## ⚙️ 安装指南

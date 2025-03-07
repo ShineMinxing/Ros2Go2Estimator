@@ -3,10 +3,10 @@
 #include <iostream>
 #include "unitree/robot/channel/channel_subscriber.hpp"
 #include "unitree/idl/go2/LowState_.hpp"
-#include "Estimator/EstimatorPortN.h"
+#include "GO2FusionEstimator/Estimator/EstimatorPortN.h"
 #include "fusion_estimator/msg/fusion_estimator_test.hpp" 
-#include "Sensor_Legs.h" 
-#include "Sensor_IMU.h" 
+#include "GO2FusionEstimator/Sensor_Legs.h" 
+#include "GO2FusionEstimator/Sensor_IMU.h" 
 #include "unitree/idl/go2/LowState_.hpp"
 #include "rcl_interfaces/msg/parameter_event.hpp"
 #include <urdf_parser/urdf_parser.h>

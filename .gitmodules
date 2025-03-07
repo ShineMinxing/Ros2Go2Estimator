@@ -1,0 +1,3 @@
+[submodule "src/fusion_estimator/src/GO2FusionEstimator"]
+	path = src/fusion_estimator/src/GO2FusionEstimator
+	url = https://github.com/ShineMinxing/GO2FusionEstimator.git

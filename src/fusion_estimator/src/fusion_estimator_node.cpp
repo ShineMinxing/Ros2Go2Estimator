@@ -1,15 +1,21 @@
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
 #include <iostream>
+#include <filesystem>
+#include <urdf_parser/urdf_parser.h>
+#include <rcl_interfaces/msg/parameter_event.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+
 #include "unitree/robot/channel/channel_subscriber.hpp"
 #include "unitree/idl/go2/LowState_.hpp"
-#include "GO2FusionEstimator/Estimator/EstimatorPortN.h"
+#include "unitree/idl/go2/LowState_.hpp"
+
 #include "fusion_estimator/msg/fusion_estimator_test.hpp" 
+#include "GO2FusionEstimator/Estimator/EstimatorPortN.h"
 #include "GO2FusionEstimator/Sensor_Legs.h" 
 #include "GO2FusionEstimator/Sensor_IMU.h" 
-#include "unitree/idl/go2/LowState_.hpp"
-#include "rcl_interfaces/msg/parameter_event.hpp"
-#include <urdf_parser/urdf_parser.h>
 
 using namespace DataFusion;
 
@@ -27,13 +33,15 @@ public:
         unitree::robot::ChannelFactory::Instance()->Init(0, network_interface);
 
         // 初始化消息接收与发布
-        lowstate_subscriber_.reset(
+        Lowstate_subscriber.reset(
             new unitree::robot::ChannelSubscriber<unitree_go::msg::dds_::LowState_>("rt/lowstate"));
-        lowstate_subscriber_->InitChannel(
+        Lowstate_subscriber->InitChannel(
             std::bind(&FusionEstimatorNode::LowStateCallback, this, std::placeholders::_1), 1);
 
-        publisher_ = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
+        FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
             "fusion_estimator_data", 10);
+
+        SMXFE_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMXFE_odom", 10);
 
         for(int i = 0; i < 2; i++)
         {
@@ -49,7 +57,7 @@ public:
         this->declare_parameter<double>("Modify_Par_1", 0.0);
         this->declare_parameter<double>("Modify_Par_2", 0.0);
         this->declare_parameter<double>("Modify_Par_3", 0.0);
-        parameter_callback_handle_ = this->add_on_set_parameters_callback(
+        ParameterCorrectCallback = this->add_on_set_parameters_callback(
             std::bind(&FusionEstimatorNode::Modify_Par_Fun, this, std::placeholders::_1)
           );
 
@@ -60,17 +68,18 @@ public:
     std::vector<EstimatorPortN*> StateSpaceModel1_Sensors = {};// 容器声明
     std::vector<EstimatorPortN*> StateSpaceModel2_Sensors = {};// 容器声明
 
-    void Init();
+    void ObtainParameter();
 
 private:
 
-    rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr publisher_;
-    unitree::robot::ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> lowstate_subscriber_;
+    rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr FETest_publisher;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher;
+    unitree::robot::ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> Lowstate_subscriber;
     std::shared_ptr<DataFusion::SensorIMUAcc> Sensor_IMUAcc; 
     std::shared_ptr<DataFusion::SensorIMUMagGyro> Sensor_IMUMagGyro; 
     std::shared_ptr<DataFusion::SensorLegs> Sensor_Legs; 
 
-    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr ParameterCorrectCallback;
     rcl_interfaces::msg::SetParametersResult Modify_Par_Fun(
     const std::vector<rclcpp::Parameter> & parameters)
     {
@@ -210,49 +219,64 @@ private:
             }
         }
 
-        publisher_->publish(fusion_msg);
+        FETest_publisher->publish(fusion_msg);
+
+        // 新增：构造标准 odometry 消息，并发布
+        nav_msgs::msg::Odometry SMXFE_odom;
+        SMXFE_odom.header.stamp = fusion_msg.stamp;
+        SMXFE_odom.header.frame_id = "SMXFE_odom";
+        SMXFE_odom.child_frame_id = "GO2_SMXFEodom";
+
+        // 使用 fusion_msg.estimated_xyz 的前 3 个元素作为位置
+        SMXFE_odom.pose.pose.position.x = fusion_msg.estimated_xyz[0];
+        SMXFE_odom.pose.pose.position.y = fusion_msg.estimated_xyz[3];
+        SMXFE_odom.pose.pose.position.z = fusion_msg.estimated_xyz[6];
+
+        // 使用 fusion_msg.estimated_rpy 的前 3 个元素（roll, pitch, yaw）转换为四元数
+        tf2::Quaternion q;
+        q.setRPY(fusion_msg.estimated_rpy[0], fusion_msg.estimated_rpy[3], fusion_msg.estimated_rpy[6]);
+        SMXFE_odom.pose.pose.orientation = tf2::toMsg(q);
+        // 发布 odometry 消息
+        SMXFE_publisher->publish(SMXFE_odom);
+
     }
 };
 
-void FusionEstimatorNode::Init()
+void FusionEstimatorNode::ObtainParameter()
 {
+    // 获得机器狗运动学参数
     Sensor_Legs->KinematicParams  << 
     0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
     0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
     -0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
     -0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022;
-
-    std::string urdf_path = "/home/smx/unitree_ros2_250221/unitree_sdk2_ws/src/fusion_estimator/cfg/go2_description.urdf";
+    std::filesystem::path current_file(__FILE__);
+    std::filesystem::path package_dir = current_file.parent_path().parent_path();
+    std::filesystem::path urdf_path = package_dir / "cfg" / "go2_description.urdf";
     std::ifstream urdf_file(urdf_path);
     if (!urdf_file.is_open())
     {
         std::cout << "无法打开文件: " << urdf_path << "，使用默认值。" << std::endl;
         return;
     }
-
     // 读入文件内容
     std::string urdf_xml((std::istreambuf_iterator<char>(urdf_file)), std::istreambuf_iterator<char>());
     urdf_file.close();
-
     urdf::ModelInterfaceSharedPtr model = urdf::parseURDF(urdf_xml);
     if (!model)
     {
         std::cout << "解析URDF失败: " << urdf_path << "，使用默认值。" << std::endl;
         return;
     }
-
     // 设置输出格式：固定小数点，保留四位小数
     std::cout << std::fixed << std::setprecision(4);
-
     // 定义腿名称顺序，与 KinematicParams 的行对应
     std::vector<std::string> legs = {"FL", "FR", "RL", "RR"};
-
     // 定义关节映射结构，每个关节在 13 维向量中的起始列号（每个关节占 3 列）
     struct JointMapping {
         std::string suffix; // 关节后缀，如 "hip_joint"
         int col;            // 起始列号
     };
-
     // 对每条腿，映射 hip, thigh, calf, foot_joint 对应的参数
     std::vector<JointMapping> jointMappings = {
         { "hip_joint",   0 },
@@ -260,7 +284,6 @@ void FusionEstimatorNode::Init()
         { "calf_joint",  6 },
         { "foot_joint",  9 }
     };
-
     // 对每条腿更新各关节参数
     for (size_t i = 0; i < legs.size(); i++)
     {
@@ -285,7 +308,6 @@ void FusionEstimatorNode::Init()
                 std::cout << Sensor_Legs->KinematicParams.row(i).segment(jm.col, 3) << std::endl;
             }
         }
-
         // 更新该腿 foot 连杆 collision 的球半径（存储在列 12）
         std::string footLinkName = leg + "_foot";
         urdf::LinkConstSharedPtr footLink = model->getLink(footLinkName);
@@ -314,7 +336,6 @@ void FusionEstimatorNode::Init()
     }
 
     // 获得IMU安装位置
-
     Eigen::Vector3d IMUPosition(-0.02557, 0, 0.04232);
     std::string jointName = "imu_joint";
     urdf::JointConstSharedPtr joint = model->getJoint(jointName);
@@ -341,7 +362,7 @@ int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<FusionEstimatorNode>();
-    node->Init();
+    node->ObtainParameter();
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;

@@ -10,6 +10,9 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(urdfdom_headers REQUIRED)
 find_package(urdfdom REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)  
 
 # 生成消息接口
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -44,6 +47,9 @@ target_include_directories(fusion_estimator_node PRIVATE
 ament_target_dependencies(fusion_estimator_node
   rclcpp
   sensor_msgs
+  nav_msgs
+  tf2
+  tf2_geometry_msgs
 )
 
 # 链接库

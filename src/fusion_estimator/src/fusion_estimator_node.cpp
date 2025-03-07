@@ -10,7 +10,6 @@
 
 #include "unitree/robot/channel/channel_subscriber.hpp"
 #include "unitree/idl/go2/LowState_.hpp"
-#include "unitree/idl/go2/LowState_.hpp"
 
 #include "fusion_estimator/msg/fusion_estimator_test.hpp" 
 #include "GO2FusionEstimator/Estimator/EstimatorPortN.h"

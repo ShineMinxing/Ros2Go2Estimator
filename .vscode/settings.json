@@ -72,5 +72,6 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "/home/smx/unitree_ros2_250221/Ros2Go2Estimator/src/unitree_sdk2/thirdparty"
 }

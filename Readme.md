@@ -10,13 +10,13 @@
 - EtherCAT/CANopen双协议兼容
 
 ## 🎥 视频演示
-### 最新进展
+### 最新进展(点击图片进入视频)
 1. 站立行走误差1%，四足行走误差0.5%
 [![主演示视频](https://i1.hdslb.com/bfs/archive/10e501bc7a93c77c1c3f41f163526b630b0afa3f.jpg)](https://www.bilibili.com/video/BV18Q9JYEEdn/)
 
 #### 实验记录
 2. 爬楼梯高度误差小于5cm
-[![实验1](https://i0.hdslb.com/bfs/archive/5ee0e18b6af81125c3254db22703d851d2feac8b.jpg)](https://www.bilibili.com/video/BV1VV9ZYZEcH/)
+[![实验1](https://i0.hdslb.com/bfs/archive/c469a3dd37522f6b7dcdbdbb2c135be599eefa7b.jpg@308w_174h)](https://www.bilibili.com/video/BV1VV9ZYZEcH/)
 
 3. 长距离测试，受磁场变化影响，380米偏差3.3%
 [![实验2](https://i0.hdslb.com/bfs/archive/481731d2db755bbe087f44aeb3f48db29c159ada.jpg)](https://www.bilibili.com/video/BV1BhRAYDEsV/)

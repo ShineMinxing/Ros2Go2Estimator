@@ -1,10 +1,10 @@
 # Ros2Go2Estimator 🦾
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-一种高精度里程计解决方案，
-基于纯运动学的双足/四足机器人位置估计算法，
-不依赖相机或Lidar，但可将信号融合进去进一步提高估计精度，
-目前仅使用IMU、足压力传感器、关节角度和角速度。
+- 一种高精度里程计解决方案，
+- 基于纯运动学的双足/四足机器人位置估计算法，
+- 不依赖相机或Lidar，但可将信号融合进去进一步提高估计精度，
+- 目前仅使用IMU、足压力传感器、关节角度和角速度。
 
 ## 📚 项目亮点
 - 切换两足、四足无需在估计器内做模式切换
@@ -28,6 +28,7 @@
 ## ⚙️ 安装指南
 ```bash
 git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
+cd Ros2Go2Estimator
 colcon build
 ```
 

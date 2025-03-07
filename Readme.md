@@ -27,7 +27,7 @@
 
 ## ⚙️ 安装指南
 ```bash
-git clone https://github.com/ShineMinxing/Ros2Go2Estimator.git
+git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
 colcon build
 ```
 

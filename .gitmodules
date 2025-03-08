@@ -1,3 +1,6 @@
 [submodule "src/fusion_estimator/src/GO2FusionEstimator"]
 	path = src/fusion_estimator/src/GO2FusionEstimator
 	url = https://github.com/ShineMinxing/GO2FusionEstimator.git
+[submodule "src/unitree_sdk2"]
+	path = src/unitree_sdk2
+	url = git@github.com:unitreerobotics/unitree_sdk2.git

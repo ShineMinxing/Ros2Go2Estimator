@@ -27,7 +27,12 @@
 [![实验2](https://i0.hdslb.com/bfs/archive/481731d2db755bbe087f44aeb3f48db29c159ada.jpg)](https://www.bilibili.com/video/BV1BhRAYDEsV/)
 
 ## ⚙️ 安装指南
+
+- Use Ubuntu 22.04, ROS2 Humble
 ```bash
+sudo apt install ros-humble-joy
+sudo apt install ros-humble-rmw-cyclonedds-cpp
+sudo apt install ros-humble-rosidl-generator-dds-idl
 git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
 cd Ros2Go2Estimator
 colcon build

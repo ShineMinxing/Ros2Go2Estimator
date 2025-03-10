@@ -1,8 +1,10 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
+#include "std_msgs/msg/string.hpp"
 #include <iostream>  // 引入 cout
 #include <cstdlib>   // 引入 system
 #include <chrono>    // 引入 chrono，用于计算时间差
+#include <iomanip>   // 添加：用于 std::setprecision
 #include <unitree/robot/go2/sport/sport_client.hpp>
 #include <unitree/robot/b2/motion_switcher/motion_switcher_client.hpp>
 
@@ -25,6 +27,10 @@ public:
         subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
             "/joy", 10, std::bind(&JoystickControlNode::joy_callback, this, std::placeholders::_1));
         
+        // 用于发布语音对话控制命令到 "voice_chat/control" 话题
+        voice_pub_ = this->create_publisher<std_msgs::msg::String>("voice_chat/control", 10);
+
+
         // 记录初始化时的时间
         Last_Operation_Time = this->get_clock()->now();
 
@@ -42,6 +48,7 @@ private:
     std::unique_ptr<unitree::robot::go2::SportClient> sport_client;
     std::unique_ptr<unitree::robot::b2::MotionSwitcherClient> motion_client;
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr voice_pub_;
 
     // 获取按钮输入状态
     int Buttons[8] = {0};
@@ -57,12 +64,22 @@ private:
     bool FreeBoundEnable = 0;
     bool ForwardClimbingEnable = 0;
     bool ContinuousGaitEnable = 0;
+    bool ChattingEnable = 0;
     float MotionEnable = 0;
     float SpeedScalse = 0.25;
 
     std::string Last_Operation;
     rclcpp::Time Last_Operation_Time;
     float Last_Operation_Duration_Time;
+
+    // 发布语音对话命令的函数
+    void publishVoiceChatCommand(const std::string &cmd)
+    {
+        std_msgs::msg::String msg;
+        msg.data = cmd;
+        voice_pub_->publish(msg);
+        std::cout << "发布语音命令: " << cmd << std::endl;
+    }
 
     // 回调函数，处理joy消息
     void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -135,6 +152,7 @@ private:
                     ErrorCode = sport_client->ContinuousGait(0);
                 ContinuousGaitEnable = 0;
                 ErrorCode = motion_client->SelectMode("normal");
+                ChattingEnable = 0;
             }
         }
 
@@ -378,6 +396,21 @@ private:
                 Last_Operation = "Motion 4 Dance1. ";
                 Last_Operation_Time = this->get_clock()->now();
                 ErrorCode = sport_client->Dance1();
+            }
+            else if(Buttons[7])
+            {
+                ChattingEnable = 1 - ChattingEnable;
+                if(ContinuousGaitEnable)
+                {
+                    Last_Operation = "Listening. ";
+                    publishVoiceChatCommand("start");
+                }
+                else
+                {
+                    Last_Operation = "Replying. ";
+                    publishVoiceChatCommand("stop");
+                }
+                Last_Operation_Time = this->get_clock()->now();
             }
         }
     }

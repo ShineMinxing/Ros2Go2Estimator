@@ -35,4 +35,15 @@ def generate_launch_description():
             ],
             output="screen",
         ),
+
+        # 启动 voice_chat_node
+        ExecuteProcess(
+            cmd=[
+                "x-terminal-emulator",
+                "--new-process",
+                "-e",
+                "bash", "-c", "source ~/.bashrc && ros2 run voice_chat_py voice_chat_node"
+            ],
+            output="screen",
+        ),
     ])

@@ -1,6 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 #include <iostream>  // 引入 cout
 #include <cstdlib>   // 引入 system
 #include <chrono>    // 引入 chrono，用于计算时间差
@@ -24,8 +25,12 @@ public:
         Last_Operation = "Joystick Control Init";
 
         // 创建订阅者，订阅/joy话题
-        subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
+        joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
             "/joy", 10, std::bind(&JoystickControlNode::joy_callback, this, std::placeholders::_1));
+
+        // 创建订阅者，订阅/JoystickCmd话题
+        joystick_cmd_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+            "SMXFE/JoystickCmd", 10, std::bind(&JoystickControlNode::joystick_cmd_callback, this, std::placeholders::_1));
         
         // 用于发布语音对话控制命令到 "voice_chat/control" 话题
         voice_pub_ = this->create_publisher<std_msgs::msg::String>("SMXFE/VoiceCmd", 10);
@@ -47,7 +52,8 @@ private:
 
     std::unique_ptr<unitree::robot::go2::SportClient> sport_client;
     std::unique_ptr<unitree::robot::b2::MotionSwitcherClient> motion_client;
-    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
+    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr joystick_cmd_sub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr voice_pub_;
 
     // 获取按钮输入状态
@@ -92,6 +98,16 @@ private:
         joystick_state_print();
 
         execute_action();
+    }
+
+    // 回调函数，处理JoystickCmd消息
+    void joystick_cmd_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
+    {
+        if (msg->data.size() >= 3)
+        {
+            int action = static_cast<int>(msg->data[0]);  // Convert double to int
+            Actions(action, msg->data[1], msg->data[2]);
+        }
     }
 
     void obtain_key_value(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -188,6 +204,7 @@ private:
         }
         std::cout << std::endl;
     }
+
     // 执行与按键对应的操作
     void execute_action()
     {

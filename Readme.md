@@ -14,7 +14,7 @@
 - 支持长距离定位
 - 目前没有调整参数做补偿，工程使用时可进一步提升精度
 - 增加了voice_chat_py用于语音交流，用不到的同志直接删除这个package即可，不影响其他包的运行。
-- voice_chat_py需要挂VPN，速度比较慢，还需要安装各种环境（怎么安的我也每记住，反正跟随大模型的指引）。里面有的api key是我个人的付费key，转语音有点贵。请长期使用的同志点击https://cloud.siliconflow.cn/i/5kSHnwpA，申请API密钥获得免费额度，将src/voice_chat_py/voice_chat_py/voice_chat_node.py的第21行替换成您的密钥。
+- voice_chat_py需要挂VPN，速度比较慢，还需要安装各种环境（怎么安的我也每记住，反正跟随大模型的指引）。里面有的api key是我个人的付费key，转语音有点贵。请长期使用的同志点击～https://cloud.siliconflow.cn/i/5kSHnwpA～申请API密钥获得免费额度，将src/voice_chat_py/voice_chat_py/voice_chat_node.py的第21行替换成您的密钥。
 
 ## 🎥 视频演示
 ### 最新进展(点击图片进入视频)

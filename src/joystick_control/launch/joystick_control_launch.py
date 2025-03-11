@@ -37,13 +37,20 @@ def generate_launch_description():
         ),
 
         # 启动 voice_chat_node
-        ExecuteProcess(
+         ExecuteProcess(
             cmd=[
-                "x-terminal-emulator",
-                "--new-process",
-                "-e",
-                "bash", "-c", "source ~/.bashrc && ros2 run voice_chat_py voice_chat_node"
+                'gnome-terminal', 
+                '--window', 
+                '--', 
+                'bash', 
+                '-c', 
+                'source /opt/ros/humble/setup.bash && '
+                'echo "Voice Window" && '
+                'ros2 run voice_chat_py voice_chat_node && '
+                'read -p "Press enter to close"'
             ],
-            output="screen",
-        ),
+            shell=True,
+            output='screen',
+            emulate_tty=True
+        )
     ])

@@ -153,6 +153,7 @@ private:
                 ContinuousGaitEnable = 0;
                 ErrorCode = motion_client->SelectMode("normal");
                 ChattingEnable = 0;
+                publishVoiceChatCommand("stop");
             }
         }
 
@@ -371,7 +372,7 @@ private:
                 ErrorCode = sport_client->FrontFlip();
             }
         }
-        else if(Axes[2] < -0.5 && Axes[5] > 0.9 && Last_Operation_Duration_Time > 1 && JoystickEnable && Last_Operation_Duration_Time > 0.5) // 按住LT键
+        else if(Axes[2] < -0.5 && Axes[5] > 0.9 && Last_Operation_Duration_Time > 1 && JoystickEnable) // 按住LT键
         {
             if(Buttons[0])
             {
@@ -400,7 +401,7 @@ private:
             else if(Buttons[7])
             {
                 ChattingEnable = 1 - ChattingEnable;
-                if(ContinuousGaitEnable)
+                if(ChattingEnable)
                 {
                     Last_Operation = "Listening. ";
                     publishVoiceChatCommand("start");

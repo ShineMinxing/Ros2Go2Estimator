@@ -17,7 +17,9 @@ setup(
     maintainer_email='401435318@qq.com',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
+    extras_require={
+        'test': ['pytest'],
+    },
     entry_points={
         'console_scripts': [
             'voice_chat_node = voice_chat_py.voice_chat_node:main'

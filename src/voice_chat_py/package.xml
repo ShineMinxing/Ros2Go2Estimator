@@ -11,6 +11,7 @@
   <depend>std_msgs</depend>
   <depend>python3-pyaudio</depend>  <!-- 新增音频设备依赖 -->
   <depend>python3-speechrecognition</depend>  <!-- 新增语音识别依赖 -->
+  <depend>python3-pygame</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

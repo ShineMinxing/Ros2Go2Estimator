@@ -15,18 +15,14 @@ import pyaudio
 import speech_recognition as sr
 from openai import OpenAI
 from pydub import AudioSegment
-from pydub.playback import play
-
-# 在任何其他模块导入之前，重定向文件描述符2到 /dev/null
-devnull_fd = os.open(os.devnull, os.O_WRONLY)
-os.dup2(devnull_fd, 2)
+import pygame  # 导入pygame用于播放音频
 
 # =============== 1. 配置信息 ===============
 API_KEY = "sk-nftsgxpdsrdnnbgdzralzbewmhiylqkhrjthtugvlbyqaiph"  # 替换成你的API Key
 BASE_URL = "https://api.siliconflow.cn/v1"
 
 # 大模型（聊天）
-MODEL_CHAT = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+MODEL_CHAT = "deepseek-ai/DeepSeek-V2.5"
 # TTS 模型
 MODEL_VOICE = "FunAudioLLM/CosyVoice2-0.5B"
 VOICE_NAME = "FunAudioLLM/CosyVoice2-0.5B:claire"
@@ -133,7 +129,7 @@ def get_model_response(user_text: str):
         response = client.chat.completions.create(
             model=MODEL_CHAT,
             messages=[
-                {"role": "system", "content": "你是来自山东的初中数学老师小崔，拥有丰富的历史知识和活跃有趣的思维，善于用启发性且有趣的语言讲解理科问题。"},
+                {"role": "system", "content": "你毕加索公司的四组机器狗，叫做来福。你用中文回答问题，有趣又调皮，回答很简短，喜欢汪汪叫。"},
                 {"role": "user", "content": user_text}
             ],
             temperature=0.7,
@@ -164,8 +160,18 @@ def speak_text_siliconcloud(text: str):
             response_format="mp3"
         ) as response:
             response.stream_to_file(output_mp3)
-        audio = AudioSegment.from_file(output_mp3, format="mp3")
-        play(audio)
+
+        # 初始化 pygame.mixer 模块
+        pygame.mixer.init()
+
+        # 加载并播放音频
+        pygame.mixer.music.load(str(output_mp3))
+        pygame.mixer.music.play()
+
+        # 等待音频播放完毕
+        while pygame.mixer.music.get_busy():
+            pygame.time.Clock().tick(10)
+
     except Exception as e:
         print(f"调用 SiliconCloud 语音合成失败: {str(e)}")
 

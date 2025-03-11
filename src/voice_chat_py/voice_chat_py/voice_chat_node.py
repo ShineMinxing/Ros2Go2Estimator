@@ -227,6 +227,21 @@ class VoiceChatNode(Node):
                 if not text:
                     self.get_logger().error("未识别或识别出错")
                     return
+                
+                if len(text) < 5:
+                    if any(word in text for word in ["坐", "作", "做", "座"]):
+                        self.get_logger().info("检测到命令: 坐")
+                        self.publish_joystick_cmd(22110000, 0, 0)
+                        return
+                    elif any(word in text for word in ["趴", "爬", "怕"]):
+                        self.get_logger().info("检测到命令: 趴")
+                        self.publish_joystick_cmd(25110000, 0, 0)
+                        return
+                    elif any(word in text for word in ["占", "站", "战", "绽"]):
+                        self.get_logger().info("检测到命令: 站")
+                        self.publish_joystick_cmd(25100000, 0, 0)
+                        return
+                
                 self.get_logger().info(f"识别结果: {text}")
                 response_text = get_model_response(text)
                 self.get_logger().info(f"模型回复: {response_text}")

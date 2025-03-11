@@ -373,7 +373,6 @@ private:
                 ErrorCode = sport_client->RecoveryStand();
                 break;
             case 25110000:
-                Actions(0025110000,0,0);
                 Last_Operation = "Sit Down. ";
                 Last_Operation_Time = this->get_clock()->now();
                 ErrorCode = sport_client->StandDown();

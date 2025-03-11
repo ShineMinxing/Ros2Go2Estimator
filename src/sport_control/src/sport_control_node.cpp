@@ -11,7 +11,7 @@
 class JoystickControlNode : public rclcpp::Node
 {
 public:
-    JoystickControlNode() : Node("joystick_control_node")
+    JoystickControlNode() : Node("sport_control_node")
     {
         // 通过参数获取网络接口名称，设置默认值为 "enxc8a3627ff10b" 或其他有效接口
         this->declare_parameter<std::string>("network_interface", "enxc8a3627ff10b");

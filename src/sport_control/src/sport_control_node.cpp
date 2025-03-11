@@ -8,6 +8,7 @@
 #include <iomanip>   // 添加：用于 std::setprecision
 #include <unitree/robot/go2/sport/sport_client.hpp>
 #include <unitree/robot/b2/motion_switcher/motion_switcher_client.hpp>
+#include <unitree/robot/go2/vui/vui_client.hpp>
 
 class JoystickControlNode : public rclcpp::Node
 {
@@ -46,12 +47,17 @@ public:
         motion_client = std::make_unique<unitree::robot::b2::MotionSwitcherClient>();
         motion_client->SetTimeout(10.0f); 
         motion_client->Init();
+
+        Vui_client = std::make_unique<unitree::robot::go2::VuiClient>();
+        Vui_client->SetTimeout(1.0f); 
+        Vui_client->Init();
     }
 
 private:
 
     std::unique_ptr<unitree::robot::go2::SportClient> sport_client;
     std::unique_ptr<unitree::robot::b2::MotionSwitcherClient> motion_client;
+    std::unique_ptr<unitree::robot::go2::VuiClient> Vui_client;
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr joystick_cmd_sub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr voice_pub_;
@@ -487,11 +493,13 @@ private:
                 if(ChattingEnable)
                 {
                     Last_Operation = "Listening. ";
+                    ErrorCode = Vui_client->SetBrightness(3);
                     publishVoiceChatCommand("start");
                 }
                 else
                 {
                     Last_Operation = "Replying. ";
+                    ErrorCode = Vui_client->SetBrightness(0);
                     publishVoiceChatCommand("stop");
                 }
                 Last_Operation_Time = this->get_clock()->now();

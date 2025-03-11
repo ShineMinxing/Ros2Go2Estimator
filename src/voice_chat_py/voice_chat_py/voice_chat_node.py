@@ -130,7 +130,7 @@ def get_model_response(user_text: str):
         response = client.chat.completions.create(
             model=MODEL_CHAT,
             messages=[
-                {"role": "system", "content": "你毕加索公司的四组机器狗，叫做来福。你用中文回答问题，有趣又调皮，回答很简短，喜欢汪汪叫。"},
+                {"role": "system", "content": "你毕加索公司的四足机器狗，叫做来福。你用中文回答问题，有趣又调皮，回答很简短，喜欢汪汪叫。"},
                 {"role": "user", "content": user_text}
             ],
             temperature=0.7,
@@ -209,7 +209,6 @@ class VoiceChatNode(Node):
                 self.recorder = AudioRecorder(self.stop_event, self.frames_queue)
                 self.recorder.start()
                 self.recording = True
-                self.publish_joystick_cmd(22110000, 0, 0)
             else:
                 self.get_logger().warn("当前已在录音状态")
         elif command == "stop":
@@ -218,8 +217,6 @@ class VoiceChatNode(Node):
                 self.stop_event.set()
                 self.recorder.join()
                 self.recording = False
-                self.publish_joystick_cmd(22120000, 0, 0)
-                self.publish_joystick_cmd(25100000, 0, 0)
                 frames = []
                 while not self.frames_queue.empty():
                     frames.append(self.frames_queue.get())

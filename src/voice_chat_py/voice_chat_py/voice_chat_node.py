@@ -10,6 +10,7 @@ import time  # 引入时间模块
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
+from std_msgs.msg import Float64MultiArray
 
 import pyaudio
 import speech_recognition as sr
@@ -187,11 +188,16 @@ class VoiceChatNode(Node):
             self.control_callback,
             10
         )
+
+        self.publisher = self.create_publisher(Float64MultiArray, 'SMXFE/JoystickCmd', 10)
+
         self.get_logger().info("VoiceChatNode 已启动")
         self.recording = False
         self.frames_queue = None
         self.stop_event = None
         self.recorder = None
+
+
 
     def control_callback(self, msg: String):
         command = msg.data.strip().lower()
@@ -203,6 +209,7 @@ class VoiceChatNode(Node):
                 self.recorder = AudioRecorder(self.stop_event, self.frames_queue)
                 self.recorder.start()
                 self.recording = True
+                self.publish_joystick_cmd(22110000, 0, 0)
             else:
                 self.get_logger().warn("当前已在录音状态")
         elif command == "stop":
@@ -211,6 +218,8 @@ class VoiceChatNode(Node):
                 self.stop_event.set()
                 self.recorder.join()
                 self.recording = False
+                self.publish_joystick_cmd(22120000, 0, 0)
+                self.publish_joystick_cmd(25100000, 0, 0)
                 frames = []
                 while not self.frames_queue.empty():
                     frames.append(self.frames_queue.get())
@@ -229,6 +238,16 @@ class VoiceChatNode(Node):
                 self.get_logger().warn("当前未在录音状态")
         else:
             self.get_logger().info(f"未知命令: {command}")
+    
+
+    def publish_joystick_cmd(self, Action, Value1, Value2):
+        """
+        发布 SMXFE/JoystickCmd 消息，包含三个 double 类型的值。
+        """
+        msg = Float64MultiArray()
+        msg.data = [float(Action), float(Value1), float(Value2)]  # 将三个数值添加到消息中
+        self.publisher.publish(msg)
+        self.get_logger().info(f"发布消息 SMXFE/JoystickCmd: {msg.data}")
 
 
 def main():

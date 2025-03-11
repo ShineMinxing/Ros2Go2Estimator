@@ -31,7 +31,7 @@ def generate_launch_description():
                 "x-terminal-emulator",
                 "--new-process",
                 "-e",
-                "bash", "-c", "source ~/.bashrc && ros2 run joystick_control joystick_control_node --ros-args -p network_interface:=enx00e04c8d0eff"
+                "bash", "-c", "source ~/.bashrc && ros2 run sport_control sport_control_node --ros-args -p network_interface:=enx00e04c8d0eff"
             ],
             output="screen",
         ),

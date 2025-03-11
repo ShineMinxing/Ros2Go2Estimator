@@ -25,7 +25,7 @@ BASE_URL = "https://api.siliconflow.cn/v1"
 MODEL_CHAT = "deepseek-ai/DeepSeek-V2.5"
 # TTS 模型
 MODEL_VOICE = "FunAudioLLM/CosyVoice2-0.5B"
-VOICE_NAME = "FunAudioLLM/CosyVoice2-0.5B:claire"
+VOICE_NAME = "FunAudioLLM/CosyVoice2-0.5B:david"
 
 # 初始化 OpenAI 客户端
 client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
@@ -133,7 +133,7 @@ def get_model_response(user_text: str):
                 {"role": "user", "content": user_text}
             ],
             temperature=0.7,
-            max_tokens=1024,
+            max_tokens=256,
             stream=False
         )
         if response and hasattr(response, 'choices'):

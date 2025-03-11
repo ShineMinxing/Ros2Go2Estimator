@@ -38,9 +38,9 @@ public:
             std::bind(&FusionEstimatorNode::LowStateCallback, this, std::placeholders::_1), 1);
 
         FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
-            "fusion_estimator_data", 10);
+            "SMXFE/estimation", 10);
 
-        SMXFE_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMXFE_odom", 10);
+        SMXFE_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMXFE/odom", 10);
 
         for(int i = 0; i < 2; i++)
         {

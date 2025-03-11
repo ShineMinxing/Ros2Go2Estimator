@@ -183,7 +183,7 @@ class VoiceChatNode(Node):
         # 订阅 "voice_chat/control" 话题，消息类型 std_msgs/String
         self.subscription = self.create_subscription(
             String,
-            'voice_chat/control',
+            'SMXFE/VoiceCmd',
             self.control_callback,
             10
         )

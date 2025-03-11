@@ -13,7 +13,8 @@
 - 动态行走模式误差率0.5%
 - 支持长距离定位
 - 目前没有调整参数做补偿，工程使用时可进一步提升精度
-- 增加了voice_chat_py用于语音交流，需要挂VPN，速度比较慢，还需要安装各种环境（怎么安的我也每记住，反正跟随大模型的指引）。里面有的api key是我个人的付费key，转语音有点贵。请长期使用的同志点击https://cloud.siliconflow.cn/i/5kSHnwpA，申请API密钥获得免费额度，将src/voice_chat_py/voice_chat_py/voice_chat_node.py的第21行替换成您的密钥。
+- 增加了voice_chat_py用于语音交流，用不到的同志直接删除这个package即可，不影响其他包的运行。
+- voice_chat_py需要挂VPN，速度比较慢，还需要安装各种环境（怎么安的我也每记住，反正跟随大模型的指引）。里面有的api key是我个人的付费key，转语音有点贵。请长期使用的同志点击https://cloud.siliconflow.cn/i/5kSHnwpA，申请API密钥获得免费额度，将src/voice_chat_py/voice_chat_py/voice_chat_node.py的第21行替换成您的密钥。
 
 ## 🎥 视频演示
 ### 最新进展(点击图片进入视频)
@@ -26,6 +27,11 @@
 
 3. 长距离测试，受磁场变化影响，380米运动偏差3.3%
 [![实验2](https://i0.hdslb.com/bfs/archive/481731d2db755bbe087f44aeb3f48db29c159ada.jpg)](https://www.bilibili.com/video/BV1BhRAYDEsV/)
+
+4. 语音控制机器狗，DeepSeek大模型语音交流
+[![实验3](https://i0.hdslb.com/bfs/archive/6aaac2a8d2726fa2c7d77f20544c9692f9fb752f.jpg)](https://www.bilibili.com/video/BV1YjQVYcEdX/)
+
+https://www.bilibili.com/video/BV1YjQVYcEdX/
 
 ## ⚙️ 安装指南
 

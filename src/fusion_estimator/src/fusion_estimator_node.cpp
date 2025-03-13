@@ -7,6 +7,8 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <sensor_msgs/msg/imu.hpp>
 
 #include "unitree/robot/channel/channel_subscriber.hpp"
 #include "unitree/idl/go2/LowState_.hpp"
@@ -38,9 +40,11 @@ public:
             std::bind(&FusionEstimatorNode::LowStateCallback, this, std::placeholders::_1), 1);
 
         FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
-            "SMXFE/estimation", 10);
+            "SMXFE/Estimation", 10);
 
-        SMXFE_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMXFE/odom", 10);
+        SMXFE_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMXFE/Odom", 10);
+        TF_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+        SMX_IMU_publisher = this->create_publisher<sensor_msgs::msg::Imu>("SMXFE/Imu", 10);
 
         for(int i = 0; i < 2; i++)
         {
@@ -73,10 +77,12 @@ private:
 
     rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr FETest_publisher;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher;
+    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr SMX_IMU_publisher;
     unitree::robot::ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> Lowstate_subscriber;
     std::shared_ptr<DataFusion::SensorIMUAcc> Sensor_IMUAcc; 
     std::shared_ptr<DataFusion::SensorIMUMagGyro> Sensor_IMUMagGyro; 
     std::shared_ptr<DataFusion::SensorLegs> Sensor_Legs; 
+    std::shared_ptr<tf2_ros::TransformBroadcaster> TF_broadcaster;
 
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr ParameterCorrectCallback;
     rcl_interfaces::msg::SetParametersResult Modify_Par_Fun(
@@ -223,8 +229,8 @@ private:
         // 新增：构造标准 odometry 消息，并发布
         nav_msgs::msg::Odometry SMXFE_odom;
         SMXFE_odom.header.stamp = fusion_msg.stamp;
-        SMXFE_odom.header.frame_id = "SMXFE_odom";
-        SMXFE_odom.child_frame_id = "GO2_SMXFEodom";
+        SMXFE_odom.header.frame_id = "odom";
+        SMXFE_odom.child_frame_id = "base_link";
 
         // 使用 fusion_msg.estimated_xyz 的前 3 个元素作为位置
         SMXFE_odom.pose.pose.position.x = fusion_msg.estimated_xyz[0];
@@ -238,7 +244,58 @@ private:
         // 发布 odometry 消息
         SMXFE_publisher->publish(SMXFE_odom);
 
-    }
+        // 2. 构造并发布 TF 变换消息
+        geometry_msgs::msg::TransformStamped transformStamped;
+        transformStamped.header.stamp = fusion_msg.stamp;
+        transformStamped.header.frame_id = "odom";      // 父坐标系
+        transformStamped.child_frame_id = "base_link";   // 子坐标系
+
+        // 设置位置
+        transformStamped.transform.translation.x = fusion_msg.estimated_xyz[0];
+        transformStamped.transform.translation.y = fusion_msg.estimated_xyz[3];
+        transformStamped.transform.translation.z = fusion_msg.estimated_xyz[6];
+
+        // 设置旋转（四元数）
+        transformStamped.transform.rotation = tf2::toMsg(q);
+
+        // 发布 TF 变换
+        TF_broadcaster->sendTransform(transformStamped);
+
+
+        // 创建 Imu 消息对象
+        sensor_msgs::msg::Imu imu_msg;
+
+        // 设置消息头
+        imu_msg.header.stamp = this->get_clock()->now();
+        imu_msg.header.frame_id = "imu_link"; // 根据您的机器人框架设置
+
+        // 设置线性加速度（加速度计数据）
+        imu_msg.linear_acceleration.x = low_state.imu_state().accelerometer()[0];
+        imu_msg.linear_acceleration.y = low_state.imu_state().accelerometer()[1];
+        imu_msg.linear_acceleration.z = low_state.imu_state().accelerometer()[2];
+
+        // 设置角速度（陀螺仪数据）
+        imu_msg.angular_velocity.x = low_state.imu_state().gyroscope()[0];
+        imu_msg.angular_velocity.y = low_state.imu_state().gyroscope()[1];
+        imu_msg.angular_velocity.z = low_state.imu_state().gyroscope()[2];
+
+        // 设置姿态（RPY 转换为四元数）
+        q.setRPY(
+            low_state.imu_state().rpy()[0],
+            low_state.imu_state().rpy()[1],
+            low_state.imu_state().rpy()[2]
+        );
+        imu_msg.orientation = tf2::toMsg(q);
+
+        // 设置协方差矩阵（根据您的传感器精度设置）
+        // 如果不知道，可以设置为 -1 或默认值
+        imu_msg.orientation_covariance[0] = -1;
+        imu_msg.angular_velocity_covariance[0] = -1;
+        imu_msg.linear_acceleration_covariance[0] = -1;
+
+        // 发布 IMU 消息
+        SMX_IMU_publisher->publish(imu_msg);
+        }
 };
 
 void FusionEstimatorNode::ObtainParameter()

@@ -52,5 +52,20 @@ def generate_launch_description():
             shell=True,
             output='screen',
             emulate_tty=True
-        )
+        ),
+
+        ExecuteProcess(
+            cmd=[
+                "x-terminal-emulator",
+                "--new-process",
+                "-e",
+                "bash", "-c",
+                'source ~/.bashrc && '
+                'ros2 launch lio_sam run.launch.py'
+            ],
+            output='screen'
+        ),
+
+        # rviz2 -d /home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/SMXFE_odm.rviz
+        # ros2 run rqt_tf_tree rqt_tf_tree
     ])

@@ -54,17 +54,13 @@ def generate_launch_description():
             emulate_tty=True
         ),
 
-        ExecuteProcess(
-            cmd=[
-                "x-terminal-emulator",
-                "--new-process",
-                "-e",
-                "bash", "-c",
-                'source ~/.bashrc && '
-                'ros2 launch lio_sam run.launch.py'
-            ],
+        Node(
+            package='message_handle',
+            executable='message_handle_node',  # 使用setup.py中定义的入口点名称
+            name='message_handle_node',
             output='screen'
         ),
+
 
         # rviz2 -d /home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/SMXFE_odm.rviz
         # ros2 run rqt_tf_tree rqt_tf_tree

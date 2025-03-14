@@ -9,7 +9,6 @@ Panels:
         - /TF1
         - /LaserScan1
         - /Map1
-        - /Map1/Status1
       Splitter Ratio: 0.5
     Tree Height: 719
   - Class: rviz_common/Selection
@@ -128,7 +127,7 @@ Visualization Manager:
       Max Color: 255; 255; 255
       Max Intensity: 255
       Min Color: 0; 0; 0
-      Min Intensity: 26
+      Min Intensity: 72
       Name: PointCloud2
       Position Transformer: XYZ
       Selectable: true
@@ -212,25 +211,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 9.419841766357422
+      Distance: 40.99222183227539
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: -8.768308639526367
+        Y: 4.766014099121094
+        Z: 10.127223014831543
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7903978824615479
+      Pitch: 0.7403979301452637
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.5004265308380127
+      Yaw: 6.060437202453613
     Saved: ~
 Window Geometry:
   Displays:
@@ -248,5 +247,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1850
-  X: 410
-  Y: 1467
+  X: 70
+  Y: 27

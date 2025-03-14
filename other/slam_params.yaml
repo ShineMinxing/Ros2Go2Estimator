@@ -21,10 +21,10 @@ slam_toolbox:
 
     # 优化参数
     optimization_period: 1.0       # 优化间隔 (秒)
-    loop_search_max_distance: 5.0  # 回环检测最大距离 (米)
+    loop_search_max_distance: 10.0  # 回环检测最大距离 (米)
 
     # 控制SLAM节点行为
-    use_scan_matching: true
+    use_scan_matching: false
     use_scan_barycenter: true
     minimum_travel_distance: 0.2
     minimum_travel_heading: 0.2

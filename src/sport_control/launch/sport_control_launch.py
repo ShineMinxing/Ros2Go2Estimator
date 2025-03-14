@@ -56,9 +56,17 @@ def generate_launch_description():
 
         Node(
             package='message_handle',
-            executable='message_handle_node',  # 使用setup.py中定义的入口点名称
+            executable='message_handle_node',
             name='message_handle_node',
             output='screen'
+        ),
+
+        Node(
+            package='slam_toolbox',
+            executable='async_slam_toolbox_node',
+            name='slam_toolbox',
+            output='screen',
+            parameters=["/home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/slam_params.yaml"]
         ),
 
 

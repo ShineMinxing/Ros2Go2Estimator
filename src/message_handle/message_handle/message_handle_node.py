@@ -37,9 +37,6 @@ class PointCloudToLaserScan(Node):
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
         self.static_broadcaster = tf2_ros.StaticTransformBroadcaster(self)
 
-        # 发布静态变换：base_link -> utlidar_lidar
-        self.publish_static_transform()
-
         self.subscription = self.create_subscription(
             PointCloud2,
             '/utlidar/cloud',
@@ -58,11 +55,12 @@ class PointCloudToLaserScan(Node):
         # LaserScan 参数配置
         self.angle_min = -math.pi / 2
         self.angle_max = math.pi / 2
-        self.angle_increment = 0.0058
-        self.range_min = 0.0
-        self.range_max = 100.0
+        self.angle_increment = 0.0056
+        self.range_min = 0.1
+        self.range_max = 30.0
         self.min_height = -0.1
         self.max_height = 1.0
+        self.odom_counter = 0
 
     def publish_static_transform(self):
         """
@@ -160,7 +158,7 @@ class PointCloudToLaserScan(Node):
         scan.range_min = self.range_min
         scan.range_max = self.range_max
 
-        num_bins = int((self.angle_max - self.angle_min) / self.angle_increment)
+        num_bins = int((self.angle_max - self.angle_min) / self.angle_increment)+2
         ranges = [float('inf')] * num_bins
 
         for point in pc2.read_points(cloud_in_base, field_names=("x", "y", "z"), skip_nans=True):
@@ -180,19 +178,46 @@ class PointCloudToLaserScan(Node):
         # self.get_logger().info('Published scan with %d points' % len(ranges))
 
     def odom_callback(self, msg):
-        """处理里程计数据并发布 odom 到 base_link 的TF变换"""
-        try:
-            transform = TransformStamped()
-            transform.header.stamp = msg.header.stamp
-            transform.header.frame_id = "odom"       # 父坐标系
-            transform.child_frame_id = "base_link"     # 子坐标系
-            transform.transform.translation.x = msg.pose.pose.position.x
-            transform.transform.translation.y = msg.pose.pose.position.y
-            transform.transform.translation.z = msg.pose.pose.position.z
-            transform.transform.rotation = msg.pose.pose.orientation
-            self.tf_broadcaster.sendTransform(transform)
-        except Exception as e:
-            self.get_logger().error(f"TF发布失败: {str(e)}")
+        self.odom_counter += 1
+        
+        # 增加计数器，每50条消息发布一次 base_link 到 utlidar_lidar 的TF
+        if self.odom_counter % 5 == 0:
+            self.odom_counter = 0
+            """处理里程计数据并发布 odom 到 base_link 的TF变换"""
+            try:
+                # 发布 odom 到 base_link 的TF
+                transform = TransformStamped()
+                transform.header.stamp = msg.header.stamp
+                transform.header.frame_id = "odom"       # 父坐标系
+                transform.child_frame_id = "base_link"     # 子坐标系
+                transform.transform.translation.x = msg.pose.pose.position.x
+                transform.transform.translation.y = msg.pose.pose.position.y
+                transform.transform.translation.z = msg.pose.pose.position.z
+                transform.transform.rotation = msg.pose.pose.orientation
+                self.tf_broadcaster.sendTransform(transform)
+            except Exception as e:
+                self.get_logger().error(f"odom-baseTF发布失败: {str(e)}")
+            try:
+                static_transform = TransformStamped()
+                static_transform.header.stamp = msg.header.stamp
+                static_transform.header.frame_id = "base_link"        # 父坐标系
+                static_transform.child_frame_id = "utlidar_lidar"       # 子坐标系
+
+                # 设置平移
+                static_transform.transform.translation.x = 0.28945
+                static_transform.transform.translation.y = 0.0
+                static_transform.transform.translation.z = -0.046825
+
+                # 将 rpy 转换为四元数
+                qx, qy, qz, qw = euler_to_quaternion(0.0, 2.8782, 0.0)
+                static_transform.transform.rotation.x = qx
+                static_transform.transform.rotation.y = qy
+                static_transform.transform.rotation.z = qz
+                static_transform.transform.rotation.w = qw
+
+                self.tf_broadcaster.sendTransform(static_transform)
+            except Exception as e:
+                self.get_logger().error(f"base-lidar TF发布失败: {str(e)}")
 
 def main(args=None):
     rclpy.init(args=args)

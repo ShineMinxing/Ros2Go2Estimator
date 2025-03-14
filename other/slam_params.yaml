@@ -1,0 +1,34 @@
+slam_toolbox:
+  ros__parameters:
+
+    # 重要的帧和话题名称
+    map_frame: map
+    odom_frame: odom
+    base_frame: base_link
+    scan_topic: /SMXFE/Scan
+    odom_topic: /SMXFE/Odom
+
+    # TF发布频率 (Hz)
+    transform_publish_period: 0.02
+    transform_timeout: 0.1
+    tf_message_filter_queue_size: 200
+
+    # 激光扫描匹配相关参数
+    max_laser_range: 30.0          # 激光雷达最大范围 (单位:米)
+    min_laser_range: 0.1           # 激光雷达最小范围
+    resolution: 0.05               # 地图分辨率 (单位:米)
+    max_iterations: 20             # 匹配最大迭代次数
+
+    # 优化参数
+    optimization_period: 1.0       # 优化间隔 (秒)
+    loop_search_max_distance: 5.0  # 回环检测最大距离 (米)
+
+    # 控制SLAM节点行为
+    use_scan_matching: true
+    use_scan_barycenter: true
+    minimum_travel_distance: 0.2
+    minimum_travel_heading: 0.2
+
+    # CPU和内存控制
+    throttle_scans: 1
+    solver_plugin: solver_plugins::CeresSolver

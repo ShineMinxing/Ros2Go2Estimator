@@ -38,7 +38,7 @@ CHANNELS = 1
 RATE = 16000  # 16kHz
 
 # 确保存音频的文件夹存在
-RECORD_FOLDER = Path("mp3_record")
+RECORD_FOLDER = Path("local_file")
 if not RECORD_FOLDER.exists():
     RECORD_FOLDER.mkdir(parents=True, exist_ok=True)
 

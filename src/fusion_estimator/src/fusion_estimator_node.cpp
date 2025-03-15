@@ -62,7 +62,7 @@ public:
             std::bind(&FusionEstimatorNode::Modify_Par_Fun, this, std::placeholders::_1)
           );
 
-        RCLCPP_INFO(this->get_logger(), "Fusion Estimator Node Initialized");
+        RCLCPP_INFO(this->get_logger(), "FusionEstimatorNode 已启动");
     }
 
     // 传感器状态空间模型创建
@@ -237,6 +237,44 @@ private:
         tf2::Quaternion q;
         q.setRPY(fusion_msg.estimated_rpy[0], fusion_msg.estimated_rpy[3], fusion_msg.estimated_rpy[6]);
         SMXFE_odom.pose.pose.orientation = tf2::toMsg(q);
+
+        // 线速度：使用 fusion_msg.estimated_xyz 的索引 1, 4, 7
+        SMXFE_odom.twist.twist.linear.x = fusion_msg.estimated_xyz[1];
+        SMXFE_odom.twist.twist.linear.y = fusion_msg.estimated_xyz[4];
+        SMXFE_odom.twist.twist.linear.z = fusion_msg.estimated_xyz[7];
+
+        // 角速度：使用 fusion_msg.estimated_rpy 的索引 1, 4, 7
+        SMXFE_odom.twist.twist.angular.x = fusion_msg.estimated_rpy[1];
+        SMXFE_odom.twist.twist.angular.y = fusion_msg.estimated_rpy[4];
+        SMXFE_odom.twist.twist.angular.z = fusion_msg.estimated_rpy[7];
+
+        // 设置位姿（pose）协方差：6x6 矩阵（行优先排列）
+        // 初始化全部置零
+        for (int i = 0; i < 36; ++i) {
+            SMXFE_odom.pose.covariance[i] = 0.0;
+        }
+        // 位置 (x, y, z) 的协方差设为 0.01
+        SMXFE_odom.pose.covariance[0]  = 0.01;   // x
+        SMXFE_odom.pose.covariance[7]  = 0.01;   // y
+        SMXFE_odom.pose.covariance[14] = 0.01;   // z
+        // 姿态（roll, pitch, yaw）的协方差设为 0.0001
+        SMXFE_odom.pose.covariance[21] = 0.0001; // roll
+        SMXFE_odom.pose.covariance[28] = 0.0001; // pitch
+        SMXFE_odom.pose.covariance[35] = 0.0001; // yaw
+
+        // 设置 twist 协方差：6x6 矩阵（行优先排列）
+        for (int i = 0; i < 36; ++i) {
+            SMXFE_odom.twist.covariance[i] = 0.0;
+        }
+        // 线速度 (x, y, z) 的协方差设为 0.1
+        SMXFE_odom.twist.covariance[0]  = 0.1;   // linear x
+        SMXFE_odom.twist.covariance[7]  = 0.1;   // linear y
+        SMXFE_odom.twist.covariance[14] = 0.1;   // linear z
+        // 角速度 (x, y, z) 的协方差设为 0.01
+        SMXFE_odom.twist.covariance[21] = 0.01;  // angular x
+        SMXFE_odom.twist.covariance[28] = 0.01;  // angular y
+        SMXFE_odom.twist.covariance[35] = 0.01;  // angular z
+
         // 发布 odometry 消息
         SMXFE_publisher->publish(SMXFE_odom);
         }

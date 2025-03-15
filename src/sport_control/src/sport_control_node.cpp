@@ -29,12 +29,12 @@ public:
         joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
             "/joy", 10, std::bind(&JoystickControlNode::joy_callback, this, std::placeholders::_1));
 
-        // 创建订阅者，订阅/JoystickCmd话题
-        joystick_cmd_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-            "SMXFE/JoystickCmd", 10, std::bind(&JoystickControlNode::joystick_cmd_callback, this, std::placeholders::_1));
+        // 创建订阅者，订阅/SportCmd话题
+        sport_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+            "SMXFE/SportCmd", 10, std::bind(&JoystickControlNode::sport_cmd_callback, this, std::placeholders::_1));
         
         // 用于发布语音对话控制命令到 "voice_chat/control" 话题
-        voice_pub_ = this->create_publisher<std_msgs::msg::String>("SMXFE/VoiceCmd", 10);
+        sport_cmd_pub = this->create_publisher<std_msgs::msg::String>("SMXFE/ModeCmd", 10);
 
 
         // 记录初始化时的时间
@@ -51,6 +51,8 @@ public:
         Vui_client = std::make_unique<unitree::robot::go2::VuiClient>();
         Vui_client->SetTimeout(1.0f); 
         Vui_client->Init();
+
+        RCLCPP_INFO(this->get_logger(), "JoystickControlNode 已启动");
     }
 
 private:
@@ -59,8 +61,8 @@ private:
     std::unique_ptr<unitree::robot::b2::MotionSwitcherClient> motion_client;
     std::unique_ptr<unitree::robot::go2::VuiClient> Vui_client;
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
-    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr joystick_cmd_sub_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr voice_pub_;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr sport_cmd_sub;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr sport_cmd_pub;
 
     // 获取按钮输入状态
     int Buttons[8] = {0};
@@ -89,7 +91,7 @@ private:
     {
         std_msgs::msg::String msg;
         msg.data = cmd;
-        voice_pub_->publish(msg);
+        sport_cmd_pub->publish(msg);
         std::cout << "发布语音命令: " << cmd << std::endl;
     }
 
@@ -106,13 +108,13 @@ private:
         execute_action();
     }
 
-    // 回调函数，处理JoystickCmd消息
-    void joystick_cmd_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
+    // 回调函数，处理SportCmd消息
+    void sport_cmd_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
     {
-        if (msg->data.size() >= 3)
+        if (msg->data.size() >= 5)
         {
             int action = static_cast<int>(msg->data[0]);  // Convert double to int
-            Actions(action, msg->data[1], msg->data[2]);
+            Actions(action, msg->data[1], msg->data[2], msg->data[3], msg->data[4]);
         }
     }
 
@@ -216,90 +218,90 @@ private:
     {
         if(Buttons[6]) // 急停
         {
-            Actions(16000000,0,0);
+            Actions(16000000,0,0,0,0);
         }
 
         if(Buttons[4] && Buttons[5] && JoystickEnable && Last_Operation_Duration_Time > 0.5) // 按住LB RB， 开启或关闭AI模式
         {
 
-            Actions(14150000,0,0);
+            Actions(14150000,0,0,0,0);
         }
 
         if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable) // 只按住RT键，进行运动判断
         {
-            Actions(25000000,0,0);
+            Actions(25000000,0,0,0,0);
         }
 
         if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable && !AIModeEnable && Last_Operation_Duration_Time > 0.5) // 常规模式，只按住RT键，进行动作判断
         {
-            Actions(25161700,Axes[6],Axes[7]);
+            Actions(25161700,Axes[6],Axes[7], 0, 0);
             if(Buttons[0])
             {
-                Actions(25100000,0,0);
+                Actions(25100000,0,0,0,0);
             }
             else if(Buttons[1])
             {
-                Actions(25110000,0,0);
+                Actions(25110000,0,0,0,0);
             }
             else if(Buttons[2])
             {
-                Actions(25120000,0,0);
+                Actions(25120000,0,0,0,0);
             }
             else if(Buttons[3])
             {
-                Actions(25130000,0,0);
+                Actions(25130000,0,0,0,0);
             }
             else if(Buttons[7])
             {
-                Actions(25170000,0,0);
+                Actions(25170000,0,0,0,0);
             }
         }
         else if(Axes[2] < -0.5 && Axes[5] > 0.9 && JoystickEnable && !AIModeEnable && Last_Operation_Duration_Time > 0.5) // 常规模式，只按住LT键
         {
             if(Buttons[0])
             {
-                Actions(22100000,0,0);
+                Actions(22100000,0,0,0,0);
             }
             else if(Buttons[1])
             {
-                Actions(22110000,0,0);
+                Actions(22110000,0,0,0,0);
             }
             else if(Buttons[2])
             {
-                Actions(22120000,0,0);
+                Actions(22120000,0,0,0,0);
             }
             else if(Buttons[3])
             {
-                Actions(22130000,0,0);
+                Actions(22130000,0,0,0,0);
             }
             else if(Buttons[7])
             {
-                Actions(22170000,0,0);
+                Actions(22170000,0,0,0,0);
             }
         }
         else if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable && AIModeEnable && Last_Operation_Duration_Time > 0.5) // AI模式，只按住RT键，进行动作判断
         {
             if(Buttons[0])
             {
-                Actions(125100000,0,0);
+                Actions(125100000,0,0,0,0);
             }
             else if(Buttons[1])
             {
-                Actions(125110000,0,0);
+                Actions(125110000,0,0,0,0);
             }
             else if(Buttons[2])
             {
-                Actions(125120000,0,0);
+                Actions(125120000,0,0,0,0);
             }
             else if(Buttons[3])
             {
-                Actions(125130000,0,0);
+                Actions(125130000,0,0,0,0);
             }
-            Actions(125262700,Axes[6],Axes[7]);
+            Actions(125262700,Axes[6],Axes[7],0,0);
         }
     }
 
-    void Actions(int Action, double Value1, double Value2)
+    void Actions(int Action, double Value1, double Value2, double Value3, double Value4)
     {
         // Action命名规则： 00 00 00 00 00，前两位表示模式，后面四个两位，表示同时4个按键按下
         // 按键的两位AB，A 1/2表示按键/摇杆，B 0～7表示不同的按键名/摇杆名

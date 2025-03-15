@@ -27,7 +27,7 @@ def euler_to_quaternion(roll, pitch, yaw):
 
     return qx, qy, qz, qw
 
-class PointCloudToLaserScan(Node):
+class MssageHandleNode(Node):
     def __init__(self):
         super().__init__('pointcloud_to_laserscan_custom')
 
@@ -61,6 +61,8 @@ class PointCloudToLaserScan(Node):
         self.min_height = -0.1
         self.max_height = 1.0
         self.odom_counter = 0
+
+        self.get_logger().info("MssageHandleNode 已启动")
 
     def publish_static_transform(self):
         """
@@ -221,7 +223,7 @@ class PointCloudToLaserScan(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = PointCloudToLaserScan()
+    node = MssageHandleNode()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

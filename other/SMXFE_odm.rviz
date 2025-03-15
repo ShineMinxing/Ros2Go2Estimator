@@ -70,10 +70,11 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          odom:
-            base_link:
-              utlidar_lidar:
-                {}
+          {}
+        odom:
+          base_link:
+            utlidar_lidar:
+              {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -127,7 +128,7 @@ Visualization Manager:
       Max Color: 255; 255; 255
       Max Intensity: 255
       Min Color: 0; 0; 0
-      Min Intensity: 72
+      Min Intensity: 52
       Name: PointCloud2
       Position Transformer: XYZ
       Selectable: true
@@ -211,25 +212,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 40.99222183227539
+      Distance: 13.8095121383667
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -8.768308639526367
-        Y: 4.766014099121094
-        Z: 10.127223014831543
-      Focal Shape Fixed Size: true
+        X: 0
+        Y: 0
+        Z: 0
+      Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7403979301452637
-      Target Frame: <Fixed Frame>
+      Pitch: 0.7853981852531433
+      Target Frame: odom
       Value: Orbit (rviz)
-      Yaw: 6.060437202453613
+      Yaw: 0.7853981852531433
     Saved: ~
 Window Geometry:
   Displays:

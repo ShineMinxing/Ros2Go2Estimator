@@ -4,8 +4,12 @@ project(sport_control)
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(nav2_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(unitree_sdk2 REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 add_executable(sport_control_node src/sport_control_node.cpp)
 
@@ -14,6 +18,7 @@ target_include_directories(sport_control_node
   ${rclcpp_INCLUDE_DIRS}
   ${sensor_msgs_INCLUDE_DIRS}
   ${unitree_sdk2_INCLUDE_DIRS} 
+  ${EIGEN3_INCLUDE_DIR}
 )
 
 target_link_libraries(sport_control_node
@@ -25,6 +30,9 @@ target_link_libraries(sport_control_node
 ament_target_dependencies(sport_control_node
   rclcpp
   sensor_msgs
+  rclcpp_action
+  nav2_msgs
+  geometry_msgs
 )
 
 install(TARGETS

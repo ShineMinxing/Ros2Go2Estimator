@@ -3,10 +3,17 @@
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-#include <iostream>  // 引入 cout
-#include <cstdlib>   // 引入 system
-#include <chrono>    // 引入 chrono，用于计算时间差
-#include <iomanip>   // 添加：用于 std::setprecision
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <memory>
+#include <cmath>
+#include <string>
+#include <iostream> 
+#include <cstdlib> 
+#include <chrono>
+#include <iomanip>
+#include <Eigen/Geometry>
 #include <unitree/robot/go2/sport/sport_client.hpp>
 #include <unitree/robot/b2/motion_switcher/motion_switcher_client.hpp>
 #include <unitree/robot/go2/vui/vui_client.hpp>
@@ -43,7 +50,6 @@ public:
         // 用于发布语音对话控制命令到 "voice_chat/control" 话题
         sport_cmd_pub = this->create_publisher<std_msgs::msg::String>("SMXFE/ModeCmd", 10);
 
-
         // 记录初始化时的时间
         Last_Operation_Time = this->get_clock()->now();
 
@@ -72,6 +78,7 @@ private:
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr sport_cmd_pub;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr guide_sub;
     double guide_x_vel = 0, guide_y_vel = 0, guide_yaw_vel = 0;
+    rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr nav_to_pose_client;
 
     // 获取按钮输入状态
     int Buttons[8] = {0};
@@ -132,6 +139,67 @@ private:
         guide_y_vel = msg->linear.y;
         guide_yaw_vel = msg->angular.z;
     }
+
+    void sendGoal(double x, double y, double yaw_degs)
+    {
+        if (!nav_to_pose_client) {
+            nav_to_pose_client = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
+                this->shared_from_this(), "navigate_to_pose");
+        }
+        
+        // 等待服务器就绪
+        if (!nav_to_pose_client->wait_for_action_server(std::chrono::seconds(5))) {
+            RCLCPP_ERROR(this->get_logger(), "Action server not available after waiting");
+            return;
+        }
+
+        // 1. 准备目标消息
+        auto goal_msg = nav2_msgs::action::NavigateToPose::Goal();
+        goal_msg.pose.header.frame_id = "map";
+        goal_msg.pose.header.stamp = now();
+
+        // (1) 位置
+        goal_msg.pose.pose.position.x = x;
+        goal_msg.pose.pose.position.y = y;
+
+        // (2) 朝向：将 yaw(度) 转换成四元数（使用 Eigen）
+        double yaw_radians = yaw_degs * M_PI / 180.0; // 若本来就是弧度，则直接用
+        Eigen::Quaterniond q(Eigen::AngleAxisd(yaw_radians, Eigen::Vector3d::UnitZ()));
+
+        goal_msg.pose.pose.orientation.x = q.x();
+        goal_msg.pose.pose.orientation.y = q.y();
+        goal_msg.pose.pose.orientation.z = q.z();
+        goal_msg.pose.pose.orientation.w = q.w();
+
+        RCLCPP_INFO(
+            this->get_logger(),
+            "Sending goal to (%.2f, %.2f) with yaw=%.2f deg",
+            x, y, yaw_degs
+    );
+
+    // 2. 定义发送目标时的回调选项（可选：结果回调、反馈回调等）
+    rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions send_goal_options;
+    send_goal_options.result_callback =
+        [this](const rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::WrappedResult & result) {
+        switch (result.code) {
+            case rclcpp_action::ResultCode::SUCCEEDED:
+            RCLCPP_INFO(this->get_logger(), "Goal succeeded!");
+            break;
+            case rclcpp_action::ResultCode::ABORTED:
+            RCLCPP_ERROR(this->get_logger(), "Goal was aborted");
+            break;
+            case rclcpp_action::ResultCode::CANCELED:
+            RCLCPP_ERROR(this->get_logger(), "Goal was canceled");
+            break;
+            default:
+            RCLCPP_ERROR(this->get_logger(), "Unknown result code");
+            break;
+        }
+        };
+
+    // 3. 异步发送目标
+    nav_to_pose_client->async_send_goal(goal_msg, send_goal_options);
+}
 
     void obtain_key_value(const sensor_msgs::msg::Joy::SharedPtr msg)
     {
@@ -303,6 +371,15 @@ private:
             {
                 Actions(22170000,0,0,0,0);
             }
+            else if(Axes[6])
+            {
+                Actions(22260000,Axes[6],0,0,0);
+            }
+            else if(Axes[7])
+            {
+                Actions(22270000,Axes[7],0,0,0);
+            }
+
         }
         else if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable && AIModeEnable && Last_Operation_Duration_Time > 0.5) // AI模式，只按住RT键，进行动作判断
         {
@@ -557,6 +634,36 @@ private:
                     Last_Operation = "Replying. ";
                     ErrorCode = Vui_client->SetBrightness(0);
                     publishVoiceChatCommand("stop");
+                }
+                Last_Operation_Time = this->get_clock()->now();
+                break;
+            case 22260000:
+                if(Value1==1)
+                {
+                    Last_Operation = "Go To Ofiice Room. ";
+                    ErrorCode = Vui_client->SetBrightness(3);
+                    sendGoal(0, 0, 0);
+                }
+                else if(Value1==-1)
+                {
+                    Last_Operation = "Go To Meeting Room. ";
+                    ErrorCode = Vui_client->SetBrightness(0);
+                    sendGoal(-16, 3, 1.57);
+                }
+                Last_Operation_Time = this->get_clock()->now();
+                break;
+            case 22270000:
+                if(Value1==1)
+                {
+                    Last_Operation = "Go To Washroom. ";
+                    ErrorCode = Vui_client->SetBrightness(3);
+                    sendGoal(-8, 16, 1.57);
+                }
+                else if(Value1==-1)
+                {
+                    Last_Operation = "Go to Warehouse. ";
+                    ErrorCode = Vui_client->SetBrightness(0);
+                    sendGoal(-3, 10, 0);
                 }
                 Last_Operation_Time = this->get_clock()->now();
                 break;

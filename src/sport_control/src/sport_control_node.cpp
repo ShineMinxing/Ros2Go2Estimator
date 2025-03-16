@@ -2,6 +2,7 @@
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
+#include "geometry_msgs/msg/twist.hpp"
 #include <iostream>  // 引入 cout
 #include <cstdlib>   // 引入 system
 #include <chrono>    // 引入 chrono，用于计算时间差
@@ -32,6 +33,12 @@ public:
         // 创建订阅者，订阅/SportCmd话题
         sport_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             "SMXFE/SportCmd", 10, std::bind(&JoystickControlNode::sport_cmd_callback, this, std::placeholders::_1));
+
+
+        // 创建订阅者，订阅导航话题
+        guide_sub = this->create_subscription<geometry_msgs::msg::Twist>(
+            "/cmd_vel", 10,
+            std::bind(&JoystickControlNode::guide_callback, this, std::placeholders::_1));
         
         // 用于发布语音对话控制命令到 "voice_chat/control" 话题
         sport_cmd_pub = this->create_publisher<std_msgs::msg::String>("SMXFE/ModeCmd", 10);
@@ -63,6 +70,8 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr sport_cmd_sub;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr sport_cmd_pub;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr guide_sub;
+    double guide_x_vel = 0, guide_y_vel = 0, guide_yaw_vel = 0;
 
     // 获取按钮输入状态
     int Buttons[8] = {0};
@@ -116,6 +125,12 @@ private:
             int action = static_cast<int>(msg->data[0]);  // Convert double to int
             Actions(action, msg->data[1], msg->data[2], msg->data[3], msg->data[4]);
         }
+    }
+
+    void guide_callback(const geometry_msgs::msg::Twist::SharedPtr msg) {
+        guide_x_vel = msg->linear.x;
+        guide_y_vel = msg->linear.y;
+        guide_yaw_vel = msg->angular.z;
     }
 
     void obtain_key_value(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -231,6 +246,11 @@ private:
         {
             Actions(25202123,Axes[0],Axes[1],Axes[3],Axes[4]);
         }
+        if(Axes[2] < -0.5 && Axes[5] > 0.9 && JoystickEnable) // 只按住LT键，进行导航
+        {
+            Actions(25202123,guide_y_vel,guide_x_vel,guide_yaw_vel,0);
+        }
+
 
         if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable && !AIModeEnable && Last_Operation_Duration_Time > 0.5) // 常规模式，只按住RT键，进行动作判断
         {
@@ -328,7 +348,7 @@ private:
                 ErrorCode = motion_client->SelectMode("ai");
                 break;
             case 25202123:
-                if(abs(Value2)>0.1 || abs(Value1)>0.1 || abs(Value3)>0.1)
+                if(abs(Value1)>0.1 || abs(Value2)>0.1 || abs(Value3)>0.1)
                 {
                     float Leftward_Speed = 1 * SpeedScalse * Value1;
                     float Forward_Speed = 2.5 * SpeedScalse * Value2;

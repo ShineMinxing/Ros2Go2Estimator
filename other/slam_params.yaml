@@ -17,22 +17,26 @@ slam_toolbox:
     max_laser_range: 30.0          # 激光雷达最大范围 (单位:米)
     min_laser_range: 0.1           # 激光雷达最小范围
     max_iterations: 20             # 匹配最大迭代次数
-    minimum_travel_distance: 0.1
-    minimum_travel_heading: 0.1
+    minimum_travel_distance: 0.03
+    minimum_travel_heading: 0.05
 
+    slam_mode: "localization" # localization mapping
     # 绘图
     map_update_interval: 2.0
     resolution: 0.05
+    # 定位
+    map_file_name: map_new
+    map_start_pose: [0.0, 0.0, 0.0]
 
     # 优化参数
     use_scan_matching: false
     use_scan_barycenter: false
-    # position_covariance_scale: 1.0
-    # yaw_covariance_scale: 1.0
-    # do_loop_closing: false
-    # loop_match_minimum_response_fine: 0.8
-    # distance_variance_penalty: 1      
-    # angle_variance_penalty: 1    
+    position_covariance_scale: 1.0
+    yaw_covariance_scale: 1.0
+    do_loop_closing: false
+    loop_match_minimum_response_fine: 0.8
+    distance_variance_penalty: 1.0   
+    angle_variance_penalty: 1.0    
     optimization_period: 0.2       # 优化间隔 (秒)
     loop_search_max_distance: 5.0  # 回环检测最大距离 (米)
 

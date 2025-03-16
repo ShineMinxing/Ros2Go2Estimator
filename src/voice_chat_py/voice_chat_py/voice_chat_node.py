@@ -214,7 +214,7 @@ class VoiceChatNode(Node):
             self.get_logger().info(f"识别结果: {text}")
 
             # 如果识别到的内容较短，可能是简单命令（坐、趴、站）
-            if len(text) < 5:
+            if len(text) < 8:
                 if any(word in text for word in ["坐", "作", "做", "座"]):
                     self.get_logger().info("检测到命令: 坐")
                     self.publish_sport_cmd(22110000, 0, 0, 0, 0)

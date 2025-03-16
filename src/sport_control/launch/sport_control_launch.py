@@ -22,7 +22,7 @@ def generate_launch_description():
             output="screen",
         ),
 
-        # 启动 voice_chat_node fusion_estimator_node message_handle_node
+        # 启动 fusion_estimator_node message_handle_node
         ExecuteProcess(
             cmd=[
                 "x-terminal-emulator",
@@ -53,12 +53,15 @@ def generate_launch_description():
                 'bash',
                 '-c',
                 'source ~/.bashrc && '
-                'ros2 run slam_toolbox async_slam_toolbox_node --ros-args --params-file /home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/slam_params.yaml&'
+                # 'ros2 run slam_toolbox async_slam_toolbox_node --ros-args --params-file /home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/slam_params.yaml&'
+                'ros2 launch nav2_bringup bringup_launch.py \
+                    map:=/home/smx/unitree_ros2_250221/Ros2Go2Estimator/local_file/map_new.yaml \
+                    params_file:=/home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/Guide.yaml&'
                 'rviz2 -d /home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/SMXFE_odm.rviz; '
                 'read -p "Press enter to close"'
             ],
             output='screen',
-        )
+        ),
 
         # rviz2 -d /home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/SMXFE_odm.rviz
         # ros2 run rqt_tf_tree rqt_tf_tree

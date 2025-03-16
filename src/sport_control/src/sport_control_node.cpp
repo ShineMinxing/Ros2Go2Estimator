@@ -86,13 +86,13 @@ private:
     rclcpp::Time Last_Operation_Time;
     float Last_Operation_Duration_Time;
 
-    // 发布语音对话命令的函数
+    // 发布模式命令的函数
     void publishVoiceChatCommand(const std::string &cmd)
     {
         std_msgs::msg::String msg;
         msg.data = cmd;
         sport_cmd_pub->publish(msg);
-        std::cout << "发布语音命令: " << cmd << std::endl;
+        std::cout << "发布String命令: " << cmd << std::endl;
     }
 
     // 回调函数，处理joy消息
@@ -251,6 +251,10 @@ private:
             {
                 Actions(25130000,0,0,0,0);
             }
+            else if(Buttons[4])
+            {
+                Actions(25140000,0,0,0,0);
+            }
             else if(Buttons[7])
             {
                 Actions(25170000,0,0,0,0);
@@ -402,6 +406,11 @@ private:
                     Last_Operation = "Continuous Gait Stop. ";
                 Last_Operation_Time = this->get_clock()->now();
                 ErrorCode = sport_client->ContinuousGait(ContinuousGaitEnable);
+                break;
+            case 25140000:
+                Last_Operation = "Reset Estimator Position. ";
+                publishVoiceChatCommand("Estimator_Position_Reset");
+                
                 break;
             case 25170000:
                 Last_Operation = "Get Ready to Move. ";

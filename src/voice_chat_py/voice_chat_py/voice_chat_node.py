@@ -181,8 +181,6 @@ class VoiceChatNode(Node):
             self.start_recording()
         elif command == "stop":
             self.stop_recording()
-        else:
-            self.get_logger().info(f"未知命令: {command}")
 
     def start_recording(self):
         if not self.recording:
@@ -236,8 +234,8 @@ class VoiceChatNode(Node):
             self.get_logger().info(f"模型回复: {response_text}")
 
             # 最终合成语音
-            speak_text_pyttsx3(response_text)
-            # speak_text_siliconcloud(response_text)
+            # speak_text_pyttsx3(response_text)
+            speak_text_siliconcloud(response_text)
             self.playing_audio = False
         else:
             self.get_logger().warn("当前未在录音状态")

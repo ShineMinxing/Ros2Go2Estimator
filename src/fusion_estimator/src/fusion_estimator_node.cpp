@@ -9,6 +9,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <sensor_msgs/msg/imu.hpp>
+#include <std_msgs/msg/string.hpp>
 
 #include "unitree/robot/channel/channel_subscriber.hpp"
 #include "unitree/idl/go2/LowState_.hpp"
@@ -39,9 +40,12 @@ public:
         Lowstate_subscriber->InitChannel(
             std::bind(&FusionEstimatorNode::LowStateCallback, this, std::placeholders::_1), 1);
 
+        // 创建订阅者，订阅/ModeCmd话题
+        Mode_cmd_sub = this->create_subscription<std_msgs::msg::String>(
+            "SMXFE/ModeCmd", 10, std::bind(&FusionEstimatorNode::mode_cmd_callback, this, std::placeholders::_1));
+
         FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
             "SMXFE/Estimation", 10);
-
         SMXFE_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMXFE/Odom", 10);
 
         for(int i = 0; i < 2; i++)
@@ -75,6 +79,7 @@ private:
 
     rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr FETest_publisher;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr Mode_cmd_sub;
     unitree::robot::ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> Lowstate_subscriber;
     std::shared_ptr<DataFusion::SensorIMUAcc> Sensor_IMUAcc; 
     std::shared_ptr<DataFusion::SensorIMUMagGyro> Sensor_IMUMagGyro; 
@@ -277,7 +282,20 @@ private:
 
         // 发布 odometry 消息
         SMXFE_publisher->publish(SMXFE_odom);
+    }
+
+    // 回调函数，处理SportCmd消息
+    void mode_cmd_callback(const std_msgs::msg::String::SharedPtr msg)
+    {
+        if (msg->data == "Estimator_Position_Reset")
+        {
+            Sensor_Legs->FootfallPositionRecordIsInitiated = 0;
+            StateSpaceModel1_Sensors[0]->EstimatedState[0] = 0;
+            StateSpaceModel1_Sensors[0]->EstimatedState[3] = 0;
+            StateSpaceModel1_Sensors[0]->EstimatedState[6] = 0;
+            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received Estimator Position Reset command");
         }
+    }
 };
 
 void FusionEstimatorNode::ObtainParameter()

@@ -128,7 +128,7 @@ Visualization Manager:
       Max Color: 255; 255; 255
       Max Intensity: 255
       Min Color: 0; 0; 0
-      Min Intensity: 52
+      Min Intensity: 36
       Name: PointCloud2
       Position Transformer: XYZ
       Selectable: true
@@ -212,7 +212,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 13.8095121383667
+      Distance: 10
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -228,7 +228,7 @@ Visualization Manager:
       Name: Current View
       Near Clip Distance: 0.009999999776482582
       Pitch: 0.7853981852531433
-      Target Frame: odom
+      Target Frame: base_link
       Value: Orbit (rviz)
       Yaw: 0.7853981852531433
     Saved: ~

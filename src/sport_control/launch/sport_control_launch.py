@@ -38,12 +38,12 @@ def generate_launch_description():
             output="screen",
         ),
 
-        Node(
-            package='voice_chat_py',
-            executable='voice_chat_node',
-            name='voice_chat_node',
-            output='screen'
-        ),
+        # Node(
+        #     package='voice_chat_py',
+        #     executable='voice_chat_node',
+        #     name='voice_chat_node',
+        #     output='screen'
+        # ),
 
         ExecuteProcess(
             cmd=[

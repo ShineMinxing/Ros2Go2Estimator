@@ -23,10 +23,10 @@ amcl:
     odom_topic: "/SMXFE/Odom"
 
     # Odom 噪声参数
-    odom_alpha1: 0.01
-    odom_alpha2: 0.01
-    odom_alpha3: 0.01
-    odom_alpha4: 0.01
+    odom_alpha1: 0.1
+    odom_alpha2: 0.1
+    odom_alpha3: 0.1
+    odom_alpha4: 0.1
 
     # 其他AMCL常见参数
     max_particles: 5000
@@ -198,26 +198,51 @@ global_costmap:
       use_sim_time: false
       robot_radius: 0.5
       resolution: 0.05
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
-      obstacle_layer:
-        plugin: "nav2_costmap_2d::ObstacleLayer"
+      plugins: ["static_layer", "voxel_layer", "inflation_layer"] # "obstacle_layer",
+      
+      # obstacle_layer:
+      #   plugin: "nav2_costmap_2d::ObstacleLayer"
+      #   enabled: True
+      #   observation_sources: scan
+      #   footprint_clearing_enabled: true
+      #   max_obstacle_height: 2.0
+      #   combination_method: 1
+      #   scan:
+      #     topic: /SMXFE/Scan
+      #     obstacle_max_range: 2.5
+      #     obstacle_min_range: 0.0
+      #     raytrace_max_range: 3.0
+      #     raytrace_min_range: 0.0
+      #     max_obstacle_height: 2.0
+      #     min_obstacle_height: 0.0
+      #     clearing: True
+      #     marking: True
+      #     data_type: "LaserScan"
+      #     inf_is_valid: false
+      
+
+      voxel_layer:
+        plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
-        observation_sources: scan
         footprint_clearing_enabled: true
         max_obstacle_height: 2.0
-        combination_method: 1
-        scan:
-          topic: /SMXFE/Scan
-          obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
-          raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
-          max_obstacle_height: 2.0
-          min_obstacle_height: 0.0
-          clearing: True
-          marking: True
-          data_type: "LaserScan"
-          inf_is_valid: false
+        publish_voxel_map: True
+        origin_z: 0.0
+        z_resolution: 0.05
+        z_voxels: 16
+        max_obstacle_height: 2.0
+        unknown_threshold: 15
+        mark_threshold: 0
+        observation_sources: laser
+        laser:
+          topic: /SMXFE/Scan          # 你的激光话题
+          sensor_frame: base_link     # 你的激光坐标系与base_link相同
+          data_type: LaserScan        # 如果是LaserScan类型
+          marking: true
+          clearing: true
+          obstacle_range: 3.0         # 探测障碍物最大距离
+          raytrace_range: 4.0         # 射线跟踪最大距离
+          inf_is_valid: false 
 
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
@@ -233,7 +258,7 @@ global_costmap:
         cost_scaling_factor: 1.0
         inflate_unknown: false
         inflate_around_unknown: true
-      always_send_full_costmap: false
+      always_send_full_costmap: True
 
 
 local_costmap:

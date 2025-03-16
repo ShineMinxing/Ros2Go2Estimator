@@ -5,11 +5,6 @@ from launch.actions import ExecuteProcess, SetEnvironmentVariable
 
 def generate_launch_description():
     return LaunchDescription([
-
-        launch.actions.SetEnvironmentVariable('all_proxy', 'socks5://127.0.0.1:7898'),
-        launch.actions.SetEnvironmentVariable('http_proxy', 'socks5://127.0.0.1:7898'),
-        launch.actions.SetEnvironmentVariable('https_proxy', 'socks5://127.0.0.1:7898'),
-
         
         # 启动 joy_node sport_control_node
         ExecuteProcess(

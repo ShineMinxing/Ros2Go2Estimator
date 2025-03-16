@@ -229,7 +229,7 @@ private:
 
         if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable) // 只按住RT键，进行运动判断
         {
-            Actions(25000000,0,0,0,0);
+            Actions(25202123,Axes[0],Axes[1],Axes[3],Axes[4]);
         }
 
         if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable && !AIModeEnable && Last_Operation_Duration_Time > 0.5) // 常规模式，只按住RT键，进行动作判断
@@ -258,6 +258,7 @@ private:
         }
         else if(Axes[2] < -0.5 && Axes[5] > 0.9 && JoystickEnable && !AIModeEnable && Last_Operation_Duration_Time > 0.5) // 常规模式，只按住LT键
         {
+            Actions(20212324,Axes[0],Axes[1],Axes[3],Axes[4]);
             if(Buttons[0])
             {
                 Actions(22100000,0,0,0,0);
@@ -322,12 +323,12 @@ private:
                 Last_Operation_Time = this->get_clock()->now();
                 ErrorCode = motion_client->SelectMode("ai");
                 break;
-            case 25000000:
-                if(abs(Axes[1])>0.1 || abs(Axes[0])>0.1 || abs(Axes[3])>0.1)
+            case 25202123:
+                if(abs(Value2)>0.1 || abs(Value1)>0.1 || abs(Value3)>0.1)
                 {
-                    float Forward_Speed = 2.5 * SpeedScalse * Axes[1];
-                    float Leftward_Speed = 1 * SpeedScalse * Axes[0];
-                    float Turning_Speed = 4 * SpeedScalse * Axes[3];
+                    float Leftward_Speed = 1 * SpeedScalse * Value1;
+                    float Forward_Speed = 2.5 * SpeedScalse * Value2;
+                    float Turning_Speed = 4 * SpeedScalse * Value3;
         
                     if(Forward_Speed>=0)
                         Forward_Speed = Forward_Speed / 2.5 * 3.8;
@@ -467,6 +468,31 @@ private:
                     Last_Operation = "FrontFlip. ";
                     Last_Operation_Time = this->get_clock()->now();
                     ErrorCode = sport_client->FrontFlip();
+                }
+                break;
+            
+            case 20212324:
+                if(abs(Value1)>0.1 || abs(Value2)>0.1 || abs(Value3)>0.1 || abs(Value4)>0.1)
+                {
+                    float RollAngle = -0.75 * SpeedScalse * Value1;
+                    float PitchAngle = 0.75 * SpeedScalse * Value2;
+                    float YawAngle = 0.6 * SpeedScalse * Value3;
+                    float Height = 0.03 * SpeedScalse * Value4;
+        
+                    if(Height<=0)
+                        Height = Height / 0.03 * 0.18;
+        
+                    Last_Operation = "RollAngle: " + std::to_string(RollAngle) 
+                    + "; PitchAngle: " + std::to_string(PitchAngle)
+                    + "; YawAngle: " + std::to_string(YawAngle)
+                    + "; Height: " + std::to_string(Height);
+        
+                    Last_Operation_Time = this->get_clock()->now();
+        
+                    std::cout << "Twisting... " << std::endl;
+        
+                    ErrorCode = sport_client->Euler(RollAngle, PitchAngle, YawAngle);
+                    ErrorCode = sport_client->BodyHeight(Height);
                 }
                 break;
             case 22100000:

@@ -640,30 +640,30 @@ private:
             case 22260000:
                 if(Value1==1)
                 {
-                    Last_Operation = "Go To Ofiice Room. ";
-                    ErrorCode = Vui_client->SetBrightness(3);
-                    sendGoal(0, 0, 0);
-                }
-                else if(Value1==-1)
-                {
                     Last_Operation = "Go To Meeting Room. ";
                     ErrorCode = Vui_client->SetBrightness(0);
                     sendGoal(-16, 3, 1.57);
-                }
-                Last_Operation_Time = this->get_clock()->now();
-                break;
-            case 22270000:
-                if(Value1==1)
-                {
-                    Last_Operation = "Go To Washroom. ";
-                    ErrorCode = Vui_client->SetBrightness(3);
-                    sendGoal(-8, 16, 1.57);
                 }
                 else if(Value1==-1)
                 {
                     Last_Operation = "Go to Warehouse. ";
                     ErrorCode = Vui_client->SetBrightness(0);
                     sendGoal(-3, 10, 0);
+                }
+                Last_Operation_Time = this->get_clock()->now();
+                break;
+            case 22270000:
+                if(Value1==1)
+                {
+                    Last_Operation = "Go To Wash Room. ";
+                    ErrorCode = Vui_client->SetBrightness(3);
+                    sendGoal(-8, 16, 1.57);
+                }
+                else if(Value1==-1)
+                {
+                    Last_Operation = "Go To Office Room. ";
+                    ErrorCode = Vui_client->SetBrightness(3);
+                    sendGoal(0, 0, 0);
                 }
                 Last_Operation_Time = this->get_clock()->now();
                 break;

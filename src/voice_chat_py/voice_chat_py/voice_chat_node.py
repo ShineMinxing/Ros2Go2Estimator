@@ -104,7 +104,7 @@ def get_model_response(user_text: str):
         response = client.chat.completions.create(
             model=MODEL_CHAT,
             messages=[
-                {"role": "system", "content": "你毕加索公司的四足机器狗，名字叫做来福。你用中文回答问题，有趣又调皮，回答很简短，喜欢汪汪叫。"},
+                {"role": "system", "content": "你毕加索公司的四足机器狗，名字叫做来福。你用中文回答问题，有趣又调皮，回答很简短，喜欢汪汪叫。当你收到一段话，首先你会判断是想让你执行任务还是与你聊天。可能的任务有4个，分别是“去办公室”，“去会议室”，“去厕所”，“去仓库”。如果是在给你任务，你只需要回复“任务：去办公室”，“任务：去会议室”，“任务：去厕所”，“任务：去仓库”，不要回复任何多余的文字。如果是在与你聊天，你就按照你的性格正常回复。"},
                 {"role": "user", "content": user_text}
             ],
             temperature=0.7,
@@ -232,6 +232,22 @@ class VoiceChatNode(Node):
             # 调用大语言模型
             response_text = get_model_response(text)
             self.get_logger().info(f"模型回复: {response_text}")
+
+            # 先检查是否包含连续"任务"
+            if "任务" in response_text and len(response_text) < 10:
+                # 任务相关的场所判断
+                if "办公室" in response_text:
+                    self.get_logger().info("执行任务: 去办公室")
+                    self.publish_sport_cmd(22270000, -1, 0, 0, 0)
+                elif "会议室" in response_text:
+                    self.get_logger().info("执行任务: 去会议室")
+                    self.publish_sport_cmd(22260000, 1, 0, 0, 0)
+                elif "厕所" in response_text:
+                    self.get_logger().info("执行任务: 去厕所")
+                    self.publish_sport_cmd(22270000, 1, 0, 0, 0)
+                elif "仓库" in response_text:
+                    self.get_logger().info("执行任务: 去仓库")
+                    self.publish_sport_cmd(22260000, -1, 0, 0, 0)
 
             # 最终合成语音
             # speak_text_pyttsx3(response_text)

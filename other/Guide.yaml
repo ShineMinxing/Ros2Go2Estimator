@@ -25,10 +25,10 @@ amcl:
     # Odom 噪声参数
     alpha1: 0.05
     alpha2: 0.05
-    alpha3: 0.1
-    alpha4: 0.2
-    alpha5: 0.2
-    odom_alpha1: 0.05
+    alpha3: 0.05
+    alpha4: 0.05
+    alpha5: 0.05
+    odom_alpha1: 0.01
     odom_alpha2: 0.05
     odom_alpha3: 0.05
     odom_alpha4: 0.05
@@ -142,6 +142,7 @@ global_costmap:
       use_sim_time: false
       robot_radius: 0.3
       resolution: 0.05
+      lethal_cost_threshold: 30 #~~~~~~~~~~~~~~~~~~
       plugins: ["static_layer", "voxel_layer", "inflation_layer"] # "obstacle_layer",      
 
       voxel_layer:
@@ -177,7 +178,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
-        inflation_radius: 0.5
+        inflation_radius: 0.8
         cost_scaling_factor: 5.0
         inflate_unknown: false
         inflate_around_unknown: true
@@ -196,50 +197,9 @@ local_costmap:
       width: 5
       height: 5
       resolution: 0.05
-      # plugins: ["obstacle_layer", "inflation_layer"]  # 关键：添加插件
-
-      # # 障碍物层配置（使用激光数据）
-      # obstacle_layer:
-      #   plugin: "nav2_costmap_2d::ObstacleLayer"
-      #   enabled: true
-      #   observation_sources: scan
-      #   scan:
-      #     topic: /SMXFE/Scan          # 激光话题需与AMCL一致
-      #     data_type: "LaserScan"
-      #     marking: true
-      #     clearing: true
-      #     obstacle_range: 3.0         # 探测障碍物的最大距离
-      #     raytrace_range: 4.0         # 清除障碍物的最大距离
-
-      # # 膨胀层配置
-      # inflation_layer:
-      #   plugin: "nav2_costmap_2d::InflationLayer"
-      #   enabled: true
-      #   inflation_radius: 0.5         # 膨胀半径需与全局一致
-      #   cost_scaling_factor: 5.0
-
-      voxel_layer:
-        plugin: "nav2_costmap_2d::VoxelLayer"
-        enabled: True
-        footprint_clearing_enabled: true
-        max_obstacle_height: 2.0
-        publish_voxel_map: True
-        origin_z: 0.0
-        z_resolution: 0.05
-        z_voxels: 16
-        max_obstacle_height: 2.0
-        unknown_threshold: 15
-        mark_threshold: 0
-        observation_sources: laser
-        laser:
-          topic: /SMXFE/Scan          # 你的激光话题
-          sensor_frame: base_link     # 你的激光坐标系与base_link相同
-          data_type: LaserScan        # 如果是LaserScan类型
-          marking: true
-          clearing: true
-          obstacle_range: 3.0         # 探测障碍物最大距离
-          raytrace_range: 4.0         # 射线跟踪最大距离
-          inf_is_valid: false 
+      lethal_cost_threshold: 30 #~~~~~~~~~~~~~~~~~~
+      always_send_full_costmap: True
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]  # 关键：添加插件
 
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
@@ -251,8 +211,7 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
-        inflation_radius: 0.5
+        inflation_radius: 0.8
         cost_scaling_factor: 5.0
         inflate_unknown: false
         inflate_around_unknown: true
-      always_send_full_costmap: True

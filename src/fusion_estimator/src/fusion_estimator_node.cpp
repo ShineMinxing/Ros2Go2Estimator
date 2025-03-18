@@ -289,7 +289,10 @@ private:
     {
         if (msg->data == "Estimator_Position_Reset")
         {
-            Sensor_Legs->FootfallPositionRecordIsInitiated = 0;
+            for(int i=0; i<4; i++)
+            {
+                Sensor_Legs->FootfallPositionRecordIsInitiated[i] = 0;
+            }
             StateSpaceModel1_Sensors[0]->EstimatedState[0] = 0;
             StateSpaceModel1_Sensors[0]->EstimatedState[3] = 0;
             StateSpaceModel1_Sensors[0]->EstimatedState[6] = 0;

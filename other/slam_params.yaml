@@ -4,12 +4,12 @@ slam_toolbox:
     # 重要的帧和话题名称
     map_frame: map
     odom_frame: odom
-    base_frame: base_link
+    base_frame: base_link_2D
     scan_topic: /SMXFE/Scan
-    odom_topic: /SMXFE/Odom
+    odom_topic: /SMXFE/Odom_2D
 
     # TF发布频率 (Hz)
-    transform_publish_period: 0.02
+    transform_publish_period: 0.0
     transform_timeout: 0.1
     tf_message_filter_queue_size: 200
 

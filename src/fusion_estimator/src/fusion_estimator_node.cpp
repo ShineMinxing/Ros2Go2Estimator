@@ -46,7 +46,10 @@ public:
 
         FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
             "SMXFE/Estimation", 10);
+
         SMXFE_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMXFE/Odom", 10);
+        
+        SMXFE_2D_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMXFE/Odom_2D", 10);
 
         for(int i = 0; i < 2; i++)
         {
@@ -79,6 +82,7 @@ private:
 
     rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr FETest_publisher;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_2D_publisher;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr Mode_cmd_sub;
     unitree::robot::ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> Lowstate_subscriber;
     std::shared_ptr<DataFusion::SensorIMUAcc> Sensor_IMUAcc; 
@@ -259,13 +263,13 @@ private:
             SMXFE_odom.pose.covariance[i] = 0.0;
         }
         // 位置 (x, y, z) 的协方差设为 0.01
-        SMXFE_odom.pose.covariance[0]  = 0.01;   // x
-        SMXFE_odom.pose.covariance[7]  = 0.01;   // y
-        SMXFE_odom.pose.covariance[14] = 0.01;   // z
+        SMXFE_odom.pose.covariance[0]  = 0.1;   // x
+        SMXFE_odom.pose.covariance[7]  = 0.1;   // y
+        SMXFE_odom.pose.covariance[14] = 0.1;   // z
         // 姿态（roll, pitch, yaw）的协方差设为 0.0001
-        SMXFE_odom.pose.covariance[21] = 0.0001; // roll
-        SMXFE_odom.pose.covariance[28] = 0.0001; // pitch
-        SMXFE_odom.pose.covariance[35] = 0.0001; // yaw
+        SMXFE_odom.pose.covariance[21] = 0.1; // roll
+        SMXFE_odom.pose.covariance[28] = 0.1; // pitch
+        SMXFE_odom.pose.covariance[35] = 0.1; // yaw
 
         // 设置 twist 协方差：6x6 矩阵（行优先排列）
         for (int i = 0; i < 36; ++i) {
@@ -276,12 +280,66 @@ private:
         SMXFE_odom.twist.covariance[7]  = 0.1;   // linear y
         SMXFE_odom.twist.covariance[14] = 0.1;   // linear z
         // 角速度 (x, y, z) 的协方差设为 0.01
-        SMXFE_odom.twist.covariance[21] = 0.01;  // angular x
-        SMXFE_odom.twist.covariance[28] = 0.01;  // angular y
-        SMXFE_odom.twist.covariance[35] = 0.01;  // angular z
+        SMXFE_odom.twist.covariance[21] = 0.1;  // angular x
+        SMXFE_odom.twist.covariance[28] = 0.1;  // angular y
+        SMXFE_odom.twist.covariance[35] = 0.1;  // angular z
 
         // 发布 odometry 消息
         SMXFE_publisher->publish(SMXFE_odom);
+
+        // 新增：构造标准 odometry 消息，并发布
+        nav_msgs::msg::Odometry SMXFE_odom_2D;
+        SMXFE_odom_2D.header.stamp = fusion_msg.stamp;
+        SMXFE_odom_2D.header.frame_id = "odom";
+        SMXFE_odom_2D.child_frame_id = "base_link_2D";
+
+        // 使用 fusion_msg.estimated_xyz 的前 3 个元素作为位置
+        SMXFE_odom_2D.pose.pose.position.x = fusion_msg.estimated_xyz[0];
+        SMXFE_odom_2D.pose.pose.position.y = fusion_msg.estimated_xyz[3];
+        SMXFE_odom_2D.pose.pose.position.z = 0;
+
+        // 使用 fusion_msg.estimated_rpy 的前 3 个元素（roll, pitch, yaw）转换为四元数
+        q.setRPY(0, 0, fusion_msg.estimated_rpy[6]);
+        SMXFE_odom_2D.pose.pose.orientation = tf2::toMsg(q);
+
+        // 线速度：使用 fusion_msg.estimated_xyz 的索引 1, 4, 7
+        SMXFE_odom_2D.twist.twist.linear.x = fusion_msg.estimated_xyz[1];
+        SMXFE_odom_2D.twist.twist.linear.y = fusion_msg.estimated_xyz[4];
+        SMXFE_odom_2D.twist.twist.linear.z = fusion_msg.estimated_xyz[7];
+
+        // 角速度：使用 fusion_msg.estimated_rpy 的索引 1, 4, 7
+        SMXFE_odom_2D.twist.twist.angular.x = fusion_msg.estimated_rpy[1];
+        SMXFE_odom_2D.twist.twist.angular.y = fusion_msg.estimated_rpy[4];
+        SMXFE_odom_2D.twist.twist.angular.z = fusion_msg.estimated_rpy[7];
+
+        // 设置位姿（pose）协方差：6x6 矩阵（行优先排列）
+        // 初始化全部置零
+        for (int i = 0; i < 36; ++i) {
+            SMXFE_odom_2D.pose.covariance[i] = 0.0;
+        }
+        // 位置 (x, y, z) 的协方差设为 0.01
+        SMXFE_odom_2D.pose.covariance[0]  = 0.1;   // x
+        SMXFE_odom_2D.pose.covariance[7]  = 0.1;   // y
+        SMXFE_odom_2D.pose.covariance[14] = 0.1;   // z
+        // 姿态（roll, pitch, yaw）的协方差设为 0.0001
+        SMXFE_odom_2D.pose.covariance[21] = 0.1; // roll
+        SMXFE_odom_2D.pose.covariance[28] = 0.1; // pitch
+        SMXFE_odom_2D.pose.covariance[35] = 0.1; // yaw
+
+        // 设置 twist 协方差：6x6 矩阵（行优先排列）
+        for (int i = 0; i < 36; ++i) {
+            SMXFE_odom_2D.twist.covariance[i] = 0.0;
+        }
+        // 线速度 (x, y, z) 的协方差设为 0.1
+        SMXFE_odom_2D.twist.covariance[0]  = 0.1;   // linear x
+        SMXFE_odom_2D.twist.covariance[7]  = 0.1;   // linear y
+        SMXFE_odom_2D.twist.covariance[14] = 0.1;   // linear z
+        // 角速度 (x, y, z) 的协方差设为 0.01
+        SMXFE_odom_2D.twist.covariance[21] = 0.1;  // angular x
+        SMXFE_odom_2D.twist.covariance[28] = 0.1;  // angular y
+        SMXFE_odom_2D.twist.covariance[35] = 0.1;  // angular z
+
+        SMXFE_2D_publisher->publish(SMXFE_odom_2D);
     }
 
     // 回调函数，处理SportCmd消息

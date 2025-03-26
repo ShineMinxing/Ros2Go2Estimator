@@ -7,7 +7,7 @@
 - message_handel包完成SMXFE/Odom和SMXFE/Odom_2D的tf，此外，将机器狗提供的“base_link”的话题/utlidar/cloud转换为“base_link_2D”话题/SMXFE/Scan；
 - sport_control包读取joystick输入、voice_chat指令，使用unitree_sdk2提供的接口控制机器狗；
 - 使用SLAM Toolbox建图时放开sport_control/launch/sport_control_launch.py的ros2 run slam_toolbox async_slam_toolbox_node ......；
-- 使用Nav2导航时放开sport_control/launch/sport_control_launch.py的ros2 run slam_toolbox async_slam_toolbox_node ......；
+- 使用Nav2导航时放开sport_control/launch/sport_control_launch.py的ros2 launch nav2_bringup bringup_launch.py ......；
 - voice_chat_py监听麦克风，听到唤醒词“来福”时，开启录制，VOSK语音转文字，Deepseek API联网获取文字回复，CosyVoice2/pyttsx3文本转语音并播放。
 
 ## 📚 补充说明

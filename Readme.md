@@ -48,10 +48,14 @@
 sudo apt install ros-humble-joy
 sudo apt install ros-humble-rmw-cyclonedds-cpp
 sudo apt install ros-humble-rosidl-generator-dds-idl
+sudo apt install ros-humble-nav2-msgs
+sudo apt install ros-humble-slam-toolbox ros-humble-nav2-bringup
+sudo apt install portaudio19-dev ffmpeg libasound-dev python3-pyaudio python3-pip
+pip3 install pyaudio pydub pygame vosk pyttsx3 "openai>=1.0" --user
 git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
 cd Ros2Go2Estimator
 colcon build
-ros2 launch joystick_control joystick_control_launch.py
+ros2 launch sport_control sport_control_launch.py
 # Voice_chat_py具体需要安装的依赖没有整理，可以把代码扔给大模型问它需要装什么，也可以删除此包，不影响使用。
 ```
 - 记得在src/joystick_control/launch/joystick_control_launch.py中，修改机器狗的网口名，我个人的是“enx00e04c8d0eff”。

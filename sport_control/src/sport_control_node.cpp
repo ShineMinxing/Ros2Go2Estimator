@@ -3,6 +3,9 @@
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "nav_msgs/msg/odometry.hpp"
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav2_msgs/action/navigate_to_pose.hpp>
@@ -41,11 +44,15 @@ public:
         sport_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             "SMXFE/SportCmd", 10, std::bind(&JoystickControlNode::sport_cmd_callback, this, std::placeholders::_1));
 
-
         // 创建订阅者，订阅导航话题
         guide_sub = this->create_subscription<geometry_msgs::msg::Twist>(
             "/cmd_vel", 10,
             std::bind(&JoystickControlNode::guide_callback, this, std::placeholders::_1));
+
+        // 创建 odom 消息订阅者
+        odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+            "SMXFE/Odom", 10, std::bind(&JoystickControlNode::odom_callback, this, std::placeholders::_1));
+        
         
         // 用于发布语音对话控制命令到 "voice_chat/control" 话题
         sport_cmd_pub = this->create_publisher<std_msgs::msg::String>("SMXFE/ModeCmd", 10);
@@ -73,11 +80,16 @@ private:
     std::unique_ptr<unitree::robot::go2::SportClient> sport_client;
     std::unique_ptr<unitree::robot::b2::MotionSwitcherClient> motion_client;
     std::unique_ptr<unitree::robot::go2::VuiClient> Vui_client;
+
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr sport_cmd_sub;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr sport_cmd_pub;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr guide_sub;
     double guide_x_vel = 0, guide_y_vel = 0, guide_yaw_vel = 0;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+    double current_x = 0, current_y = 0, current_z = 0, current_roll = 0, current_pitch= 0, current_yaw = 0;
+
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr sport_cmd_pub;
+
     rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr nav_to_pose_client;
 
     // 获取按钮输入状态
@@ -134,12 +146,12 @@ private:
         }
     }
 
+    // 回调函数，处理导航消息
     void guide_callback(const geometry_msgs::msg::Twist::SharedPtr msg) {
         guide_x_vel = msg->linear.x;
         guide_y_vel = msg->linear.y;
         guide_yaw_vel = msg->angular.z;
     }
-
     void sendGoal(double x, double y, double yaw_degs)
     {
         if (!nav_to_pose_client) {
@@ -176,7 +188,6 @@ private:
             "Sending goal to (%.2f, %.2f) with yaw=%.2f deg",
             x, y, yaw_degs
     );
-
     // 2. 定义发送目标时的回调选项（可选：结果回调、反馈回调等）
     rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions send_goal_options;
     send_goal_options.result_callback =
@@ -196,10 +207,27 @@ private:
             break;
         }
         };
-
     // 3. 异步发送目标
     nav_to_pose_client->async_send_goal(goal_msg, send_goal_options);
-}
+    }
+
+    // odom 回调函数，将数据赋值给 current_x、current_y、current_z 和欧拉角
+    void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
+    {
+        // 赋值位置信息
+        current_x = msg->pose.pose.position.x;
+        current_y = msg->pose.pose.position.y;
+        current_z = msg->pose.pose.position.z;
+
+        // 通过 tf2 将四元数转换成欧拉角 (roll, pitch, yaw)
+        tf2::Quaternion q(
+            msg->pose.pose.orientation.x,
+            msg->pose.pose.orientation.y,
+            msg->pose.pose.orientation.z,
+            msg->pose.pose.orientation.w);
+        tf2::Matrix3x3 m(q);
+        m.getRPY(current_roll, current_pitch, current_yaw);
+    }
 
     void obtain_key_value(const sensor_msgs::msg::Joy::SharedPtr msg)
     {
@@ -287,12 +315,22 @@ private:
         }
         std::cout << std::endl;
 
-        // 打印摇杆数据，使用 std::cout
+        // 打印摇杆数据
         std::cout << std::fixed << std::setprecision(1); 
         for (int i = 0; i < 8; ++i)
         {
             std::cout << i << ": " << Axes[i] <<"; ";
         }
+        std::cout << std::endl;
+
+        // 打印机器人位置
+        std::cout << std::fixed << std::setprecision(1); 
+        std::cout << "X: " << current_x <<"; ";
+        std::cout << "Y: " << current_y <<"; ";
+        std::cout << "Z: " << current_z <<"; ";
+        std::cout << "Roll: " << current_roll <<"; ";
+        std::cout << "Pitch: " << current_pitch <<"; ";
+        std::cout << "Yaw: " << current_yaw <<"; ";
         std::cout << std::endl;
     }
 

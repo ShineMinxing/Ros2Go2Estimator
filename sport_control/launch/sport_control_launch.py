@@ -60,6 +60,7 @@ def generate_launch_description():
                         '-c',
                         'source ~/.bashrc && '
                         'ros2 run fusion_estimator fusion_estimator_node --ros-args -p network_interface:=enx00e04c8d0eff & '
+                        'ros2 run dds_rostopic dds_rostopic_node --ros-args -p network_interface:=enx00e04c8d0eff & '
                         'ros2 run message_handle message_handle_node;'
                         'read -p "Press enter to close"'
                     ],

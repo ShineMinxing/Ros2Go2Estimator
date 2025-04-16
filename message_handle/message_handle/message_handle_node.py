@@ -88,7 +88,7 @@ class MssageHandleNode(Node):
 
         self.subscription = self.create_subscription(
             PointCloud2,
-            '/utlidar/cloud',
+            '/SMXFE/Cloud',
             self.pointcloud_callback,
             10
         )

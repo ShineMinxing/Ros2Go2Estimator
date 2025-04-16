@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'voice_chat_py'
+package_name = 'voice_chat'
 
 setup(
     name=package_name,
@@ -22,7 +22,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'voice_chat_node = voice_chat_py.voice_chat_node:main'
+            'voice_chat_node = voice_chat.voice_chat_node:main'
         ],
     },
 )

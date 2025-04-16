@@ -27,8 +27,8 @@ public:
     FusionEstimatorNode() 
     : Node("fusion_estimator_node")
     {
-        // 通过参数获取网络接口名称，设置默认值为 "enxc8a3627ff10b" 或其他有效接口
-        this->declare_parameter<std::string>("network_interface", "enxc8a3627ff10b");
+        // 通过参数获取网络接口名称，设置默认值为 "enx00e04c8d0eff" 或其他有效接口
+        this->declare_parameter<std::string>("network_interface", "enx00e04c8d0eff");
         std::string network_interface = this->get_parameter("network_interface").as_string();
 
         // 初始化Unitree通道工厂

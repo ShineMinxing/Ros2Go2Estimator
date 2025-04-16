@@ -8,7 +8,7 @@
 - sport_control包读取joystick输入、voice_chat指令，使用unitree_sdk2提供的接口控制机器狗；
 - 使用SLAM Toolbox建图时放开sport_control/launch/sport_control_launch.py的启动项ros2 run slam_toolbox async_slam_toolbox_node ......；
 - 使用Nav2导航时放开sport_control/launch/sport_control_launch.py的启动项ros2 launch nav2_bringup bringup_launch.py ......；
-- voice_chat_py监听麦克风，听到唤醒词“来福”时，开启录制，VOSK语音转文字，Deepseek API联网获取文字回复，CosyVoice2/pyttsx3文本转语音并播放。
+- voice_chat监听麦克风，听到唤醒词“来福”时，开启录制，VOSK语音转文字，Deepseek API联网获取文字回复，CosyVoice2/pyttsx3文本转语音并播放。
 
 ## 📚 补充说明
 - 切换两足、四足无需在估计器内做模式切换
@@ -18,7 +18,7 @@
 - 目前没有调整参数做补偿，工程使用时可进一步提升精度
 - SLAM Toolbox目前是纯里程计建图，请擅长SLAM的同志自行把地图匹配加进去
 - Nav2同样请自行调整，加载的地图记得改成自己的
-- voice_chat_py可用于语音交流，但需要安装各种依赖，用不到的同志直接删除这个package即可，不影响其他包的运行；如长期使用，请把api_key换成您自己的https://cloud.siliconflow.cn/i/5kSHnwpA
+- voice_chat可用于语音交流，但需要安装各种依赖，用不到的同志直接删除这个package即可，不影响其他包的运行；如长期使用，请把api_key换成您自己的https://cloud.siliconflow.cn/i/5kSHnwpA
 
 ## 🎥 视频演示
 ### 最新进展(点击图片进入视频)
@@ -45,18 +45,13 @@
 
 - Use Ubuntu 22.04, ROS2 Humble
 ```bash
-sudo apt install ros-humble-joy
-sudo apt install ros-humble-rmw-cyclonedds-cpp
-sudo apt install ros-humble-rosidl-generator-dds-idl
-sudo apt install ros-humble-nav2-msgs
-sudo apt install ros-humble-slam-toolbox ros-humble-nav2-bringup
-sudo apt install portaudio19-dev ffmpeg libasound-dev python3-pyaudio python3-pip
+sudo apt install ros-humble-joy ros-humble-nav2-msgs ros-humble-slam-toolbox ros-humble-nav2-bringup portaudio19-dev ffmpeg libasound-dev python3-pyaudio python3-pip
 pip3 install pyaudio pydub pygame vosk pyttsx3 "openai>=1.0" --user
 git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
 cd Ros2Go2Estimator
 colcon build
 ros2 launch sport_control sport_control_launch.py
-# Voice_chat_py具体需要安装的依赖没有整理，可以把代码扔给大模型问它需要装什么，也可以删除此包，不影响使用。
+# voice_chat具体需要安装的依赖没有整理，可以把代码扔给大模型问它需要装什么，也可以删除此包，不影响使用。
 ```
 - 记得在src/joystick_control/launch/joystick_control_launch.py中，修改机器狗的网口名，我个人的是“enx00e04c8d0eff”。
 - 同时按下手柄的LT、RT，解锁/锁定手柄；按住RT+左摇杆进行移动；按住RT+右摇杆进行旋转；更多操作请看joystick_control_node.cpp。

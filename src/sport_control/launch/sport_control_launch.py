@@ -7,7 +7,7 @@ def generate_launch_description():
     return LaunchDescription([
         # 第 1 组：立即启动
         Node(
-            package='voice_chat_py',
+            package='voice_chat',
             executable='voice_chat_node',
             name='voice_chat_node',
             output='screen'
@@ -39,7 +39,7 @@ def generate_launch_description():
                         'bash',
                         '-c',
                         'source ~/.bashrc && '
-                        'rviz2 -d /home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/SMXFE_odm.rviz; '
+                        'rviz2 -d /home/smx/ros2_ws/Ros2Go2Estimator/other/SMXFE_odm.rviz; '
                         'read -p "Press enter to close"'
                     ],
                     output='screen',
@@ -80,10 +80,10 @@ def generate_launch_description():
                         'bash',
                         '-c',
                         'source ~/.bashrc && '
-                        'ros2 run slam_toolbox async_slam_toolbox_node --ros-args --params-file /home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/slam_params.yaml&'
+                        'ros2 run slam_toolbox async_slam_toolbox_node --ros-args --params-file /home/smx/ros2_ws/Ros2Go2Estimator/other/slam_params.yaml&'
                         # 'ros2 launch nav2_bringup bringup_launch.py \
-                        #     map:=/home/smx/unitree_ros2_250221/Ros2Go2Estimator/local_file/map_new.yaml \
-                        #     params_file:=/home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/Guide.yaml; '
+                        #     map:=/home/smx/ros2_ws/Ros2Go2Estimator/local_file/map_new.yaml \
+                        #     params_file:=/home/smx/ros2_ws/Ros2Go2Estimator/other/Guide.yaml; '
                         'read -p "Press enter to close"'
                     ],
                     output='screen',
@@ -92,7 +92,7 @@ def generate_launch_description():
         ),
     ]
 
-    # rviz2 -d /home/smx/unitree_ros2_250221/Ros2Go2Estimator/other/SMXFE_odm.rviz
+    # rviz2 -d /home/smx/ros2_ws/Ros2Go2Estimator/other/SMXFE_odm.rviz
     # ros2 run rqt_tf_tree rqt_tf_tree
 )
 

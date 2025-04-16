@@ -50,7 +50,7 @@ amcl:
 
 map_server:
   ros__parameters:
-    yaml_filename: "/home/smx/ros2_ws/Ros2Go2Estimator/local_file/map_new.yaml"
+    yaml_filename: "~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/local_file/map_new.yaml"
 
 bt_navigator:
   ros__parameters:

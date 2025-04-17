@@ -114,8 +114,8 @@ class MssageHandleNode(Node):
         self.angle_increment = 0.0056
         self.range_min = 0.1
         self.range_max = 30.0
-        self.min_height = 0.5
-        self.max_height = 1.0
+        self.min_height = 0.15
+        self.max_height = 3.0
         self.odom_counter = 0
         self.odom_2D_counter = 0
 

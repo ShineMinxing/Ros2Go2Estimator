@@ -5,8 +5,8 @@ slam_toolbox:
     map_frame: map
     odom_frame: odom
     base_frame: base_link_2D
-    scan_topic: /SMXFE/Scan
-    odom_topic: /SMXFE/Odom_2D
+    scan_topic: /SMX/Scan
+    odom_topic: /SMX/Odom_2D
 
     # TF发布频率 (Hz)
     transform_publish_period: 0.0

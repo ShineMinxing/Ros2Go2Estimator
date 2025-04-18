@@ -88,22 +88,22 @@ class MssageHandleNode(Node):
 
         self.subscription = self.create_subscription(
             PointCloud2,
-            '/SMXFE/Cloud',
+            '/SMX/Go2Lidar',
             self.pointcloud_callback,
             10
         )
-        self.publisher_ = self.create_publisher(LaserScan, '/SMXFE/Scan', 10)
+        self.publisher_ = self.create_publisher(LaserScan, '/SMX/Scan', 10)
 
         self.odom_sub = self.create_subscription(
             Odometry,
-            '/SMXFE/Odom',
+            '/SMX/Odom',
             self.odom_callback,
             10
         )
 
         self.odom_2D_sub = self.create_subscription(
             Odometry,
-            '/SMXFE/Odom_2D',
+            '/SMX/Odom_2D',
             self.odom_2D_callback,
             10
         )

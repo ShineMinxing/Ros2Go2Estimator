@@ -11,7 +11,7 @@ amcl:
     global_frame_id: "map"
 
     # 激光相关
-    scan_topic: "/SMXFE/Scan"
+    scan_topic: "/SMX/Scan"
     laser_model_type: "likelihood_field"
     laser_max_range: 30.0
     laser_min_range: 0.1
@@ -20,7 +20,7 @@ amcl:
 
     # 运动模型 (Omni表明全向；若是差速轮建议用 nav2_amcl::DifferentialMotionModel)
     motion_model: "nav2_amcl::OmniMotionModel"
-    odom_topic: "/SMXFE/Odom"
+    odom_topic: "/SMX/Odom"
 
     # Odom 噪声参数
     alpha1: 0.05
@@ -57,7 +57,7 @@ bt_navigator:
     use_sim_time: false
     global_frame: map
     robot_base_frame: base_link
-    odom_topic: "/SMXFE/Odom"
+    odom_topic: "/SMX/Odom"
     progress_checker_plugins: ["progress_checker"]
     goal_checker_plugins: ["goal_checker"]
     progress_checker:
@@ -159,7 +159,7 @@ global_costmap:
         mark_threshold: 0
         observation_sources: laser
         laser:
-          topic: /SMXFE/Scan          # 你的激光话题
+          topic: /SMX/Scan          # 你的激光话题
           sensor_frame: base_link     # 你的激光坐标系与base_link相同
           data_type: LaserScan        # 如果是LaserScan类型
           marking: true

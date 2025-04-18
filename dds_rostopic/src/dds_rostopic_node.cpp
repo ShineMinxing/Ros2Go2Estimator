@@ -33,10 +33,10 @@ public:
     unitree::robot::ChannelFactory::Instance()->Init(0, network_if.c_str());
 
     // 2. 创建 ROS2 Publisher（发布标准的 PointCloud2）
-    pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("SMXFE/Cloud", 10);
+    pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("SMX/Go2Lidar", 10);
     
     // 3. 创建 ROS2 Publisher（发布视频流）
-    pub_camera_ = this->create_publisher<sensor_msgs::msg::Image>("SMXFE/Go2Camera", 10);
+    pub_camera_ = this->create_publisher<sensor_msgs::msg::Image>("SMX/Go2Camera", 10);
 
     // 4. 创建 DDS 订阅者
     subscriber_ = std::make_unique<unitree::robot::ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>>(TOPIC_CLOUD);

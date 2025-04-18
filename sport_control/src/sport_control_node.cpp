@@ -42,7 +42,7 @@ public:
 
         // 创建订阅者，订阅/SportCmd话题
         sport_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-            "SMXFE/SportCmd", 10, std::bind(&JoystickControlNode::sport_cmd_callback, this, std::placeholders::_1));
+            "SMX/sport_cmd", 10, std::bind(&JoystickControlNode::sport_cmd_callback, this, std::placeholders::_1));
 
         // 创建订阅者，订阅导航话题
         guide_sub = this->create_subscription<geometry_msgs::msg::Twist>(
@@ -51,11 +51,11 @@ public:
 
         // 创建 odom 消息订阅者
         odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-            "SMXFE/Odom", 10, std::bind(&JoystickControlNode::odom_callback, this, std::placeholders::_1));
+            "SMX/Odom", 10, std::bind(&JoystickControlNode::odom_callback, this, std::placeholders::_1));
         
         
         // 用于发布语音对话控制命令到 "voice_chat/control" 话题
-        sport_cmd_pub = this->create_publisher<std_msgs::msg::String>("SMXFE/ModeCmd", 10);
+        sport_cmd_pub = this->create_publisher<std_msgs::msg::String>("SMX/JoystickCmd", 10);
 
         // 记录初始化时的时间
         Last_Operation_Time = this->get_clock()->now();
@@ -288,7 +288,7 @@ private:
                 ContinuousGaitEnable = 0;
                 ErrorCode = motion_client->SelectMode("normal");
                 ChattingEnable = 0;
-                publishVoiceChatCommand("stop");
+                publishVoiceChatCommand("voice chat stop");
             }
         }
 
@@ -388,7 +388,7 @@ private:
         }
         else if(Axes[2] < -0.5 && Axes[5] > 0.9 && JoystickEnable && !AIModeEnable && Last_Operation_Duration_Time > 0.5) // 常规模式，只按住LT键
         {
-            Actions(20212324,Axes[0],Axes[1],Axes[3],Axes[4]);
+            Actions(20212324,Axes[3],Axes[4],0,0);
             if(Buttons[0])
             {
                 Actions(22100000,0,0,0,0);
@@ -616,27 +616,19 @@ private:
                 break;
             
             case 20212324:
-                if(abs(Value1)>0.1 || abs(Value2)>0.1 || abs(Value3)>0.1 || abs(Value4)>0.1)
+                if(abs(Value1)>0.1 || abs(Value2)>0.1)
                 {
-                    float RollAngle = -0.75 * SpeedScalse * Value1;
-                    float PitchAngle = 0.75 * SpeedScalse * Value2;
-                    float YawAngle = 0.6 * SpeedScalse * Value3;
-                    float Height = 0.03 * SpeedScalse * Value4;
+                    float YawAngle = 0.6 * Value1;
+                    float PitchAngle = -0.75 * Value2;
         
-                    if(Height<=0)
-                        Height = Height / 0.03 * 0.18;
-        
-                    Last_Operation = "RollAngle: " + std::to_string(RollAngle) 
-                    + "; PitchAngle: " + std::to_string(PitchAngle)
-                    + "; YawAngle: " + std::to_string(YawAngle)
-                    + "; Height: " + std::to_string(Height);
+                    Last_Operation = "PitchAngle: " + std::to_string(PitchAngle)
+                    + "; YawAngle: " + std::to_string(YawAngle);
         
                     Last_Operation_Time = this->get_clock()->now();
         
                     std::cout << "Twisting... " << std::endl;
         
-                    ErrorCode = sport_client->Euler(RollAngle, PitchAngle, YawAngle);
-                    ErrorCode = sport_client->BodyHeight(Height);
+                    ErrorCode = sport_client->Euler(0.0, PitchAngle, YawAngle);
                 }
                 break;
             case 22100000:
@@ -665,13 +657,13 @@ private:
                 {
                     Last_Operation = "Listening. ";
                     ErrorCode = Vui_client->SetBrightness(3);
-                    publishVoiceChatCommand("start");
+                    publishVoiceChatCommand("voice chat start");
                 }
                 else
                 {
                     Last_Operation = "Replying. ";
                     ErrorCode = Vui_client->SetBrightness(0);
-                    publishVoiceChatCommand("stop");
+                    publishVoiceChatCommand("voice chat stop");
                 }
                 Last_Operation_Time = this->get_clock()->now();
                 break;

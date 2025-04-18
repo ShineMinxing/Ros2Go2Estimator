@@ -42,14 +42,14 @@ public:
 
         // 创建订阅者，订阅/ModeCmd话题
         Mode_cmd_sub = this->create_subscription<std_msgs::msg::String>(
-            "SMXFE/ModeCmd", 10, std::bind(&FusionEstimatorNode::mode_cmd_callback, this, std::placeholders::_1));
+            "SMX/JoystickCmd", 10, std::bind(&FusionEstimatorNode::mode_cmd_callback, this, std::placeholders::_1));
 
         FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
-            "SMXFE/Estimation", 10);
+            "SMX/Estimation", 10);
 
-        SMXFE_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMXFE/Odom", 10);
+        SMXFE_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMX/Odom", 10);
         
-        SMXFE_2D_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMXFE/Odom_2D", 10);
+        SMXFE_2D_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMX/Odom_2D", 10);
 
         for(int i = 0; i < 2; i++)
         {

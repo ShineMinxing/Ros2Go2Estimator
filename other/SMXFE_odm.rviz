@@ -111,7 +111,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /SMXFE/Scan
+        Value: /SMX/Scan
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -145,7 +145,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /SMXFE/Cloud
+        Value: /SMX/Go2Lidar
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -265,7 +265,7 @@ Visualization Manager:
         Durability Policy: System Default
         History Policy: Keep Last
         Reliability Policy: System Default
-        Value: /SMXFE/Go2Camera
+        Value: /SMX/Go2Camera
       Value: true
   Enabled: true
   Global Options:

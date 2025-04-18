@@ -3,22 +3,19 @@
 
 - 一种高精度里程计解决方案，
 - 基于纯运动学的双足/四足机器人位置估计算法，目前仅使用IMU、足压力传感器、关节角度和角速度，不依赖相机或Lidar，但可将信号融合进去，进一步提高估计精度；
-- fusion_estimator包发布对应“base_link”的话题SMXFE/Odom和对应“base_link_2D”的话题SMXFE/Odom_2D；
-- message_handel包完成SMXFE/Odom和SMXFE/Odom_2D的tf，此外，将机器狗提供的“utlidar_lidar”的话题/utlidar/cloud转换为“base_link_2D”话题/SMXFE/Scan；
-- sport_control包读取joystick输入、voice_chat指令，使用unitree_sdk2提供的接口控制机器狗；
+- sport_control包读取joystick输入和其他指令，使用unitree_sdk2提供的接口控制机器狗；
+- fusion_estimator包发布对应“base_link”的话题SMX/Odom和对应“base_link_2D”的话题SMX/Odom_2D；
+- dds_rostopic包将dds的lidar、230.1.1.1:1720的相机数据发布为ros2话题；
+- message_handle包完成SMX/Odom和SMX/Odom_2D的tf，此外，将frame“utlidar_lidar”的pointcloud2转换为“base_link_2D”话题/SMX/Scan；
 - 使用SLAM Toolbox建图时放开sport_control/launch/sport_control_launch.py的启动项ros2 run slam_toolbox async_slam_toolbox_node ......；
 - 使用Nav2导航时放开sport_control/launch/sport_control_launch.py的启动项ros2 launch nav2_bringup bringup_launch.py ......；
 
 ## 📚 补充说明
 - 切换两足、四足无需在估计器内做模式切换
-- 两足站立行走误差率1%  
-- 动态行走模式误差率0.5%
-- 支持长距离定位
 - 目前没有调整参数做补偿，工程使用时可进一步提升精度
 - SLAM Toolbox目前是纯里程计建图，请擅长SLAM的同志自行把地图匹配加进去
 - Nav2同样请自行调整，加载的地图记得改成自己的
-- voice_chat监听麦克风，听到唤醒词“来福”时，开启录制，VOSK语音转文字，Deepseek API联网获取文字回复，CosyVoice2/pyttsx3文本转语音并播放。
-- voice_chat被转移到我的另一个库Ros2Chat中，它可用于语音交流，但需要安装各种依赖；如长期使用，请把api_key换成您自己的https://cloud.siliconflow.cn/i/5kSHnwpA
+- 可安装voice_chat进行deepseek的语音交流https://github.com/ShineMinxing/Ros2Chat
 
 ## 🎥 视频演示
 ### 最新进展(点击图片进入视频)
@@ -35,18 +32,14 @@
 3. 长距离测试，受磁场变化影响，380米运动偏差3.3%
 [![实验3](https://i0.hdslb.com/bfs/archive/481731d2db755bbe087f44aeb3f48db29c159ada.jpg)](https://www.bilibili.com/video/BV1BhRAYDEsV/)
 
-4. 语音控制机器狗，DeepSeek大模型语音交流
-[![实验4](https://i0.hdslb.com/bfs/archive/6aaac2a8d2726fa2c7d77f20544c9692f9fb752f.jpg)](https://www.bilibili.com/video/BV1YjQVYcEdX/)
-
-5. 语音控制机器狗，实现意图猜测和在预建地图导航。比如说“没有纸张了”，自动执行导航‘去仓库’
-[![实验5](https://i2.hdslb.com/bfs/archive/5b95c6eda3b6c9c8e0ba4124c1af9f3da10f39d2.jpg)](https://www.bilibili.com/video/BV1HCQBYUEvk/)
+4. 语音控制机器狗，实现意图猜测和在预建地图导航。比如说“没有纸张了”，自动执行导航‘去仓库’
+[![实验4](https://i2.hdslb.com/bfs/archive/5b95c6eda3b6c9c8e0ba4124c1af9f3da10f39d2.jpg)](https://www.bilibili.com/video/BV1HCQBYUEvk/)
 
 ## ⚙️ 安装指南
 
 - Use Ubuntu 22.04, ROS2 Humble
 ```bash
-sudo apt install ros-humble-joy ros-humble-nav2-msgs ros-humble-slam-toolbox ros-humble-nav2-bringup portaudio19-dev ffmpeg libasound-dev python3-pyaudio python3-pip libopencv-dev ros-humble-cv-bridge
-pip3 install pyaudio pydub pygame vosk pyttsx3 "openai>=1.0" --user
+sudo apt install ros-humble-joy ros-humble-nav2-msgs ros-humble-slam-toolbox ros-humble-nav2-bringup python3-pip libopencv-dev ros-humble-cv-bridge
 mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
 cd ..

@@ -16,6 +16,7 @@
 - SLAM Toolbox目前是纯里程计建图，请擅长SLAM的同志自行把地图匹配加进去
 - Nav2同样请自行调整，加载的地图记得改成自己的
 - 可安装voice_chat进行deepseek的语音交流https://github.com/ShineMinxing/Ros2Chat
+- 也适用于foxy系统，把apt install的软件改为-foxy-即可
 
 ## 🎥 视频演示
 ### 最新进展(点击图片进入视频)

@@ -42,7 +42,7 @@ public:
 
         // 创建订阅者，订阅/SportCmd话题
         sport_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-            "SMX/sport_cmd", 10, std::bind(&JoystickControlNode::sport_cmd_callback, this, std::placeholders::_1));
+            "SMX/SportCmd", 10, std::bind(&JoystickControlNode::sport_cmd_callback, this, std::placeholders::_1));
 
         // 创建订阅者，订阅导航话题
         guide_sub = this->create_subscription<geometry_msgs::msg::Twist>(

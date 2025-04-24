@@ -1,7 +1,7 @@
 import launch
 from launch_ros.actions import Node
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, SetEnvironmentVariable, TimerAction  # 新增 TimerAction
+from launch.actions import ExecuteProcess, TimerAction  # 新增 TimerAction
 
 def generate_launch_description():
     return LaunchDescription([
@@ -22,7 +22,7 @@ def generate_launch_description():
                 '-c', 
                 'source ~/.bashrc && '
                 'ros2 run joy joy_node & '
-                'ros2 run sport_control sport_control_node --ros-args -p network_interface:=enx00e04c8d0eff;'
+                'ros2 run sport_control sport_control_node --ros-args -p network_interface:=enx00e04c362b5e; '
                 'read -p "Press enter to close"'
             ],
             output="screen",
@@ -39,17 +39,16 @@ def generate_launch_description():
                         'bash',
                         '-c',
                         'source ~/.bashrc && '
-                        'rviz2 -d ~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/SMXFE_odm.rviz; '
+                        'ros2 run fusion_estimator fusion_estimator_node --ros-args -p network_interface:=enx00e04c362b5e;'
                         'read -p "Press enter to close"'
                     ],
-                    output='screen',
-                )
+                    output="screen",
+                ),
             ]
         ),
 
-        # 第 2 组：延迟 3 秒启动
         TimerAction(
-            period=3.0,
+            period=2.0,
             actions=[
                 ExecuteProcess(
                     cmd=[
@@ -59,9 +58,8 @@ def generate_launch_description():
                         'bash',
                         '-c',
                         'source ~/.bashrc && '
-                        'ros2 run fusion_estimator fusion_estimator_node --ros-args -p network_interface:=enx00e04c8d0eff & '
-                        'ros2 run dds_rostopic dds_rostopic_node --ros-args -p network_interface:=enx00e04c8d0eff & '
-                        'ros2 run message_handle message_handle_node;'
+                        'ros2 run dds_rostopic dds_rostopic_node --ros-args -p network_interface:=enx00e04c362b5e & '
+                        'ros2 run message_handle message_handle_node; '
                         'read -p "Press enter to close"'
                     ],
                     output="screen",
@@ -69,7 +67,6 @@ def generate_launch_description():
             ]
         ),
 
-        # 第 3 组：延迟 6 秒启动（即第 2 组启动后 3 秒）
         TimerAction(
             period=5.0,
             actions=[
@@ -81,10 +78,11 @@ def generate_launch_description():
                         'bash',
                         '-c',
                         'source ~/.bashrc && '
-                        'ros2 run slam_toolbox async_slam_toolbox_node --ros-args --params-file ~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/slam_params.yaml&'
-                        # 'ros2 launch nav2_bringup bringup_launch.py \
-                        #     map:=~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/local_file/map_new.yaml \
-                        #     params_file:=~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/Guide.yaml; '
+                        'ros2 run slam_toolbox async_slam_toolbox_node --ros-args --params-file ~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/slam_params.yaml & '
+                        # 'ros2 launch nav2_bringup bringup_launch.py '
+                        #     'map:=~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/local_file/map_new.yaml '
+                        #     'params_file:=~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/Guide.yaml; '
+                        'rviz2 -d ~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/SMXFE_odm.rviz;'
                         'read -p "Press enter to close"'
                     ],
                     output='screen',
@@ -92,8 +90,8 @@ def generate_launch_description():
             ]
         ),
     ]
+)
+
 # ros2 run nav2_map_server map_saver_cli -f /home/smx/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/local_file/new_map --fmt png
 # rviz2 -d ~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/SMXFE_odm.rviz
 # ros2 run rqt_tf_tree rqt_tf_tree
-)
-

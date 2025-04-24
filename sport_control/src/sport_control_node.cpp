@@ -1,7 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "std_msgs/msg/float64_multi_array.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include <tf2/LinearMath/Quaternion.h>
@@ -26,8 +26,8 @@ class JoystickControlNode : public rclcpp::Node
 public:
     JoystickControlNode() : Node("sport_control_node")
     {
-        // 通过参数获取网络接口名称，设置默认值为 "enx00e04c8d0eff" 或其他有效接口
-        this->declare_parameter<std::string>("network_interface", "enx00e04c8d0eff");
+        // 通过参数获取网络接口名称，设置默认值为 "enx00e04c362b5e" 或其他有效接口
+        this->declare_parameter<std::string>("network_interface", "enx00e04c362b5e");
         std::string network_interface = this->get_parameter("network_interface").as_string();
 
         // 初始化Unitree通道工厂
@@ -41,11 +41,15 @@ public:
             "/joy", 10, std::bind(&JoystickControlNode::joy_callback, this, std::placeholders::_1));
 
         // 创建订阅者，订阅/SportCmd话题
-        sport_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+        sport_cmd_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
             "SMX/SportCmd", 10, std::bind(&JoystickControlNode::sport_cmd_callback, this, std::placeholders::_1));
 
+        // 创建订阅者，订阅/GimbalAngularVelocityCmd话题
+        target_angle_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
+            "SMX/TargetImageAngle", 10, std::bind(&JoystickControlNode::target_angle_callback, this, std::placeholders::_1));
+
         // 创建订阅者，订阅导航话题
-        guide_sub = this->create_subscription<geometry_msgs::msg::Twist>(
+        guide_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
             "/cmd_vel", 10,
             std::bind(&JoystickControlNode::guide_callback, this, std::placeholders::_1));
 
@@ -82,8 +86,10 @@ private:
     std::unique_ptr<unitree::robot::go2::VuiClient> Vui_client;
 
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
-    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr sport_cmd_sub;
-    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr guide_sub;
+    rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr sport_cmd_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr target_angle_sub_;
+
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr guide_sub_;
     double guide_x_vel = 0, guide_y_vel = 0, guide_yaw_vel = 0;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     double current_x = 0, current_y = 0, current_z = 0, current_roll = 0, current_pitch= 0, current_yaw = 0;
@@ -137,13 +143,53 @@ private:
     }
 
     // 回调函数，处理SportCmd消息
-    void sport_cmd_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
+    void sport_cmd_callback(const std_msgs::msg::Float32MultiArray::SharedPtr msg)
     {
         if (msg->data.size() >= 5)
         {
             int action = static_cast<int>(msg->data[0]);  // Convert double to int
             Actions(action, msg->data[1], msg->data[2], msg->data[3], msg->data[4]);
         }
+    }
+
+    // 回调函数，处理TargetImageAngle消息
+    void target_angle_callback(const std_msgs::msg::Float32MultiArray::SharedPtr msg)
+    {
+        static double accumulated_yaw = 0.0;
+        static double accumulated_pitch = 0.0;
+        static std::chrono::steady_clock::time_point last_update_time = std::chrono::steady_clock::now(); // 静态时间戳，确保只在第一次初始化时设置
+
+        // 获取当前时间
+        auto current_time = std::chrono::steady_clock::now();
+
+        // 计算时间差（以秒为单位）
+        std::chrono::duration<double> time_diff = current_time - last_update_time;
+
+        // 如果时间差小于0.2秒，继续进行积分更新
+        if (msg->data.size() >= 2 && Axes[2] < -0.5 && Axes[5] > 0.9)
+        {
+            // 更新积分：只在0.2秒内的历史数据有效
+            if (time_diff.count() <= 0.2)
+            {
+                accumulated_yaw += -msg->data[0] / 180 * M_PI * time_diff.count();   // 积分更新Yaw
+                accumulated_pitch += msg->data[1] / 180 * M_PI  * time_diff.count();  // 积分更新Pitch
+            }
+            else
+            {
+                accumulated_yaw = -msg->data[0] / 180 * M_PI;   // 积分更新Yaw
+                accumulated_pitch = msg->data[1] / 180 * M_PI;  // 积分更新Pitch
+            }
+
+            if (accumulated_yaw > 0.5) accumulated_yaw = 0.5;
+            if (accumulated_yaw < -0.5) accumulated_yaw = -0.5;
+            if (accumulated_pitch > 0.5) accumulated_pitch = 0.5;
+            if (accumulated_pitch < -0.5) accumulated_pitch = -0.5;
+    
+            Actions(22232400, accumulated_yaw, accumulated_pitch, 0, 0);
+        }
+
+        // 更新最后更新时间戳
+        last_update_time = current_time;
     }
 
     // 回调函数，处理导航消息
@@ -388,7 +434,7 @@ private:
         }
         else if(Axes[2] < -0.5 && Axes[5] > 0.9 && JoystickEnable && !AIModeEnable && Last_Operation_Duration_Time > 0.5) // 常规模式，只按住LT键
         {
-            Actions(20212324,Axes[3],Axes[4],0,0);
+            Actions(22232400,Axes[3],Axes[4],0,0);
             if(Buttons[0])
             {
                 Actions(22100000,0,0,0,0);
@@ -615,7 +661,7 @@ private:
                 }
                 break;
             
-            case 20212324:
+            case 22232400:
                 if(abs(Value1)>0.1 || abs(Value2)>0.1)
                 {
                     float YawAngle = 0.6 * Value1;

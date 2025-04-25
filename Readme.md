@@ -47,7 +47,7 @@ cd ..
 colcon build
 ros2 launch sport_control sport_control_launch.py
 ```
-- 记得在src/joystick_control/launch/joystick_control_launch.py中，修改机器狗的网口名，我个人的是“enx00e04c362b5e”。
+- 记得在src/joystick_control/launch/joystick_control_launch.py中，修改机器狗的网口名，我个人的是“br0”。
 - 同时按下手柄的LT、RT，解锁/锁定手柄；按住RT+左摇杆进行移动；按住RT+右摇杆进行旋转；更多操作请看joystick_control_node.cpp。
 
 ## 📄 相关文档

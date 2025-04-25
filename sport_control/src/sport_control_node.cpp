@@ -1,7 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "std_msgs/msg/float32_multi_array.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include <tf2/LinearMath/Quaternion.h>
@@ -41,7 +41,7 @@ public:
             "/joy", 10, std::bind(&JoystickControlNode::joy_callback, this, std::placeholders::_1));
 
         // 创建订阅者，订阅/SportCmd话题
-        sport_cmd_sub_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
+        sport_cmd_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             "SMX/SportCmd", 10, std::bind(&JoystickControlNode::sport_cmd_callback, this, std::placeholders::_1));
 
         // 创建订阅者，订阅导航话题
@@ -57,7 +57,7 @@ public:
         sport_cmd_pub = this->create_publisher<std_msgs::msg::String>("SMX/JoystickCmd", 10);
 
         // 用于发布Gimbal控制命令到 "SMX/GimbalAngleCmd" 话题
-        gimbal_cmd_pub = this->create_publisher<std_msgs::msg::Float32MultiArray>("SMX/GimbalAngleCmd", 10);
+        gimbal_cmd_pub = this->create_publisher<std_msgs::msg::Float64MultiArray>("SMX/GimbalAngleCmd", 10);
 
         // 记录初始化时的时间
         Last_Operation_Time = this->get_clock()->now();
@@ -84,7 +84,7 @@ private:
     std::unique_ptr<unitree::robot::go2::VuiClient> Vui_client;
 
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
-    rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr sport_cmd_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr sport_cmd_sub_;
 
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr guide_sub_;
     double guide_x_vel = 0, guide_y_vel = 0, guide_yaw_vel = 0;
@@ -92,7 +92,7 @@ private:
     double current_x = 0, current_y = 0, current_z = 0, current_roll = 0, current_pitch= 0, current_yaw = 0;
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr sport_cmd_pub;
-    rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr gimbal_cmd_pub;
+    rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr gimbal_cmd_pub;
 
     rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr nav_to_pose_client;
 
@@ -141,11 +141,11 @@ private:
     }
 
     // 回调函数，处理SportCmd消息
-    void sport_cmd_callback(const std_msgs::msg::Float32MultiArray::SharedPtr msg)
+    void sport_cmd_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
     {
         if (msg->data.size() >= 5 && (Axes[2]<-0.9 || Axes[5]<-0.9))
         {
-            int action = static_cast<int>(msg->data[0]);  // Convert double to int
+            int action = static_cast<int>(msg->data[0]);
             Actions(action, msg->data[1], msg->data[2], msg->data[3], msg->data[4]);
         }
     }
@@ -458,6 +458,11 @@ private:
                 Last_Operation_Time = this->get_clock()->now();
                 ErrorCode = sport_client->Damp();
                 break;
+            case 16170000:
+                Last_Operation = "Stop Move. ";
+                Last_Operation_Time = this->get_clock()->now();
+                ErrorCode = sport_client->StopMove();
+                break;
             case 14150000:
                 AIModeEnable = 1 - AIModeEnable;
                 if(AIModeEnable)
@@ -625,9 +630,9 @@ private:
                     Last_Operation = "Gimbal Yaw Vel: " + std::to_string(Value1)
                         + "; Gimbal Pitch Vel: " + std::to_string(Value2);
                     Last_Operation_Time = this->get_clock()->now();
-                    std_msgs::msg::Float32MultiArray angle_msg;
-                    angle_msg.data.push_back(static_cast<float>(-50*Value1));
-                    angle_msg.data.push_back(static_cast<float>(50*Value2));
+                    std_msgs::msg::Float64MultiArray angle_msg;
+                    angle_msg.data.push_back(static_cast<double>(-50*Value1));
+                    angle_msg.data.push_back(static_cast<double>(50*Value2));
                     gimbal_cmd_pub->publish(angle_msg);
                     break;
                 }

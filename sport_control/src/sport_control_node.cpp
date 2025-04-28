@@ -21,10 +21,10 @@
 #include <unitree/robot/b2/motion_switcher/motion_switcher_client.hpp>
 #include <unitree/robot/go2/vui/vui_client.hpp>
 
-class JoystickControlNode : public rclcpp::Node
+class SportControlNode : public rclcpp::Node
 {
 public:
-    JoystickControlNode() : Node("sport_control_node")
+    SportControlNode() : Node("sport_control_node")
     {
         // 通过参数获取网络接口名称，设置默认值为 "br0" 或其他有效接口
         this->declare_parameter<std::string>("network_interface", "br0");
@@ -34,24 +34,24 @@ public:
         unitree::robot::ChannelFactory::Instance()->Init(0, network_interface);
 
         // 初始化句子
-        Last_Operation = "Joystick Control Init";
+        Last_Operation = "Sport Control Init";
 
         // 创建订阅者，订阅/joy话题
         joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/joy", 10, std::bind(&JoystickControlNode::joy_callback, this, std::placeholders::_1));
+            "/joy", 10, std::bind(&SportControlNode::joy_callback, this, std::placeholders::_1));
 
         // 创建订阅者，订阅/SportCmd话题
         sport_cmd_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-            "SMX/SportCmd", 10, std::bind(&JoystickControlNode::sport_cmd_callback, this, std::placeholders::_1));
+            "SMX/SportCmd", 10, std::bind(&SportControlNode::sport_cmd_callback, this, std::placeholders::_1));
 
         // 创建订阅者，订阅导航话题
         guide_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
             "/cmd_vel", 10,
-            std::bind(&JoystickControlNode::guide_callback, this, std::placeholders::_1));
+            std::bind(&SportControlNode::guide_callback, this, std::placeholders::_1));
 
         // 创建 odom 消息订阅者
         odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-            "SMX/Odom", 10, std::bind(&JoystickControlNode::odom_callback, this, std::placeholders::_1));
+            "SMX/Odom", 10, std::bind(&SportControlNode::odom_callback, this, std::placeholders::_1));
         
         // 用于发布语音对话控制命令到 "SMX/JoystickCmd" 话题
         sport_cmd_pub = this->create_publisher<std_msgs::msg::String>("SMX/JoystickCmd", 10);
@@ -74,7 +74,7 @@ public:
         Vui_client->SetTimeout(1.0f); 
         Vui_client->Init();
 
-        RCLCPP_INFO(this->get_logger(), "JoystickControlNode 已启动");
+        RCLCPP_INFO(this->get_logger(), "SportControlNode 已启动");
     }
 
 private:
@@ -729,7 +729,7 @@ private:
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<JoystickControlNode>();
+    auto node = std::make_shared<SportControlNode>();
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;

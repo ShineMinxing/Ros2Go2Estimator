@@ -36,6 +36,9 @@
 4. 语音控制机器狗，实现意图猜测和在预建地图导航。比如说“没有纸张了”，自动执行导航‘去仓库’
 [![实验4](https://i2.hdslb.com/bfs/archive/5b95c6eda3b6c9c8e0ba4124c1af9f3da10f39d2.jpg)](https://www.bilibili.com/video/BV1HCQBYUEvk/)
 
+5. 机器狗与吊舱的协同跟踪
+[![实验5](https://i1.hdslb.com/bfs/archive/ea4fd7cd595daac01dbb29cf61e7a88b63bae25e.jpg)](https://www.bilibili.com/video/BV1XZjcznEC8/)
+
 ## ⚙️ 安装指南
 
 - Use Ubuntu 22.04, ROS2 Humble
@@ -47,11 +50,11 @@ cd ..
 colcon build
 ros2 launch sport_control sport_control_launch.py
 ```
-- 记得在src/joystick_control/launch/joystick_control_launch.py中，修改机器狗的网口名，我个人的是“br0”。
-- 同时按下手柄的LT、RT，解锁/锁定手柄；按住RT+左摇杆进行移动；按住RT+右摇杆进行旋转；更多操作请看joystick_control_node.cpp。
+- 记得在src/sport_control/launch/sport_control_launch.py中，修改机器狗的网口名，我个人的是“br0”。
+- 同时按下手柄的LT、RT，解锁/锁定手柄；按住RT+左摇杆进行移动；按住RT+右摇杆进行旋转；更多操作请看sport_control_node.cpp。
 
 ## 📄 相关文档
-- 核心算法原理: [技术文档](https://github.com/ShineMinxing/FusionEstimation.git)
+- 核心算法原理: [技术文档](https://www.notion.so/Ros2Go2-1e3a3ea29e778044a4c9c35df4c27b22)
 - 历史项目参考: [Aliengo ROS1项目](https://github.com/ShineMinxing/FusionEstimation.git)
 
 ## 📧 联系我们

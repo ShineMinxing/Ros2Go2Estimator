@@ -37,7 +37,7 @@
 [![实验4](https://i2.hdslb.com/bfs/archive/5b95c6eda3b6c9c8e0ba4124c1af9f3da10f39d2.jpg)](https://www.bilibili.com/video/BV1HCQBYUEvk/)
 
 5. 机器狗与吊舱的协同跟踪
-[![实验5](https://i1.hdslb.com/bfs/archive/ea4fd7cd595daac01dbb29cf61e7a88b63bae25e.jpg)](https://www.bilibili.com/video/BV1XZjcznEC8/)
+[![实验5](https://i2.hdslb.com/bfs/archive/32d0d91807e4852b3d8fff4883d63c0b7abf3555.jpg)](https://www.bilibili.com/video/BV1XZjcznEC8/)
 
 ## ⚙️ 安装指南
 

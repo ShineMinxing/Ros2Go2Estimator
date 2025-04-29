@@ -597,8 +597,8 @@ private:
                         + "; Gimbal Pitch Vel: " + std::to_string(Value2);
                     Last_Operation_Time = this->get_clock()->now();
                     std_msgs::msg::Float64MultiArray angle_msg;
-                    angle_msg.data.push_back(static_cast<double>(-100*Value1));
-                    angle_msg.data.push_back(static_cast<double>(-100*Value2));
+                    angle_msg.data.push_back(static_cast<double>(-50*Value1));
+                    angle_msg.data.push_back(static_cast<double>(-50*Value2));
                     gimbal_cmd_pub->publish(angle_msg);
                     break;
                 }

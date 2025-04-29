@@ -48,10 +48,6 @@ public:
         guide_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
             "/cmd_vel", 10,
             std::bind(&SportControlNode::guide_callback, this, std::placeholders::_1));
-
-        // 创建 odom 消息订阅者
-        odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-            "SMX/Odom", 10, std::bind(&SportControlNode::odom_callback, this, std::placeholders::_1));
         
         // 用于发布语音对话控制命令到 "SMX/JoystickCmd" 话题
         sport_cmd_pub = this->create_publisher<std_msgs::msg::String>("SMX/JoystickCmd", 10);
@@ -88,8 +84,6 @@ private:
 
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr guide_sub_;
     double guide_x_vel = 0, guide_y_vel = 0, guide_yaw_vel = 0;
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
-    double current_x = 0, current_y = 0, current_z = 0, current_roll = 0, current_pitch= 0, current_yaw = 0;
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr sport_cmd_pub;
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr gimbal_cmd_pub;
@@ -215,24 +209,6 @@ private:
     nav_to_pose_client->async_send_goal(goal_msg, send_goal_options);
     }
 
-    // odom 回调函数，将数据赋值给 current_x、current_y、current_z 和欧拉角
-    void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
-    {
-        // 赋值位置信息
-        current_x = msg->pose.pose.position.x;
-        current_y = msg->pose.pose.position.y;
-        current_z = msg->pose.pose.position.z;
-
-        // 通过 tf2 将四元数转换成欧拉角 (roll, pitch, yaw)
-        tf2::Quaternion q(
-            msg->pose.pose.orientation.x,
-            msg->pose.pose.orientation.y,
-            msg->pose.pose.orientation.z,
-            msg->pose.pose.orientation.w);
-        tf2::Matrix3x3 m(q);
-        m.getRPY(current_roll, current_pitch, current_yaw);
-    }
-
     void obtain_key_value(const sensor_msgs::msg::Joy::SharedPtr msg)
     {
         Buttons[0] = msg->buttons[0]; // A
@@ -325,16 +301,6 @@ private:
         {
             std::cout << i << ": " << Axes[i] <<"; ";
         }
-        std::cout << std::endl;
-
-        // 打印机器人位置
-        std::cout << std::fixed << std::setprecision(1); 
-        std::cout << "X: " << current_x <<"; ";
-        std::cout << "Y: " << current_y <<"; ";
-        std::cout << "Z: " << current_z <<"; ";
-        std::cout << "Roll: " << current_roll <<"; ";
-        std::cout << "Pitch: " << current_pitch <<"; ";
-        std::cout << "Yaw: " << current_yaw <<"; ";
         std::cout << std::endl;
     }
 
@@ -631,8 +597,8 @@ private:
                         + "; Gimbal Pitch Vel: " + std::to_string(Value2);
                     Last_Operation_Time = this->get_clock()->now();
                     std_msgs::msg::Float64MultiArray angle_msg;
-                    angle_msg.data.push_back(static_cast<double>(-50*Value1));
-                    angle_msg.data.push_back(static_cast<double>(50*Value2));
+                    angle_msg.data.push_back(static_cast<double>(-100*Value1));
+                    angle_msg.data.push_back(static_cast<double>(-100*Value2));
                     gimbal_cmd_pub->publish(angle_msg);
                     break;
                 }

@@ -36,8 +36,10 @@
 4. 语音控制机器狗，实现意图猜测和在预建地图导航。比如说“没有纸张了”，自动执行导航‘去仓库’
 [![实验4](https://i2.hdslb.com/bfs/archive/5b95c6eda3b6c9c8e0ba4124c1af9f3da10f39d2.jpg)](https://www.bilibili.com/video/BV1HCQBYUEvk/)
 
-5. 机器狗与吊舱的协同跟踪
-[![实验5](https://i2.hdslb.com/bfs/archive/32d0d91807e4852b3d8fff4883d63c0b7abf3555.jpg)](https://www.bilibili.com/video/BV1XZjcznEC8/)
+5. 机器狗与吊舱的协同光点/人脸跟踪
+[![实验5](https://i0.hdslb.com/bfs/archive/5496e9d0b40915c62b69701fd1e23af7d6ffe7de.jpg)](https://www.bilibili.com/video/BV1faG1z3EFF/)
+- 额外安装https://github.com/ShineMinxing/Ros2ImageProcess.git，调用spot_detector_node/face_check_node进行光点/人脸提取
+- 额外安装https://github.com/ShineMinxing/Ros2AmovG1.git，调用g1_control_node进行跟踪控制（无需额外硬件）
 
 ## ⚙️ 安装指南
 

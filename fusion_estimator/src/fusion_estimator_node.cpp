@@ -2,94 +2,122 @@
 #include <memory>
 #include <iostream>
 #include <filesystem>
+#include <fstream>
+#include <iomanip>
+
 #include <urdf_parser/urdf_parser.h>
-#include <rcl_interfaces/msg/parameter_event.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <sensor_msgs/msg/imu.hpp>
 #include <std_msgs/msg/string.hpp>
 
 #include "unitree/robot/channel/channel_subscriber.hpp"
 #include "unitree/idl/go2/LowState_.hpp"
 
-#include "fusion_estimator/msg/fusion_estimator_test.hpp" 
+#include "fusion_estimator/msg/fusion_estimator_test.hpp"
 #include "GO2FusionEstimator/Estimator/EstimatorPortN.h"
-#include "GO2FusionEstimator/Sensor_Legs.h" 
-#include "GO2FusionEstimator/Sensor_IMU.h" 
+#include "GO2FusionEstimator/Sensor_Legs.h"
+#include "GO2FusionEstimator/Sensor_IMU.h"
+#include "GO2FusionEstimator/Sensor_IMU.h"
 
 using namespace DataFusion;
 
 class FusionEstimatorNode : public rclcpp::Node
 {
 public:
-    FusionEstimatorNode() 
-    : Node("fusion_estimator_node")
+    explicit FusionEstimatorNode(const rclcpp::NodeOptions & opt = rclcpp::NodeOptions())
+    : Node("fusion_estimator_node", opt)
     {
-        // 通过参数获取网络接口名称，设置默认值为 "br0" 或其他有效接口
-        this->declare_parameter<std::string>("network_interface", "br0");
-        std::string network_interface = this->get_parameter("network_interface").as_string();
+        /* ────────────── ① 读取所有可能的参数 ────────────── */
+        std::string network_if;
+        this->get_parameter_or("network_interface", network_if, std::string("br0"));
+        std::string dds_topic;
+        this->get_parameter_or("dds_lowstate_topic", dds_topic, std::string("rt/lowstate"));
+        std::string sub_mode_topic;
+        this->get_parameter_or("sub_mode_topic", sub_mode_topic, std::string("SMX/JoystickCmd"));
+        std::string pub_estimation_topic;
+        this->get_parameter_or("pub_estimation_topic", pub_estimation_topic, std::string("SMX/Estimation"));
+        std::string pub_odom_topic;
+        this->get_parameter_or("pub_odom_topic", pub_odom_topic, std::string("SMX/Odom"));
+        std::string pub_odom_2d_topic;
+        this->get_parameter_or("pub_odom2d_topic", pub_odom_2d_topic, std::string("SMX/Odom_2D"));
+        std::string odom_frame;
+        this->get_parameter_or("odom_frame", odom_frame, std::string("odom"));
+        std::string base_frame;
+        this->get_parameter_or("base_frame", base_frame, std::string("base_link"));
+        std::string base_frame_2d;
+        this->get_parameter_or("base_frame_2d", base_frame_2d, std::string("base_link_2D"));
+        std::string urdf_path_cfg;
+        this->get_parameter_or("urdf_file", urdf_path_cfg, std::string("cfg/go2_description.urdf"));
 
-        // 初始化Unitree通道工厂
-        unitree::robot::ChannelFactory::Instance()->Init(0, network_interface);
+        /* ────────────── ② 初始化 DDS / 订阅 / 发布 ────────────── */
+        unitree::robot::ChannelFactory::Instance()->Init(0, network_if.c_str());
 
-        // 初始化消息接收与发布
-        Lowstate_subscriber.reset(
-            new unitree::robot::ChannelSubscriber<unitree_go::msg::dds_::LowState_>("rt/lowstate"));
+        Lowstate_subscriber = std::make_shared<
+        unitree::robot::ChannelSubscriber<unitree_go::msg::dds_::LowState_>>(dds_topic);
         Lowstate_subscriber->InitChannel(
-            std::bind(&FusionEstimatorNode::LowStateCallback, this, std::placeholders::_1), 1);
+        std::bind(&FusionEstimatorNode::LowStateCallback, this, std::placeholders::_1), 1);
 
-        // 创建订阅者，订阅/ModeCmd话题
         Mode_cmd_sub = this->create_subscription<std_msgs::msg::String>(
-            "SMX/JoystickCmd", 10, std::bind(&FusionEstimatorNode::mode_cmd_callback, this, std::placeholders::_1));
+        sub_mode_topic, 10,
+        std::bind(&FusionEstimatorNode::mode_cmd_callback, this, std::placeholders::_1));
 
         FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
-            "SMX/Estimation", 10);
+        pub_estimation_topic, 10);
+        SMXFE_publisher   = this->create_publisher<nav_msgs::msg::Odometry>(pub_odom_topic, 10);
+        SMXFE_2D_publisher= this->create_publisher<nav_msgs::msg::Odometry>(pub_odom_2d_topic, 10);
 
-        SMXFE_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMX/Odom", 10);
-        
-        SMXFE_2D_publisher = this->create_publisher<nav_msgs::msg::Odometry>("SMX/Odom_2D", 10);
+        odom_frame_id_     = odom_frame;
+        child_frame_id_    = base_frame;
+        child_frame_id_2d_ = base_frame_2d;
 
-        for(int i = 0; i < 2; i++)
-        {
-            EstimatorPortN* StateSpaceModel1_SensorsPtrs = new EstimatorPortN; // 创建新的结构体实例
-            StateSpaceModel1_Initialization(StateSpaceModel1_SensorsPtrs);     // 调用初始化函数
-            StateSpaceModel1_Sensors.push_back(StateSpaceModel1_SensorsPtrs);  // 将指针添加到容器中
+        /* ────────────── ③ 创建融合器对象 ────────────── */
+        for (int i = 0; i < 2; ++i) {
+        auto * ptr = new EstimatorPortN;
+        StateSpaceModel1_Initialization(ptr);
+        StateSpaceModel1_Sensors.emplace_back(ptr);
         }
+        Sensor_IMUAcc      = std::make_shared<SensorIMUAcc>     (StateSpaceModel1_Sensors[0]);
+        Sensor_IMUMagGyro  = std::make_shared<SensorIMUMagGyro> (StateSpaceModel1_Sensors[1]);
+        Sensor_Legs        = std::make_shared<SensorLegs>       (StateSpaceModel1_Sensors[0]);
 
-        Sensor_IMUAcc = std::make_shared<DataFusion::SensorIMUAcc>(StateSpaceModel1_Sensors[0]);
-        Sensor_IMUMagGyro = std::make_shared<DataFusion::SensorIMUMagGyro>(StateSpaceModel1_Sensors[1]);
-        Sensor_Legs = std::make_shared<DataFusion::SensorLegs>(StateSpaceModel1_Sensors[0]);
-
+        /* 可在线调三轴角度补偿 */
         this->declare_parameter<double>("Modify_Par_1", 0.0);
         this->declare_parameter<double>("Modify_Par_2", 0.0);
         this->declare_parameter<double>("Modify_Par_3", 0.0);
         ParameterCorrectCallback = this->add_on_set_parameters_callback(
-            std::bind(&FusionEstimatorNode::Modify_Par_Fun, this, std::placeholders::_1)
-          );
+        std::bind(&FusionEstimatorNode::Modify_Par_Fun, this, std::placeholders::_1));
 
-        RCLCPP_INFO(this->get_logger(), "FusionEstimatorNode 已启动");
+        /* ────────────── ④ 读取 URDF 并填充腿部参数 ────────────── */
+        urdf_path_cfg_ = urdf_path_cfg;   // 保存到成员变量，ObtainParameter() 会用
+        RCLCPP_INFO(get_logger(), "FusionEstimatorNode started, DDS=%s  URDF=%s",
+                    dds_topic.c_str(), urdf_path_cfg_.c_str());
     }
 
-    // 传感器状态空间模型创建
-    std::vector<EstimatorPortN*> StateSpaceModel1_Sensors = {};// 容器声明
-    std::vector<EstimatorPortN*> StateSpaceModel2_Sensors = {};// 容器声明
-
+    /* —— 在 main() 里会显式调用 —— */
     void ObtainParameter();
 
 private:
+    /* ───────────── 类型别名 & 成员变量 ───────────── */
+    using LowStateSubPtr =
+        unitree::robot::ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_>;
+
+    std::vector<EstimatorPortN*> StateSpaceModel1_Sensors;
 
     rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr FETest_publisher;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_2D_publisher;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher, SMXFE_2D_publisher;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr Mode_cmd_sub;
-    unitree::robot::ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> Lowstate_subscriber;
-    std::shared_ptr<DataFusion::SensorIMUAcc> Sensor_IMUAcc; 
-    std::shared_ptr<DataFusion::SensorIMUMagGyro> Sensor_IMUMagGyro; 
-    std::shared_ptr<DataFusion::SensorLegs> Sensor_Legs; 
+    LowStateSubPtr Lowstate_subscriber;
+
+    std::shared_ptr<SensorIMUAcc>     Sensor_IMUAcc;
+    std::shared_ptr<SensorIMUMagGyro> Sensor_IMUMagGyro;
+    std::shared_ptr<SensorLegs>       Sensor_Legs;
 
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr ParameterCorrectCallback;
+
+    std::string odom_frame_id_, child_frame_id_, child_frame_id_2d_;
+    std::string urdf_path_cfg_;
+
     rcl_interfaces::msg::SetParametersResult Modify_Par_Fun(
     const std::vector<rclcpp::Parameter> & parameters)
     {
@@ -234,8 +262,8 @@ private:
         // 新增：构造标准 odometry 消息，并发布
         nav_msgs::msg::Odometry SMXFE_odom;
         SMXFE_odom.header.stamp = fusion_msg.stamp;
-        SMXFE_odom.header.frame_id = "odom";
-        SMXFE_odom.child_frame_id = "base_link";
+        SMXFE_odom.header.frame_id = odom_frame_id_;
+        SMXFE_odom.child_frame_id = child_frame_id_;
 
         // 使用 fusion_msg.estimated_xyz 的前 3 个元素作为位置
         SMXFE_odom.pose.pose.position.x = fusion_msg.estimated_xyz[0];
@@ -290,8 +318,8 @@ private:
         // 新增：构造标准 odometry 消息，并发布
         nav_msgs::msg::Odometry SMXFE_odom_2D;
         SMXFE_odom_2D.header.stamp = fusion_msg.stamp;
-        SMXFE_odom_2D.header.frame_id = "odom";
-        SMXFE_odom_2D.child_frame_id = "base_link_2D";
+        SMXFE_odom_2D.header.frame_id = odom_frame_id_;
+        SMXFE_odom_2D.child_frame_id = child_frame_id_2d_;
 
         // 使用 fusion_msg.estimated_xyz 的前 3 个元素作为位置
         SMXFE_odom_2D.pose.pose.position.x = fusion_msg.estimated_xyz[0];
@@ -369,7 +397,7 @@ void FusionEstimatorNode::ObtainParameter()
     -0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022;
     std::filesystem::path current_file(__FILE__);
     std::filesystem::path package_dir = current_file.parent_path().parent_path();
-    std::filesystem::path urdf_path = package_dir / "cfg" / "go2_description.urdf";
+    std::filesystem::path urdf_path = package_dir / urdf_path_cfg_;
     std::ifstream urdf_file(urdf_path);
     if (!urdf_file.is_open())
     {
@@ -475,12 +503,20 @@ void FusionEstimatorNode::ObtainParameter()
     Sensor_IMUMagGyro->SensorPosition[2] = IMUPosition(2);
 }
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
-    rclcpp::init(argc, argv);
-    auto node = std::make_shared<FusionEstimatorNode>();
-    node->ObtainParameter();
-    rclcpp::spin(node);
-    rclcpp::shutdown();
-    return 0;
+  rclcpp::init(argc, argv);
+
+  auto opts = rclcpp::NodeOptions()
+                .allow_undeclared_parameters(true)
+                .arguments({
+                  "--ros-args",
+                  "--params-file", "src/Ros2Go2Estimator/config.yaml"
+                });
+
+  auto node = std::make_shared<FusionEstimatorNode>(opts);
+  node->ObtainParameter();
+  rclcpp::spin(node);
+  rclcpp::shutdown();
+  return 0;
 }

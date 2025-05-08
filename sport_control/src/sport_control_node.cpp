@@ -24,36 +24,50 @@
 class SportControlNode : public rclcpp::Node
 {
 public:
-    SportControlNode() : Node("sport_control_node")
+    explicit SportControlNode(const rclcpp::NodeOptions & opt = rclcpp::NodeOptions())
+    : Node("sport_control_node", opt)
     {
-        // 通过参数获取网络接口名称，设置默认值为 "br0" 或其他有效接口
+        // 声明参数
         this->declare_parameter<std::string>("network_interface", "br0");
-        std::string network_interface = this->get_parameter("network_interface").as_string();
+        this->declare_parameter<std::string>("joy_topic",       "/joy");
+        this->declare_parameter<std::string>("sport_cmd_topic", "SMX/SportCmd");
+        this->declare_parameter<std::string>("guide_topic",     "/cmd_vel");
+        this->declare_parameter<std::string>("voice_topic",     "SMX/JoystickCmd");
+        this->declare_parameter<std::string>("gimbal_topic",    "SMX/GimbalAngleCmd");
+        this->declare_parameter<std::string>("map_frame_id",    "map");
+
+        // 读取并保存到成员
+        network_interface_ = this->get_parameter("network_interface").as_string();
+        joy_topic_         = this->get_parameter("joy_topic").as_string();
+        sport_cmd_topic_   = this->get_parameter("sport_cmd_topic").as_string();
+        guide_topic_       = this->get_parameter("guide_topic").as_string();
+        voice_topic_       = this->get_parameter("voice_topic").as_string();
+        gimbal_topic_      = this->get_parameter("gimbal_topic").as_string();
+        map_frame_id_      = this->get_parameter("map_frame_id").as_string();
 
         // 初始化Unitree通道工厂
-        unitree::robot::ChannelFactory::Instance()->Init(0, network_interface);
+        unitree::robot::ChannelFactory::Instance()->Init(0, network_interface_);
 
         // 初始化句子
         Last_Operation = "Sport Control Init";
 
         // 创建订阅者，订阅/joy话题
         joy_sub_ = this->create_subscription<sensor_msgs::msg::Joy>(
-            "/joy", 10, std::bind(&SportControlNode::joy_callback, this, std::placeholders::_1));
+            joy_topic_, 10, std::bind(&SportControlNode::joy_callback, this, std::placeholders::_1));
 
         // 创建订阅者，订阅/SportCmd话题
         sport_cmd_sub_ = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-            "SMX/SportCmd", 10, std::bind(&SportControlNode::sport_cmd_callback, this, std::placeholders::_1));
+            sport_cmd_topic_, 10, std::bind(&SportControlNode::sport_cmd_callback, this, std::placeholders::_1));
 
         // 创建订阅者，订阅导航话题
         guide_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-            "/cmd_vel", 10,
-            std::bind(&SportControlNode::guide_callback, this, std::placeholders::_1));
+            guide_topic_, 10, std::bind(&SportControlNode::guide_callback, this, std::placeholders::_1));
         
-        // 用于发布语音对话控制命令到 "SMX/JoystickCmd" 话题
-        sport_cmd_pub = this->create_publisher<std_msgs::msg::String>("SMX/JoystickCmd", 10);
+        // 用于发布语音对话控制命令到 "SMX/JoystickCmd" 话题d
+        sport_cmd_pub = this->create_publisher<std_msgs::msg::String>(voice_topic_, 10);
 
         // 用于发布Gimbal控制命令到 "SMX/GimbalAngleCmd" 话题
-        gimbal_cmd_pub = this->create_publisher<std_msgs::msg::Float64MultiArray>("SMX/GimbalAngleCmd", 10);
+        gimbal_cmd_pub = this->create_publisher<std_msgs::msg::Float64MultiArray>(gimbal_topic_, 10);
 
         // 记录初始化时的时间
         Last_Operation_Time = this->get_clock()->now();
@@ -74,6 +88,14 @@ public:
     }
 
 private:
+
+    std::string network_interface_;
+    std::string joy_topic_;
+    std::string sport_cmd_topic_;
+    std::string guide_topic_;
+    std::string voice_topic_;
+    std::string gimbal_topic_;
+    std::string map_frame_id_;
 
     std::unique_ptr<unitree::robot::go2::SportClient> sport_client;
     std::unique_ptr<unitree::robot::b2::MotionSwitcherClient> motion_client;
@@ -163,9 +185,9 @@ private:
             return;
         }
 
-        // 1. 准备目标消息
+        // 1. 准备目标消息d
         auto goal_msg = nav2_msgs::action::NavigateToPose::Goal();
-        goal_msg.pose.header.frame_id = "map";
+        goal_msg.pose.header.frame_id = map_frame_id_;
         goal_msg.pose.header.stamp = now();
 
         // (1) 位置
@@ -695,7 +717,13 @@ private:
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<SportControlNode>();
+    auto opts = rclcpp::NodeOptions()
+                .allow_undeclared_parameters(true)
+                .arguments({
+                "--ros-args",
+                "--params-file", "src/Ros2Go2Estimator/config.yaml"
+                });
+    auto node = std::make_shared<SportControlNode>(opts);
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;

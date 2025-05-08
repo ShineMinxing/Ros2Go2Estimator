@@ -7,8 +7,8 @@
 - fusion_estimator包发布对应“base_link”的话题SMX/Odom和对应“base_link_2D”的话题SMX/Odom_2D；
 - dds_rostopic包将dds的lidar、230.1.1.1:1720的相机数据发布为ros2话题；
 - message_handle包完成SMX/Odom和SMX/Odom_2D的tf，此外，将frame“utlidar_lidar”的pointcloud2转换为“base_link_2D”话题/SMX/Scan；
-- 使用SLAM Toolbox建图时放开sport_control/launch/go2_launch.py的启动项ros2 run slam_toolbox async_slam_toolbox_node ......；
-- 使用Nav2导航时放开sport_control/launch/go2_launch.py的启动项ros2 launch nav2_bringup bringup_launch.py ......；
+- 使用SLAM Toolbox建图时额外ros2 launch sport_control slam_launch.py;
+- 使用Nav2导航时额外ros2 launch sport_control nav_launch.py；
 
 ## 📚 补充说明
 - 切换两足、四足无需在估计器内做模式切换

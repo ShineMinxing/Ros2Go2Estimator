@@ -1,130 +1,149 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <sensor_msgs/msg/image.hpp>  // 导入图像消息类型
+#include <sensor_msgs/msg/image.hpp>
 
-// Unitree DDS 库头文件
+// Unitree DDS
 #include <unitree/robot/channel/channel_subscriber.hpp>
 #include <unitree/common/time/time_tool.hpp>
 #include <unitree/idl/ros2/PointCloud2_.hpp>
 
-// C++ 标准库
-#include <string>
-#include <memory>
+// OpenCV & GStreamer
 #include <opencv2/opencv.hpp>
-#include <gst/gst.h>
 #include <opencv2/videoio.hpp>
 
-#define TOPIC_CLOUD "rt/utlidar/cloud"
-
-// 建立一个封装类，从 rclcpp::Node 继承
 class DDSToRosNode : public rclcpp::Node
 {
 public:
-  DDSToRosNode(const rclcpp::NodeOptions &options = rclcpp::NodeOptions())
+  DDSToRosNode(const rclcpp::NodeOptions &options)
   : Node("dds_rostopic_node", options)
   {
-    // 声明一个 ROS 参数，用于指定网络接口
-    this->declare_parameter<std::string>("network_interface", "br0");
-    // 获取参数
-    std::string network_if = this->get_parameter("network_interface").as_string();
-    RCLCPP_INFO(this->get_logger(), "Using network interface: %s", network_if.c_str());
+    // 读取参数，如果 YAML 里没配置，就用第二个参数里的默认值
+    std::string network_if;
+    this->get_parameter_or<std::string>(
+      "network_interface", network_if, std::string("br0"));
 
-    // 1. 初始化 Unitree DDS
+    std::string pub_cloud_topic;
+    this->get_parameter_or<std::string>(
+      "pub_cloud_topic", pub_cloud_topic, std::string("SMX/Go2Lidar"));
+
+    std::string pub_camera_topic;
+    this->get_parameter_or<std::string>(
+      "pub_camera_topic", pub_camera_topic, std::string("SMX/Go2Camera"));
+
+    std::string dds_topic_in;
+    this->get_parameter_or<std::string>(
+      "dds_topic", dds_topic_in, std::string("rt/utlidar/cloud"));
+
+    std::string gst_pipeline;
+    this->get_parameter_or<std::string>(
+      "gst_pipeline", gst_pipeline,
+      std::string(
+        "udpsrc address=230.1.1.1 port=1720 multicast-iface=br0 ! "
+        "application/x-rtp, media=video, encoding-name=H264 ! rtph264depay ! "
+        "h264parse ! avdec_h264 ! videoconvert ! video/x-raw,width=1280,height=720,format=BGR ! "
+        "appsink drop=1 sync=false"
+      )
+    );
+
+    // 1) 初始化 DDS
     unitree::robot::ChannelFactory::Instance()->Init(0, network_if.c_str());
 
-    // 2. 创建 ROS2 Publisher（发布标准的 PointCloud2）
-    pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("SMX/Go2Lidar", 10);
-    
-    // 3. 创建 ROS2 Publisher（发布视频流）
-    pub_camera_ = this->create_publisher<sensor_msgs::msg::Image>("SMX/Go2Camera", 10);
+    // 2) ROS2 发布者
+    pub_cloud_  = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_cloud_topic,  10);
+    pub_camera_ = this->create_publisher<sensor_msgs::msg::Image>     (pub_camera_topic, 10);
 
-    // 4. 创建 DDS 订阅者
-    subscriber_ = std::make_unique<unitree::robot::ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>>(TOPIC_CLOUD);
-    subscriber_->InitChannel(std::bind(&DDSToRosNode::CbPointCloud, this, std::placeholders::_1));
+    // 3) DDS 订阅
+    subscriber_ = std::make_unique<
+      unitree::robot::ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>
+    >(dds_topic_in);
+    subscriber_->InitChannel(
+      std::bind(&DDSToRosNode::CbPointCloud, this, std::placeholders::_1)
+    );
 
-    // 5. 创建 OpenCV VideoCapture 对象用于拉取视频流
-    std::string pipeline = "udpsrc address=230.1.1.1 port=1720 multicast-iface=br0 ! "
-                           "application/x-rtp, media=video, encoding-name=H264 ! rtph264depay ! "
-                           "h264parse ! avdec_h264 ! videoconvert ! video/x-raw,width=1280,height=720,format=BGR ! appsink drop=1 sync=false";
-    cap_ = std::make_shared<cv::VideoCapture>(pipeline, cv::CAP_GSTREAMER);
-
+    // 4) OpenCV 拉流
+    cap_ = std::make_shared<cv::VideoCapture>(gst_pipeline, cv::CAP_GSTREAMER);
     if (!cap_->isOpened()) {
-      RCLCPP_ERROR(this->get_logger(), "Failed to open video stream.");
+      RCLCPP_ERROR(this->get_logger(), "无法打开视频流");
       rclcpp::shutdown();
+      return;
     }
 
-    // 定时器，定期发布视频帧
+    // 5) 定时发布视频
     timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(30), std::bind(&DDSToRosNode::timer_callback, this));
+      std::chrono::milliseconds(30),
+      std::bind(&DDSToRosNode::timer_callback, this)
+    );
   }
 
 private:
-  // 回调函数发布 PointCloud2 数据
   void CbPointCloud(const void* message)
   {
-    const sensor_msgs::msg::dds_::PointCloud2_* cloud_msg_dds
-       = static_cast<const sensor_msgs::msg::dds_::PointCloud2_*>(message);
-
-    sensor_msgs::msg::PointCloud2 cloud_ros;
-    cloud_ros.header.stamp.sec = cloud_msg_dds->header().stamp().sec();
-    cloud_ros.header.stamp.nanosec = cloud_msg_dds->header().stamp().nanosec();
-    cloud_ros.header.frame_id = cloud_msg_dds->header().frame_id();
-    cloud_ros.height = cloud_msg_dds->height();
-    cloud_ros.width  = cloud_msg_dds->width();
-    cloud_ros.fields.resize(cloud_msg_dds->fields().size());
-    for (size_t i = 0; i < cloud_msg_dds->fields().size(); i++) {
-      auto& field_dds = cloud_msg_dds->fields()[i];
-      auto& field_ros = cloud_ros.fields[i];
-      field_ros.name = field_dds.name();
-      field_ros.offset = field_dds.offset();
-      field_ros.datatype = field_dds.datatype();
-      field_ros.count = field_dds.count();
+    auto dds_msg = static_cast<const sensor_msgs::msg::dds_::PointCloud2_*>(message);
+    sensor_msgs::msg::PointCloud2 cloud;
+    cloud.header.stamp.sec     = dds_msg->header().stamp().sec();
+    cloud.header.stamp.nanosec = dds_msg->header().stamp().nanosec();
+    cloud.header.frame_id      = dds_msg->header().frame_id();
+    cloud.height = dds_msg->height();
+    cloud.width  = dds_msg->width();
+    cloud.fields.resize(dds_msg->fields().size());
+    for (size_t i = 0; i < dds_msg->fields().size(); i++) {
+      auto &f_dds = dds_msg->fields()[i];
+      auto &f_ros = cloud.fields[i];
+      f_ros.name     = f_dds.name();
+      f_ros.offset   = f_dds.offset();
+      f_ros.datatype = f_dds.datatype();
+      f_ros.count    = f_dds.count();
     }
-    cloud_ros.is_bigendian = cloud_msg_dds->is_bigendian();
-    cloud_ros.point_step = cloud_msg_dds->point_step();
-    cloud_ros.row_step   = cloud_msg_dds->row_step();
-    size_t data_size = cloud_msg_dds->data().size();
-    cloud_ros.data.resize(data_size);
-    memcpy(cloud_ros.data.data(), cloud_msg_dds->data().data(), data_size);
-    cloud_ros.is_dense = cloud_msg_dds->is_dense();
-    pub_cloud_->publish(cloud_ros);
+    cloud.is_bigendian = dds_msg->is_bigendian();
+    cloud.point_step   = dds_msg->point_step();
+    cloud.row_step     = dds_msg->row_step();
+    cloud.data.resize(dds_msg->data().size());
+    memcpy(cloud.data.data(), dds_msg->data().data(), cloud.data.size());
+    cloud.is_dense = dds_msg->is_dense();
+    pub_cloud_->publish(cloud);
   }
 
-  // 定时器回调函数用于定期发布视频帧
-  void timer_callback() {
+  void timer_callback()
+  {
     cv::Mat frame;
     if (cap_->read(frame)) {
-      // 将 OpenCV 的 Mat 转换为 ROS2 图像消息
-      auto msg = sensor_msgs::msg::Image();
-      msg.header.stamp = this->get_clock()->now();
-      msg.header.frame_id = "camera";
-      msg.height = frame.rows;
-      msg.width = frame.cols;
-      msg.encoding = "bgr8";
-      msg.is_bigendian = false;
-      msg.step = static_cast<sensor_msgs::msg::Image::_step_type>(frame.step);
-      msg.data.assign(frame.datastart, frame.dataend);
-
-      // 发布视频帧到 ROS2 话题
-      pub_camera_->publish(msg);
+      sensor_msgs::msg::Image img;
+      img.header.stamp = this->get_clock()->now();
+      img.header.frame_id = "camera";
+      img.height = frame.rows;
+      img.width  = frame.cols;
+      img.encoding     = "bgr8";
+      img.is_bigendian = false;
+      img.step         = static_cast<sensor_msgs::msg::Image::_step_type>(frame.step);
+      img.data.assign(frame.datastart, frame.dataend);
+      pub_camera_->publish(img);
     } else {
-      RCLCPP_WARN(this->get_logger(), "Failed to capture frame.");
+      RCLCPP_WARN(this->get_logger(), "采集视频帧失败");
     }
   }
 
-private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cloud_;
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_camera_;  // 发布视频流
-  std::shared_ptr<cv::VideoCapture> cap_;  // OpenCV VideoCapture 用于拉流
-  std::shared_ptr<unitree::robot::ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>> subscriber_;
+  rclcpp::Publisher<sensor_msgs::msg::Image>     ::SharedPtr pub_camera_;
+  std::unique_ptr<
+    unitree::robot::ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>
+  > subscriber_;
+  std::shared_ptr<cv::VideoCapture> cap_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
-// main 函数
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<DDSToRosNode>());
+
+  auto options = rclcpp::NodeOptions()
+    .allow_undeclared_parameters(true)  // 不强制预先 declare
+    .arguments({
+      "--ros-args",
+      "--params-file", "src/Ros2Go2Estimator/config.yaml"
+    });
+
+  auto node = std::make_shared<DDSToRosNode>(options);
+  rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
 }

@@ -1,0 +1,105 @@
+dds_rostopic_node:
+  ros__parameters:
+    # 网络接口
+    network_interface: "br0"
+    
+    # ROS2 发布的话题名
+    pub_cloud_topic: "SMX/Go2Lidar"
+    pub_camera_topic: "SMX/Go2Camera"
+
+    # DDS 订阅的原始 topic
+    dds_topic: "rt/utlidar/cloud"
+
+    # GStreamer 拉流管线
+    gst_pipeline: >
+      udpsrc address=230.1.1.1 port=1720 multicast-iface=br0 !
+      application/x-rtp, media=video, encoding-name=H264 !
+      rtph264depay ! h264parse ! avdec_h264 !
+      videoconvert ! video/x-raw,width=1280,height=720,format=BGR !
+      appsink drop=1 sync=false
+
+fusion_estimator_node:
+  ros__parameters:
+    # 网络接口
+    network_interface: "br0"
+
+    # 订阅 Go2 DDS 低层状态的 Topic
+    dds_lowstate_topic: "rt/lowstate"
+
+    # 订阅复位/模式命令的 ROS2 Topic
+    sub_mode_topic: "SMX/JoystickCmd"
+
+    # 发布融合结果的 Topic
+    pub_estimation_topic: "SMX/Estimation"
+
+    # 发布全 3D 里程计的 Topic
+    pub_odom_topic: "SMX/Odom"
+
+    # 发布平面里程计的 Topic
+    pub_odom2d_topic: "SMX/Odom_2D"
+
+    # Odometry 消息里的 frame_id
+    odom_frame: "odom"
+
+    # Odometry 消息里的 child_frame_id
+    base_frame: "base_link"
+    base_frame_2d: "base_link_2D"
+
+    # URDF 文件路径（相对于 package 根目录）
+    urdf_file: "cfg/go2_description.urdf"
+
+    # 可在线调整的三轴补偿角，单位：度
+    Modify_Par_1: 0.0
+    Modify_Par_2: 0.0
+    Modify_Par_3: 0.0
+
+message_handle_node:
+  ros__parameters:
+    # 订阅的 PointCloud2 话题
+    sub_pointcloud_topic: "/SMX/Go2Lidar"
+    # 发布的 LaserScan 话题
+    pub_laserscan_topic: "/SMX/Scan"
+
+    # 订阅的 3D 里程计话题（用于发布 odom→base_link TF）
+    sub_odom_topic: "/SMX/Odom"
+    # 订阅的 2D 里程计话题（用于发布 odom→base_link_2D TF）
+    sub_odom2d_topic: "/SMX/Odom_2D"
+
+    # LaserScan 参数
+    angle_min: -1.5708    # -π/2
+    angle_max:  1.5708    #  π/2
+    angle_increment: 0.0056
+    range_min: 0.1
+    range_max: 30.0
+    min_height: 0.15
+    max_height: 3.0
+
+    # TF frames
+    map_frame: "map"
+    odom_frame: "odom"
+    base_frame: "base_link"
+    base_frame_2d: "base_link_2D"
+    utlidar_frame: "utlidar_lidar"
+
+    # 静态 TF 从 base_link 到 utlidar_lidar 的 translation + RPY
+    static_tx: 0.28945
+    static_ty: 0.0
+    static_tz: -0.046825
+    static_r: 0.0       # roll
+    static_p: 2.8782    # pitch
+    static_y: 0.0       # yaw
+
+sport_control_node:
+  ros__parameters:
+    # 网络接口
+    network_interface: "br0"
+
+    # 各个 ROS 话题名称
+    joy_topic:       "/joy"
+    sport_cmd_topic: "SMX/SportCmd"
+    guide_topic:     "/cmd_vel"
+    voice_topic:     "SMX/JoystickCmd"
+    gimbal_topic:    "SMX/GimbalAngleCmd"
+
+    # 导航目标 pose 的 frame_id（sendGoal 中用）
+    map_frame_id:    "map"

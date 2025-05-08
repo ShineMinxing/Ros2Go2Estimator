@@ -39,7 +39,7 @@ def generate_launch_description():
                         'bash',
                         '-c',
                         'source ~/.bashrc && '
-                        'ros2 run fusion_estimator fusion_estimator_node --ros-args -p network_interface:=br0;'
+                        'ros2 run fusion_estimator fusion_estimator_node;'
                         'read -p "Press enter to close"'
                     ],
                     output="screen",
@@ -58,7 +58,7 @@ def generate_launch_description():
                         'bash',
                         '-c',
                         'source ~/.bashrc && '
-                        'ros2 run dds_rostopic dds_rostopic_node --ros-args -p network_interface:=br0 & '
+                        'ros2 run dds_rostopic dds_rostopic_node & '
                         'ros2 run message_handle message_handle_node; '
                         'read -p "Press enter to close"'
                     ],

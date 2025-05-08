@@ -11,7 +11,7 @@
 - sport_control包读取joystick输入和其他指令，使用unitree_sdk2提供的接口控制机器狗;
 - fusion_estimator包发布对应“base_link”的话题SMX/Odom和对应“base_link_2D”的话题SMX/Odom_2D;
 - dds_rostopic包将dds的lidar、230.1.1.1:1720的相机数据发布为ros2话题;
-- message_handle包完成SMX/Odom和SMX/Odom_2D的tf，此外，将frame“utlidar_lidar”的pointcloud2转换为“base_link_2D”话题/SMX/Scan;
+- message_handle包完成SMX/Odom和SMX/Odom_2D的tf，此外，将frame“utlidar_lidar”的pointcloud2转换为“base_link_2D”话题/TEST/Scan;
 - 使用SLAM Toolbox建图时额外ros2 launch sport_control slam_launch.py;
 - 使用Nav2导航时额外ros2 launch sport_control nav_launch.py;
 - SLAM Toolbox目前是纯里程计建图，请擅长SLAM的同志自行把地图匹配加进去;

@@ -45,10 +45,10 @@ class MessageHandleNode(Node):
 
         # —— 从参数服务器读取所有配置 —— #
         p = self.declare_parameter
-        self.sub_pc_topic   = p('sub_pointcloud_topic', '/SMX/Go2Lidar').value
-        self.pub_scan_topic = p('pub_laserscan_topic',  '/SMX/Scan').value
-        self.sub_odom_topic   = p('sub_odom_topic',   '/SMX/Odom').value
-        self.sub_odom2d_topic = p('sub_odom2d_topic', '/SMX/Odom_2D').value
+        self.sub_pc_topic   = p('sub_pointcloud_topic', '/TEST/Go2Lidar').value
+        self.pub_scan_topic = p('pub_laserscan_topic',  '/TEST/Scan').value
+        self.sub_odom_topic   = p('sub_odom_topic',   '/TEST/Odom').value
+        self.sub_odom2d_topic = p('sub_odom2d_topic', '/TEST/Odom_2D').value
 
         self.angle_min       = p('angle_min',       -math.pi/2).value
         self.angle_max       = p('angle_max',        math.pi/2).value
@@ -149,8 +149,10 @@ class MessageHandleNode(Node):
             return
 
         T = self.transform_to_matrix(trans)
-        pts = np.array([p for p in pc2.read_points(msg, field_names=("x","y","z"), skip_nans=True)],
-                       dtype=np.float64).reshape(-1,3)
+        pts_list = [ [p[0], p[1], p[2]] for p in pc2.read_points(msg, field_names=("x","y","z"), skip_nans=True) ]
+        if not pts_list:
+            return
+        pts = np.array(pts_list, dtype=np.float64)
         ones = np.ones((pts.shape[0],1))
         hom = np.hstack((pts,ones))
         pts_b = (T @ hom.T).T[:,:3]
@@ -222,7 +224,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     # 将 workspace 根目录下的 config.yaml 注入到参数服务器
-    config_file = 'src/Ros2Go2Estimator/config.yaml'
+    config_file = '/home/smx/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml'
     cli_args = ['--ros-args', '--params-file', config_file]
 
     node = MessageHandleNode(cli_args=cli_args)

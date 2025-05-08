@@ -25,8 +25,8 @@ using namespace DataFusion;
 class FusionEstimatorNode : public rclcpp::Node
 {
 public:
-    explicit FusionEstimatorNode(const rclcpp::NodeOptions & opt = rclcpp::NodeOptions())
-    : Node("fusion_estimator_node", opt)
+    FusionEstimatorNode(const rclcpp::NodeOptions &options)
+    : Node("fusion_estimator_node", options)
     {
         /* ────────────── ① 读取所有可能的参数 ────────────── */
         std::string network_if;
@@ -34,13 +34,13 @@ public:
         std::string dds_topic;
         this->get_parameter_or("dds_lowstate_topic", dds_topic, std::string("rt/lowstate"));
         std::string sub_mode_topic;
-        this->get_parameter_or("sub_mode_topic", sub_mode_topic, std::string("SMX/JoystickCmd"));
+        this->get_parameter_or("sub_mode_topic", sub_mode_topic, std::string("TEST/JoystickCmd"));
         std::string pub_estimation_topic;
-        this->get_parameter_or("pub_estimation_topic", pub_estimation_topic, std::string("SMX/Estimation"));
+        this->get_parameter_or("pub_estimation_topic", pub_estimation_topic, std::string("TEST/Estimation"));
         std::string pub_odom_topic;
-        this->get_parameter_or("pub_odom_topic", pub_odom_topic, std::string("SMX/Odom"));
+        this->get_parameter_or("pub_odom_topic", pub_odom_topic, std::string("TEST/Odom"));
         std::string pub_odom_2d_topic;
-        this->get_parameter_or("pub_odom2d_topic", pub_odom_2d_topic, std::string("SMX/Odom_2D"));
+        this->get_parameter_or("pub_odom2d_topic", pub_odom_2d_topic, std::string("TEST/Odom_2D"));
         std::string odom_frame;
         this->get_parameter_or("odom_frame", odom_frame, std::string("odom"));
         std::string base_frame;
@@ -82,9 +82,6 @@ public:
         Sensor_Legs        = std::make_shared<SensorLegs>       (StateSpaceModel1_Sensors[0]);
 
         /* 可在线调三轴角度补偿 */
-        this->declare_parameter<double>("Modify_Par_1", 0.0);
-        this->declare_parameter<double>("Modify_Par_2", 0.0);
-        this->declare_parameter<double>("Modify_Par_3", 0.0);
         ParameterCorrectCallback = this->add_on_set_parameters_callback(
         std::bind(&FusionEstimatorNode::Modify_Par_Fun, this, std::placeholders::_1));
 
@@ -507,14 +504,15 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
 
-  auto opts = rclcpp::NodeOptions()
-                .allow_undeclared_parameters(true)
-                .arguments({
-                  "--ros-args",
-                  "--params-file", "src/Ros2Go2Estimator/config.yaml"
-                });
+  auto options = rclcpp::NodeOptions()
+    .allow_undeclared_parameters(true)
+    .automatically_declare_parameters_from_overrides(true)
+    .arguments({
+        "--ros-args",
+        "--params-file", "/home/smx/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml"
+    });
 
-  auto node = std::make_shared<FusionEstimatorNode>(opts);
+  auto node = std::make_shared<FusionEstimatorNode>(options);
   node->ObtainParameter();
   rclcpp::spin(node);
   rclcpp::shutdown();

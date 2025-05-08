@@ -1,7 +1,7 @@
 dds_rostopic_node:
   ros__parameters:
     # 网络接口
-    network_interface: "br0"
+    network_interface: "enx00e04c8d0eff"
     
     # ROS2 发布的话题名
     pub_cloud_topic: "SMX/Go2Lidar"
@@ -12,7 +12,7 @@ dds_rostopic_node:
 
     # GStreamer 拉流管线
     gst_pipeline: >
-      udpsrc address=230.1.1.1 port=1720 multicast-iface=br0 !
+      udpsrc address=230.1.1.1 port=1720 multicast-iface=enx00e04c8d0eff !
       application/x-rtp, media=video, encoding-name=H264 !
       rtph264depay ! h264parse ! avdec_h264 !
       videoconvert ! video/x-raw,width=1280,height=720,format=BGR !
@@ -21,7 +21,7 @@ dds_rostopic_node:
 fusion_estimator_node:
   ros__parameters:
     # 网络接口
-    network_interface: "br0"
+    network_interface: "enx00e04c8d0eff"
 
     # 订阅 Go2 DDS 低层状态的 Topic
     dds_lowstate_topic: "rt/lowstate"
@@ -92,7 +92,7 @@ message_handle_node:
 sport_control_node:
   ros__parameters:
     # 网络接口
-    network_interface: "br0"
+    network_interface: "enx00e04c8d0eff"
 
     # 各个 ROS 话题名称
     joy_topic:       "/joy"

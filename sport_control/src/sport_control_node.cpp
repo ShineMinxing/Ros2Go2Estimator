@@ -24,26 +24,16 @@
 class SportControlNode : public rclcpp::Node
 {
 public:
-    explicit SportControlNode(const rclcpp::NodeOptions & opt = rclcpp::NodeOptions())
-    : Node("sport_control_node", opt)
+    SportControlNode(const rclcpp::NodeOptions &options)
+    : Node("sport_control_node", options)
     {
-        // 声明参数
-        this->declare_parameter<std::string>("network_interface", "br0");
-        this->declare_parameter<std::string>("joy_topic",       "/joy");
-        this->declare_parameter<std::string>("sport_cmd_topic", "SMX/SportCmd");
-        this->declare_parameter<std::string>("guide_topic",     "/cmd_vel");
-        this->declare_parameter<std::string>("voice_topic",     "SMX/JoystickCmd");
-        this->declare_parameter<std::string>("gimbal_topic",    "SMX/GimbalAngleCmd");
-        this->declare_parameter<std::string>("map_frame_id",    "map");
-
-        // 读取并保存到成员
-        network_interface_ = this->get_parameter("network_interface").as_string();
-        joy_topic_         = this->get_parameter("joy_topic").as_string();
-        sport_cmd_topic_   = this->get_parameter("sport_cmd_topic").as_string();
-        guide_topic_       = this->get_parameter("guide_topic").as_string();
-        voice_topic_       = this->get_parameter("voice_topic").as_string();
-        gimbal_topic_      = this->get_parameter("gimbal_topic").as_string();
-        map_frame_id_      = this->get_parameter("map_frame_id").as_string();
+        this->get_parameter_or<std::string>("network_interface", network_interface_, std::string("br0"));
+        this->get_parameter_or<std::string>("joy_topic",         joy_topic_,         std::string("/joy"));
+        this->get_parameter_or<std::string>("sport_cmd_topic",   sport_cmd_topic_,   std::string("TEST/SportCmd"));
+        this->get_parameter_or<std::string>("guide_topic",       guide_topic_,       std::string("/cmd_vel"));
+        this->get_parameter_or<std::string>("voice_topic",       voice_topic_,       std::string("TEST/JoystickCmd"));
+        this->get_parameter_or<std::string>("gimbal_topic",      gimbal_topic_,      std::string("TEST/GimbalAngleCmd"));
+        this->get_parameter_or<std::string>("map_frame_id",      map_frame_id_,      std::string("map"));
 
         // 初始化Unitree通道工厂
         unitree::robot::ChannelFactory::Instance()->Init(0, network_interface_);
@@ -63,10 +53,10 @@ public:
         guide_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
             guide_topic_, 10, std::bind(&SportControlNode::guide_callback, this, std::placeholders::_1));
         
-        // 用于发布语音对话控制命令到 "SMX/JoystickCmd" 话题d
+        // 用于发布语音对话控制命令到 "TEST/JoystickCmd" 话题d
         sport_cmd_pub = this->create_publisher<std_msgs::msg::String>(voice_topic_, 10);
 
-        // 用于发布Gimbal控制命令到 "SMX/GimbalAngleCmd" 话题
+        // 用于发布Gimbal控制命令到 "TEST/GimbalAngleCmd" 话题
         gimbal_cmd_pub = this->create_publisher<std_msgs::msg::Float64MultiArray>(gimbal_topic_, 10);
 
         // 记录初始化时的时间
@@ -717,13 +707,14 @@ private:
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
-    auto opts = rclcpp::NodeOptions()
-                .allow_undeclared_parameters(true)
-                .arguments({
-                "--ros-args",
-                "--params-file", "src/Ros2Go2Estimator/config.yaml"
-                });
-    auto node = std::make_shared<SportControlNode>(opts);
+    auto options = rclcpp::NodeOptions()
+        .allow_undeclared_parameters(true)
+        .automatically_declare_parameters_from_overrides(true)
+        .arguments({
+        "--ros-args",
+        "--params-file", "/home/smx/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml"
+        });
+    auto node = std::make_shared<SportControlNode>(options);
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;

@@ -22,7 +22,7 @@ def generate_launch_description():
                 '-c', 
                 'source ~/.bashrc && '
                 'ros2 run joy joy_node & '
-                'ros2 run sport_control sport_control_node --ros-args -p network_interface:=br0; '
+                'ros2 run sport_control sport_control_node; '
                 'read -p "Press enter to close"'
             ],
             output="screen",

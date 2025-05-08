@@ -24,11 +24,11 @@ public:
 
     std::string pub_cloud_topic;
     this->get_parameter_or<std::string>(
-      "pub_cloud_topic", pub_cloud_topic, std::string("SMX/Go2Lidar"));
+      "pub_cloud_topic", pub_cloud_topic, std::string("TEST/Go2Lidar"));
 
     std::string pub_camera_topic;
     this->get_parameter_or<std::string>(
-      "pub_camera_topic", pub_camera_topic, std::string("SMX/Go2Camera"));
+      "pub_camera_topic", pub_camera_topic, std::string("TEST/Go2Camera"));
 
     std::string dds_topic_in;
     this->get_parameter_or<std::string>(
@@ -136,10 +136,11 @@ int main(int argc, char **argv)
   rclcpp::init(argc, argv);
 
   auto options = rclcpp::NodeOptions()
-    .allow_undeclared_parameters(true)  // 不强制预先 declare
+    .allow_undeclared_parameters(true)
+    .automatically_declare_parameters_from_overrides(true)
     .arguments({
       "--ros-args",
-      "--params-file", "src/Ros2Go2Estimator/config.yaml"
+      "--params-file", "/home/smx/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml"
     });
 
   auto node = std::make_shared<DDSToRosNode>(options);

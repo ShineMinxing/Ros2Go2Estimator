@@ -3,20 +3,21 @@
 
 - 一种高精度里程计解决方案，
 - 基于纯运动学的双足/四足机器人位置估计算法，目前仅使用IMU、足压力传感器、关节角度和角速度，不依赖相机或Lidar，但可将信号融合进去，进一步提高估计精度；
-- sport_control包读取joystick输入和其他指令，使用unitree_sdk2提供的接口控制机器狗；
-- fusion_estimator包发布对应“base_link”的话题SMX/Odom和对应“base_link_2D”的话题SMX/Odom_2D；
-- dds_rostopic包将dds的lidar、230.1.1.1:1720的相机数据发布为ros2话题；
-- message_handle包完成SMX/Odom和SMX/Odom_2D的tf，此外，将frame“utlidar_lidar”的pointcloud2转换为“base_link_2D”话题/SMX/Scan；
-- 使用SLAM Toolbox建图时额外ros2 launch sport_control slam_launch.py;
-- 使用Nav2导航时额外ros2 launch sport_control nav_launch.py；
+- 使用config.yaml进行通信概览和话题名称设置.
 
 ## 📚 补充说明
-- 切换两足、四足无需在估计器内做模式切换
-- 目前没有调整参数做补偿，工程使用时可进一步提升精度
-- SLAM Toolbox目前是纯里程计建图，请擅长SLAM的同志自行把地图匹配加进去
-- Nav2同样请自行调整，加载的地图记得改成自己的
-- 可安装voice_chat进行deepseek的语音交流https://github.com/ShineMinxing/Ros2Chat
-- 也适用于foxy系统，把apt install的软件改为-foxy-即可
+- 切换两足、四足无需在估计器内做模式切换;
+- 目前没有调整参数做补偿，工程使用时可进一步提升精度;
+- sport_control包读取joystick输入和其他指令，使用unitree_sdk2提供的接口控制机器狗;
+- fusion_estimator包发布对应“base_link”的话题SMX/Odom和对应“base_link_2D”的话题SMX/Odom_2D;
+- dds_rostopic包将dds的lidar、230.1.1.1:1720的相机数据发布为ros2话题;
+- message_handle包完成SMX/Odom和SMX/Odom_2D的tf，此外，将frame“utlidar_lidar”的pointcloud2转换为“base_link_2D”话题/SMX/Scan;
+- 使用SLAM Toolbox建图时额外ros2 launch sport_control slam_launch.py;
+- 使用Nav2导航时额外ros2 launch sport_control nav_launch.py;
+- SLAM Toolbox目前是纯里程计建图，请擅长SLAM的同志自行把地图匹配加进去;
+- Nav2同样请自行调整，加载的地图记得改成自己的;
+- 可安装voice_chat进行deepseek的语音交流https://github.com/ShineMinxing/Ros2Chat;
+- 也适用于foxy系统，把apt install的软件改为-foxy-即可;
 
 ## 🎥 视频演示
 ### 最新进展(点击图片进入视频)

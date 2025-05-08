@@ -24,7 +24,7 @@ public:
   : Node("dds_rostopic_node", options)
   {
     // 声明一个 ROS 参数，用于指定网络接口
-    this->declare_parameter<std::string>("network_interface", "br0");
+    this->declare_parameter<std::string>("network_interface", "enx00e04c6800e6");
     // 获取参数
     std::string network_if = this->get_parameter("network_interface").as_string();
     RCLCPP_INFO(this->get_logger(), "Using network interface: %s", network_if.c_str());
@@ -43,7 +43,7 @@ public:
     subscriber_->InitChannel(std::bind(&DDSToRosNode::CbPointCloud, this, std::placeholders::_1));
 
     // 5. 创建 OpenCV VideoCapture 对象用于拉取视频流
-    std::string pipeline = "udpsrc address=230.1.1.1 port=1720 multicast-iface=br0 ! "
+    std::string pipeline = "udpsrc address=230.1.1.1 port=1720 multicast-iface=enx00e04c6800e6 ! "
                            "application/x-rtp, media=video, encoding-name=H264 ! rtph264depay ! "
                            "h264parse ! avdec_h264 ! videoconvert ! video/x-raw,width=1280,height=720,format=BGR ! appsink drop=1 sync=false";
     cap_ = std::make_shared<cv::VideoCapture>(pipeline, cv::CAP_GSTREAMER);

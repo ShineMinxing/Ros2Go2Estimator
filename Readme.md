@@ -7,8 +7,8 @@
 - fusion_estimator包发布对应“base_link”的话题SMX/Odom和对应“base_link_2D”的话题SMX/Odom_2D；
 - dds_rostopic包将dds的lidar、230.1.1.1:1720的相机数据发布为ros2话题；
 - message_handle包完成SMX/Odom和SMX/Odom_2D的tf，此外，将frame“utlidar_lidar”的pointcloud2转换为“base_link_2D”话题/SMX/Scan；
-- 使用SLAM Toolbox建图时放开sport_control/launch/sport_control_launch.py的启动项ros2 run slam_toolbox async_slam_toolbox_node ......；
-- 使用Nav2导航时放开sport_control/launch/sport_control_launch.py的启动项ros2 launch nav2_bringup bringup_launch.py ......；
+- 使用SLAM Toolbox建图时放开sport_control/launch/go2_launch.py的启动项ros2 run slam_toolbox async_slam_toolbox_node ......；
+- 使用Nav2导航时放开sport_control/launch/go2_launch.py的启动项ros2 launch nav2_bringup bringup_launch.py ......；
 
 ## 📚 补充说明
 - 切换两足、四足无需在估计器内做模式切换
@@ -50,9 +50,9 @@ mkdir -p ~/ros2_ws/LeggedRobot/src && cd ~/ros2_ws/LeggedRobot/src
 git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
 cd ..
 colcon build
-ros2 launch sport_control sport_control_launch.py
+ros2 launch sport_control go2_launch.py
 ```
-- 记得在src/sport_control/launch/sport_control_launch.py中，修改机器狗的网口名，我个人的是“br0”。
+- 记得在src/sport_control/launch/go2_launch.py中，修改机器狗的网口名，我个人的是“enx00e04c6800e6”。
 - 同时按下手柄的LT、RT，解锁/锁定手柄；按住RT+左摇杆进行移动；按住RT+右摇杆进行旋转；更多操作请看sport_control_node.cpp。
 
 ## 📄 相关文档

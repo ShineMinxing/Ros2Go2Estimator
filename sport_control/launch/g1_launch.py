@@ -21,10 +21,4 @@ def generate_launch_description():
             executable='g1_control_node',
             output='screen',
         ),
-        # 图像处理 节点
-        Node(
-            package='spot_detector',
-            executable='spot_detector_node',
-            output='screen',
-        ),
     ])

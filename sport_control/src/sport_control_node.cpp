@@ -26,8 +26,8 @@ class SportControlNode : public rclcpp::Node
 public:
     SportControlNode() : Node("sport_control_node")
     {
-        // 通过参数获取网络接口名称，设置默认值为 "enx00e04c6800e6" 或其他有效接口
-        this->declare_parameter<std::string>("network_interface", "enx00e04c6800e6");
+        // 通过参数获取网络接口名称，设置默认值为 "br0" 或其他有效接口
+        this->declare_parameter<std::string>("network_interface", "br0");
         std::string network_interface = this->get_parameter("network_interface").as_string();
 
         // 初始化Unitree通道工厂

@@ -22,7 +22,7 @@ def generate_launch_description():
                 '-c', 
                 'source ~/.bashrc && '
                 'ros2 run joy joy_node & '
-                'ros2 run sport_control sport_control_node --ros-args -p network_interface:=enx00e04c6800e6; '
+                'ros2 run sport_control sport_control_node --ros-args -p network_interface:=br0; '
                 'read -p "Press enter to close"'
             ],
             output="screen",
@@ -39,7 +39,7 @@ def generate_launch_description():
                         'bash',
                         '-c',
                         'source ~/.bashrc && '
-                        'ros2 run fusion_estimator fusion_estimator_node --ros-args -p network_interface:=enx00e04c6800e6;'
+                        'ros2 run fusion_estimator fusion_estimator_node --ros-args -p network_interface:=br0;'
                         'read -p "Press enter to close"'
                     ],
                     output="screen",
@@ -58,7 +58,7 @@ def generate_launch_description():
                         'bash',
                         '-c',
                         'source ~/.bashrc && '
-                        'ros2 run dds_rostopic dds_rostopic_node --ros-args -p network_interface:=enx00e04c6800e6 & '
+                        'ros2 run dds_rostopic dds_rostopic_node --ros-args -p network_interface:=br0 & '
                         'ros2 run message_handle message_handle_node; '
                         'read -p "Press enter to close"'
                     ],
@@ -68,7 +68,7 @@ def generate_launch_description():
         ),
 
         TimerAction(
-            period=5.0,
+            period=3.0,
             actions=[
                 ExecuteProcess(
                     cmd=[
@@ -78,10 +78,6 @@ def generate_launch_description():
                         'bash',
                         '-c',
                         'source ~/.bashrc && '
-                        'ros2 run slam_toolbox async_slam_toolbox_node --ros-args --params-file ~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/slam_params.yaml & '
-                        # 'ros2 launch nav2_bringup bringup_launch.py '
-                        #     'map:=~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/local_file/map_new.yaml '
-                        #     'params_file:=~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/Guide.yaml; '
                         'rviz2 -d ~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/SMXFE_odm.rviz;'
                         'read -p "Press enter to close"'
                     ],

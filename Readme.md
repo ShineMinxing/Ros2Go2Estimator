@@ -1,9 +1,9 @@
 # Ros2Go2Estimator 🦾
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-- 一种高精度里程计解决方案，
-- 基于纯运动学的双足/四足机器人位置估计算法，目前仅使用IMU、足压力传感器、关节角度和角速度，不依赖相机或Lidar，但可将信号融合进去，进一步提高估计精度；
-- 使用config.yaml进行通信概览和话题名称设置.
+- 一种高精度里程计解决方案,
+- 基于纯运动学的双足/四足机器人位置估计算法，目前仅使用IMU、足压力传感器、关节角度和角速度，不依赖相机或Lidar，但可将信号融合进去，进一步提高估计精度;
+- 使用config.yaml进行话题名称设置.
 
 ## 📚 补充说明
 - 切换两足、四足无需在估计器内做模式切换;
@@ -14,10 +14,10 @@
 - message_handle包完成SMX/Odom和SMX/Odom_2D的tf，此外，将frame“utlidar_lidar”的pointcloud2转换为“base_link_2D”话题/TEST/Scan;
 - 使用SLAM Toolbox建图时额外ros2 launch sport_control slam_launch.py;
 - 使用Nav2导航时额外ros2 launch sport_control nav_launch.py;
+- 使用Amov机架跟踪时额外ros2 launch sport_control g1_launch.py;
 - SLAM Toolbox目前是纯里程计建图，请擅长SLAM的同志自行把地图匹配加进去;
 - Nav2同样请自行调整，加载的地图记得改成自己的;
-- 可安装voice_chat进行deepseek的语音交流https://github.com/ShineMinxing/Ros2Chat;
-- 也适用于foxy系统，把apt install的软件改为-foxy-即可;
+- 也适用于Ubuntu20.04 foxy系统，把apt install的软件改为-foxy-即可;
 
 ## 🎥 视频演示
 ### 最新进展(点击图片进入视频)
@@ -36,11 +36,11 @@
 
 4. 语音控制机器狗，实现意图猜测和在预建地图导航。比如说“没有纸张了”，自动执行导航‘去仓库’
 [![实验4](https://i2.hdslb.com/bfs/archive/5b95c6eda3b6c9c8e0ba4124c1af9f3da10f39d2.jpg)](https://www.bilibili.com/video/BV1HCQBYUEvk/)
+- 额外安装https://github.com/ShineMinxing/Ros2Chat
 
 5. 机器狗与吊舱的协同光点/人脸跟踪
 [![实验5](https://i0.hdslb.com/bfs/archive/5496e9d0b40915c62b69701fd1e23af7d6ffe7de.jpg)](https://www.bilibili.com/video/BV1faG1z3EFF/)
-- 额外安装https://github.com/ShineMinxing/Ros2ImageProcess.git，调用spot_detector_node/face_check_node进行光点/人脸提取
-- 额外安装https://github.com/ShineMinxing/Ros2AmovG1.git，调用g1_control_node进行跟踪控制（无需额外硬件）
+- 额外安装https://github.com/ShineMinxing/Ros2ImageProcess.git，https://github.com/ShineMinxing/Ros2AmovG1.git
 
 ## ⚙️ 安装指南
 
@@ -50,10 +50,11 @@ sudo apt install ros-humble-joy ros-humble-nav2-msgs ros-humble-slam-toolbox ros
 mkdir -p ~/ros2_ws/LeggedRobot/src && cd ~/ros2_ws/LeggedRobot/src
 git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
 cd ..
+# 1. 搜索工程中的所有 /home/unitree/ros2_ws/LeggedRobot，替换为您的路径
+# 2. 把 src/Ros2Go2Estimator/config.yaml 中的所有 br0 替换为您的网卡名，如 enxf8e43b808e06
 colcon build
 ros2 launch sport_control go2_launch.py
 ```
-- 记得在src/sport_control/launch/go2_launch.py中，修改机器狗的网口名，我个人的是“br0”。
 - 同时按下手柄的LT、RT，解锁/锁定手柄；按住RT+左摇杆进行移动；按住RT+右摇杆进行旋转；更多操作请看sport_control_node.cpp。
 
 ## 📄 相关文档

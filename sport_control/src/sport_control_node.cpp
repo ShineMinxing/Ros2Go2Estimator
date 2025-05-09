@@ -27,12 +27,12 @@ public:
     SportControlNode(const rclcpp::NodeOptions &options)
     : Node("sport_control_node", options)
     {
-        this->get_parameter_or<std::string>("network_interface", network_interface_, std::string("br0"));
+        this->get_parameter_or<std::string>("network_interface", network_interface_, std::string("enxf8e43b808e06"));
         this->get_parameter_or<std::string>("joy_topic",         joy_topic_,         std::string("/joy"));
         this->get_parameter_or<std::string>("sport_cmd_topic",   sport_cmd_topic_,   std::string("TEST/SportCmd"));
         this->get_parameter_or<std::string>("guide_topic",       guide_topic_,       std::string("/cmd_vel"));
-        this->get_parameter_or<std::string>("voice_topic",       voice_topic_,       std::string("TEST/JoystickCmd"));
-        this->get_parameter_or<std::string>("gimbal_topic",      gimbal_topic_,      std::string("TEST/GimbalAngleCmd"));
+        this->get_parameter_or<std::string>("joy_string_cmd",    joy_string_cmd_,    std::string("TEST/JoyStringCmd"));
+        this->get_parameter_or<std::string>("joy_float_cmd",     joy_float_cmd_,     std::string("TEST/JoyFloatCmd"));
         this->get_parameter_or<std::string>("map_frame_id",      map_frame_id_,      std::string("map"));
 
         // 初始化Unitree通道工厂
@@ -53,11 +53,11 @@ public:
         guide_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
             guide_topic_, 10, std::bind(&SportControlNode::guide_callback, this, std::placeholders::_1));
         
-        // 用于发布语音对话控制命令到 "TEST/JoystickCmd" 话题d
-        sport_cmd_pub = this->create_publisher<std_msgs::msg::String>(voice_topic_, 10);
+        // 用于发布string控制命令到 "TEST/JoyStringCmd" 话题
+        joy_string_cmd_pub = this->create_publisher<std_msgs::msg::String>(joy_string_cmd_, 10);
 
-        // 用于发布Gimbal控制命令到 "TEST/GimbalAngleCmd" 话题
-        gimbal_cmd_pub = this->create_publisher<std_msgs::msg::Float64MultiArray>(gimbal_topic_, 10);
+        // 用于发布float控制命令到 "TEST/JoyFloatCmd" 话题
+        joy_float_cmd_pub = this->create_publisher<std_msgs::msg::Float64MultiArray>(joy_float_cmd_, 10);
 
         // 记录初始化时的时间
         Last_Operation_Time = this->get_clock()->now();
@@ -83,8 +83,8 @@ private:
     std::string joy_topic_;
     std::string sport_cmd_topic_;
     std::string guide_topic_;
-    std::string voice_topic_;
-    std::string gimbal_topic_;
+    std::string joy_string_cmd_;
+    std::string joy_float_cmd_;
     std::string map_frame_id_;
 
     std::unique_ptr<unitree::robot::go2::SportClient> sport_client;
@@ -97,8 +97,8 @@ private:
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr guide_sub_;
     double guide_x_vel = 0, guide_y_vel = 0, guide_yaw_vel = 0;
 
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr sport_cmd_pub;
-    rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr gimbal_cmd_pub;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr joy_string_cmd_pub;
+    rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr joy_float_cmd_pub;
 
     rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr nav_to_pose_client;
 
@@ -129,7 +129,7 @@ private:
     {
         std_msgs::msg::String msg;
         msg.data = cmd;
-        sport_cmd_pub->publish(msg);
+        joy_string_cmd_pub->publish(msg);
         std::cout << "发布String命令: " << cmd << std::endl;
     }
 
@@ -609,9 +609,10 @@ private:
                         + "; Gimbal Pitch Vel: " + std::to_string(Value2);
                     Last_Operation_Time = this->get_clock()->now();
                     std_msgs::msg::Float64MultiArray angle_msg;
+                    angle_msg.data.push_back(static_cast<double>(30000001));
                     angle_msg.data.push_back(static_cast<double>(-50*Value1));
                     angle_msg.data.push_back(static_cast<double>(-50*Value2));
-                    gimbal_cmd_pub->publish(angle_msg);
+                    joy_float_cmd_pub->publish(angle_msg);
                     break;
                 }
             case 22232400:
@@ -712,7 +713,7 @@ int main(int argc, char *argv[])
         .automatically_declare_parameters_from_overrides(true)
         .arguments({
         "--ros-args",
-        "--params-file", "/home/smx/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml"
+        "--params-file", "/home/unitree/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml"
         });
     auto node = std::make_shared<SportControlNode>(options);
     rclcpp::spin(node);

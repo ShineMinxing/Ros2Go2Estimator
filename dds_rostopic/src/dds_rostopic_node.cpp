@@ -20,7 +20,7 @@ public:
     // 读取参数，如果 YAML 里没配置，就用第二个参数里的默认值
     std::string network_if;
     this->get_parameter_or<std::string>(
-      "network_interface", network_if, std::string("br0"));
+      "network_interface", network_if, std::string("enxf8e43b808e06"));
 
     std::string pub_cloud_topic;
     this->get_parameter_or<std::string>(
@@ -38,7 +38,7 @@ public:
     this->get_parameter_or<std::string>(
       "gst_pipeline", gst_pipeline,
       std::string(
-        "udpsrc address=230.1.1.1 port=1720 multicast-iface=br0 ! "
+        "udpsrc address=230.1.1.1 port=1720 multicast-iface=enxf8e43b808e06 ! "
         "application/x-rtp, media=video, encoding-name=H264 ! rtph264depay ! "
         "h264parse ! avdec_h264 ! videoconvert ! video/x-raw,width=1280,height=720,format=BGR ! "
         "appsink drop=1 sync=false"
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
     .automatically_declare_parameters_from_overrides(true)
     .arguments({
       "--ros-args",
-      "--params-file", "/home/smx/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml"
+      "--params-file", "/home/unitree/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml"
     });
 
   auto node = std::make_shared<DDSToRosNode>(options);

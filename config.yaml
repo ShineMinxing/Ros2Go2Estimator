@@ -1,7 +1,7 @@
 dds_rostopic_node:
   ros__parameters:
     # 网络接口
-    network_interface: "enx00e04c8d0eff"
+    network_interface: "br0"
     
     # ROS2 发布的话题名
     pub_cloud_topic: "SMX/Go2Lidar"
@@ -12,7 +12,7 @@ dds_rostopic_node:
 
     # GStreamer 拉流管线
     gst_pipeline: >
-      udpsrc address=230.1.1.1 port=1720 multicast-iface=enx00e04c8d0eff !
+      udpsrc address=230.1.1.1 port=1720 multicast-iface=br0 !
       application/x-rtp, media=video, encoding-name=H264 !
       rtph264depay ! h264parse ! avdec_h264 !
       videoconvert ! video/x-raw,width=1280,height=720,format=BGR !
@@ -21,13 +21,13 @@ dds_rostopic_node:
 fusion_estimator_node:
   ros__parameters:
     # 网络接口
-    network_interface: "enx00e04c8d0eff"
+    network_interface: "br0"
 
     # 订阅 Go2 DDS 低层状态的 Topic
     dds_lowstate_topic: "rt/lowstate"
 
     # 订阅复位/模式命令的 ROS2 Topic
-    sub_mode_topic: "SMX/JoystickCmd"
+    sub_mode_topic: "SMX/JoyStringCmd"
 
     # 发布融合结果的 Topic
     pub_estimation_topic: "SMX/Estimation"
@@ -92,14 +92,14 @@ message_handle_node:
 sport_control_node:
   ros__parameters:
     # 网络接口
-    network_interface: "enx00e04c8d0eff"
+    network_interface: "br0"
 
     # 各个 ROS 话题名称
     joy_topic:       "/joy"
     sport_cmd_topic: "SMX/SportCmd"
     guide_topic:     "/cmd_vel"
-    voice_topic:     "SMX/JoystickCmd"
-    gimbal_topic:    "SMX/GimbalAngleCmd"
+    joy_string_cmd:     "SMX/JoyStringCmd"
+    joy_float_cmd:    "SMX/JoyFloatCmd"
 
     # 导航目标 pose 的 frame_id（sendGoal 中用）
     map_frame_id:    "map"

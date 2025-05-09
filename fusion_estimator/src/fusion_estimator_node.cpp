@@ -30,11 +30,11 @@ public:
     {
         /* ────────────── ① 读取所有可能的参数 ────────────── */
         std::string network_if;
-        this->get_parameter_or("network_interface", network_if, std::string("br0"));
+        this->get_parameter_or("network_interface", network_if, std::string("enxf8e43b808e06"));
         std::string dds_topic;
         this->get_parameter_or("dds_lowstate_topic", dds_topic, std::string("rt/lowstate"));
         std::string sub_mode_topic;
-        this->get_parameter_or("sub_mode_topic", sub_mode_topic, std::string("TEST/JoystickCmd"));
+        this->get_parameter_or("sub_mode_topic", sub_mode_topic, std::string("TEST/JoyStringCmd"));
         std::string pub_estimation_topic;
         this->get_parameter_or("pub_estimation_topic", pub_estimation_topic, std::string("TEST/Estimation"));
         std::string pub_odom_topic;
@@ -509,7 +509,7 @@ int main(int argc, char ** argv)
     .automatically_declare_parameters_from_overrides(true)
     .arguments({
         "--ros-args",
-        "--params-file", "/home/smx/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml"
+        "--params-file", "/home/unitree/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml"
     });
 
   auto node = std::make_shared<FusionEstimatorNode>(options);

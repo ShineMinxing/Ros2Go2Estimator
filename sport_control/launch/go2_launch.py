@@ -88,6 +88,6 @@ def generate_launch_description():
     ]
 )
 
-# ros2 run nav2_map_server map_saver_cli -f /home/smx/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/local_file/new_map --fmt png
+# ros2 run nav2_map_server map_saver_cli -f /home/unitree/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/local_file/new_map --fmt png
 # rviz2 -d ~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/SMXFE_odm.rviz
 # ros2 run rqt_tf_tree rqt_tf_tree

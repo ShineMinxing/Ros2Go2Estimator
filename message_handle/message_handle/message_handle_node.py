@@ -224,7 +224,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     # 将 workspace 根目录下的 config.yaml 注入到参数服务器
-    config_file = '/home/smx/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml'
+    config_file = '/home/unitree/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml'
     cli_args = ['--ros-args', '--params-file', config_file]
 
     node = MessageHandleNode(cli_args=cli_args)

@@ -119,6 +119,8 @@ private:
     bool ChattingEnable = 0;
     float MotionEnable = 0;
     float SpeedScalse = 0.25;
+    std::string ModeCheckForm = "unknown";
+    std::string ModeCheckMode = "unknown";
 
     std::string Last_Operation;
     rclcpp::Time Last_Operation_Time;
@@ -259,29 +261,6 @@ private:
                 Last_Operation = "Unlock the joystick.";
             else
                 Last_Operation = "Lock the joystick.";
-
-            if(AIModeEnable)
-            {
-                AIModeEnable = 0;
-                if(WalkUprightEnable)
-                    ErrorCode = sport_client->WalkUpright(0);
-                WalkUprightEnable = 0;
-                if(FreeJumpEnable)
-                    ErrorCode = sport_client->FreeJump(0);
-                FreeJumpEnable = 0;
-                if(FreeAvoidEnable)
-                    ErrorCode = sport_client->FreeBound(0);
-                FreeAvoidEnable = 0;
-                if(FreeBoundEnable)
-                    ErrorCode = sport_client->FreeAvoid(0);
-                FreeBoundEnable = 0;
-                if(ContinuousGaitEnable)
-                    ErrorCode = sport_client->ContinuousGait(0);
-                ContinuousGaitEnable = 0;
-                ErrorCode = motion_client->SelectMode("normal");
-                ChattingEnable = 0;
-                publishVoiceChatCommand("voice chat stop");
-            }
         }
 
         if(!JoystickEnable)
@@ -442,14 +421,26 @@ private:
                 ErrorCode = sport_client->StopMove();
                 break;
             case 14150000:
-                AIModeEnable = 1 - AIModeEnable;
-                if(AIModeEnable)
-                    Last_Operation = "AI Mode Start. ";
-                else
-                    Last_Operation = "AI Mode Stop. ";
-                SpeedScalse = 0.1;
                 Last_Operation_Time = this->get_clock()->now();
-                ErrorCode = motion_client->SelectMode("ai");
+                ErrorCode = motion_client->CheckMode(ModeCheckForm,ModeCheckMode);
+                Last_Operation = "The Form is: " + ModeCheckForm + "; The Mode is: " + ModeCheckMode + ".";
+                if (ErrorCode)
+                    break;
+                if(ModeCheckMode == "ai")
+                {
+                    Last_Operation = "Normal Mode Start. ";
+                    AIModeEnable = 0;
+                    Last_Operation_Time = this->get_clock()->now();
+                    ErrorCode = motion_client->SelectMode("normal");
+                }
+                else if(ModeCheckMode == "normal")
+                {
+                    Last_Operation = "AI Mode Start. ";
+                    AIModeEnable = 1;
+                    SpeedScalse = 0.1;
+                    Last_Operation_Time = this->get_clock()->now();
+                    ErrorCode = motion_client->SelectMode("ai");
+                }
                 break;
             case 25202123:
                 if(abs(Value1)>0.1 || abs(Value2)>0.1 || abs(Value3)>0.1)

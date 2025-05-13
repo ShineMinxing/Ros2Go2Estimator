@@ -14,8 +14,8 @@ def generate_launch_description():
                 '-c',
                 'source ~/.bashrc && '
                 'ros2 launch nav2_bringup bringup_launch.py '
-                'map:=~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/local_file/map_new.yaml '
-                'params_file:=~/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/Guide.yaml; '
+                'map:=/home/unitree/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/local_file/new_map.yaml '
+                'params_file:=/home/unitree/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/Guide.yaml; '
                 'read -p "Press enter to close"'
             ],
             output="screen",

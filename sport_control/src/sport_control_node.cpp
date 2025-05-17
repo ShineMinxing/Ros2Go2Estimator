@@ -151,7 +151,7 @@ private:
     // 回调函数，处理SportCmd消息
     void sport_cmd_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
     {
-        if (msg->data.size() >= 5 && (Axes[2]<-0.9 || Axes[5]<-0.9))
+        if (msg->data.size() >= 5 && (Axes[2]<-0.9))
         {
             int action = static_cast<int>(msg->data[0]);
             Actions(action, msg->data[1], msg->data[2], msg->data[3], msg->data[4]);
@@ -368,14 +368,6 @@ private:
             else if(Buttons[3])
             {
                 Actions(22130000,0,0,0,0);
-            }
-            else if(Buttons[4])
-            {
-                Actions(22140000,0,0,0,0);
-            }
-            else if(Buttons[5])
-            {
-                Actions(22150000,0,0,0,0);
             }
             else if(Buttons[7])
             {
@@ -623,35 +615,25 @@ private:
                     ErrorCode = sport_client->Euler(0.0, PitchAngle, YawAngle);
                 }
                 break;
-            case 22140000:
-                Last_Operation = "Gimbal Angle Reset. ";
+            case 22100000:
+                Last_Operation = "Gimbal Control Enable.";
+                Last_Operation_Time = this->get_clock()->now();
+                PublishStringCommand("Gimbal Control Enable");
+                break;
+            case 22110000:
+                Last_Operation = "Gimbal Control Disable.";
+                Last_Operation_Time = this->get_clock()->now();
+                PublishStringCommand("Gimbal Control Disable");
+                break;
+            case 22120000:
+                Last_Operation = "Gimbal Angle Reset.";
                 Last_Operation_Time = this->get_clock()->now();
                 PublishStringCommand("Gimbal Angle Reset");
                 break;
-            case 22150000:
-                Last_Operation = "Gimbal Control Enable Change. ";
-                Last_Operation_Time = this->get_clock()->now();
-                PublishStringCommand("Gimbal Control Enable Change");
-                break;
-            case 22100000:
-                Last_Operation = "Motion 1 Hello. ";
-                Last_Operation_Time = this->get_clock()->now();
-                ErrorCode = sport_client->Hello();
-                break;
-            case 22110000:
-                Last_Operation = "Motion 2 Sit. ";
-                Last_Operation_Time = this->get_clock()->now();
-                ErrorCode = sport_client->Sit();
-                break;
-            case 22120000:
-                Last_Operation = "Motion 3 RiseSit. ";
-                Last_Operation_Time = this->get_clock()->now();
-                ErrorCode = sport_client->RiseSit();
-                break;
             case 22130000:
-                Last_Operation = "Motion 4 Dance1. ";
+                Last_Operation = "Gimbal Control Motion Enable Change. ";
                 Last_Operation_Time = this->get_clock()->now();
-                ErrorCode = sport_client->Dance1();
+                PublishStringCommand("Gimbal Control Motion");
                 break;
             case 22170000:
                 ChattingEnable = 1 - ChattingEnable;

@@ -8,7 +8,6 @@ project(fusion_estimator)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(unitree_sdk2 REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(rosidl_cmake REQUIRED)
 find_package(builtin_interfaces REQUIRED)
@@ -64,7 +63,6 @@ add_executable(fusion_estimator_node ${ESTIMATOR_SOURCES})
 target_include_directories(fusion_estimator_node PRIVATE
   ${rclcpp_INCLUDE_DIRS}
   ${sensor_msgs_INCLUDE_DIRS}
-  ${unitree_sdk2_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}/rosidl_generator_cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${urdfdom_headers_INCLUDE_DIRS}
@@ -83,8 +81,6 @@ ament_target_dependencies(fusion_estimator_node
 # 链接库
 target_link_libraries(fusion_estimator_node
   ${ament_LIBRARIES}
-  unitree_sdk2
-  ddsc ddscxx
   ${cpp_typesupport_target}
   ${urdfdom_LIBRARIES}
 )

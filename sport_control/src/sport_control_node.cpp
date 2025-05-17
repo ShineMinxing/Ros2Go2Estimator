@@ -29,10 +29,10 @@ public:
     {
         this->get_parameter_or<std::string>("network_interface", network_interface_, std::string("enxf8e43b808e06"));
         this->get_parameter_or<std::string>("joy_topic",         joy_topic_,         std::string("/joy"));
-        this->get_parameter_or<std::string>("sport_cmd_topic",   sport_cmd_topic_,   std::string("TEST/SportCmd"));
+        this->get_parameter_or<std::string>("sport_cmd_topic",   sport_cmd_topic_,   std::string("NoYamlRead/SportCmd"));
         this->get_parameter_or<std::string>("guide_topic",       guide_topic_,       std::string("/cmd_vel"));
-        this->get_parameter_or<std::string>("joy_string_cmd",    joy_string_cmd_,    std::string("TEST/JoyStringCmd"));
-        this->get_parameter_or<std::string>("joy_float_cmd",     joy_float_cmd_,     std::string("TEST/JoyFloatCmd"));
+        this->get_parameter_or<std::string>("joy_string_cmd",    joy_string_cmd_,    std::string("NoYamlRead/JoyStringCmd"));
+        this->get_parameter_or<std::string>("joy_float_cmd",     joy_float_cmd_,     std::string("NoYamlRead/JoyFloatCmd"));
         this->get_parameter_or<std::string>("map_frame_id",      map_frame_id_,      std::string("map"));
 
         // 初始化Unitree通道工厂
@@ -53,10 +53,10 @@ public:
         guide_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
             guide_topic_, 10, std::bind(&SportControlNode::guide_callback, this, std::placeholders::_1));
         
-        // 用于发布string控制命令到 "TEST/JoyStringCmd" 话题
+        // 用于发布string控制命令到 "NoYamlRead/JoyStringCmd" 话题
         joy_string_cmd_pub = this->create_publisher<std_msgs::msg::String>(joy_string_cmd_, 10);
 
-        // 用于发布float控制命令到 "TEST/JoyFloatCmd" 话题
+        // 用于发布float控制命令到 "NoYamlRead/JoyFloatCmd" 话题
         joy_float_cmd_pub = this->create_publisher<std_msgs::msg::Float64MultiArray>(joy_float_cmd_, 10);
 
         // 记录初始化时的时间
@@ -122,12 +122,12 @@ private:
     std::string ModeCheckForm = "unknown";
     std::string ModeCheckMode = "unknown";
 
-    std::string Last_Operation;
+    std::string Last_Operation, Last_Motion;
     rclcpp::Time Last_Operation_Time;
     float Last_Operation_Duration_Time;
 
     // 发布模式命令的函数
-    void publishVoiceChatCommand(const std::string &cmd)
+    void PublishStringCommand(const std::string &cmd)
     {
         std_msgs::msg::String msg;
         msg.data = cmd;
@@ -251,6 +251,7 @@ private:
         Last_Operation_Duration_Time = elapsed_time.seconds();
         std::cout << "Error Code: " << ErrorCode << std::endl;
         std::cout << "Last Operation: " << Last_Operation << "   " << Last_Operation_Duration_Time << "s passed." << std::endl;
+        std::cout << "Last Motion: " << Last_Motion << "   " << Last_Operation_Duration_Time << "s passed." << std::endl;
         
         if(Axes[2]<-0.9 && Axes[5]<-0.9 && Last_Operation_Duration_Time > 0.5)
         {
@@ -321,7 +322,7 @@ private:
 
         if(Axes[5] < -0.5 && Axes[2] > 0.9 && JoystickEnable && !AIModeEnable && Last_Operation_Duration_Time > 0.5) // 常规模式，只按住RT键，进行动作判断
         {
-            Actions(25161700,Axes[6],Axes[7], 0, 0);
+            Actions(25262700,Axes[6],Axes[7], 0, 0);
             if(Buttons[0])
             {
                 Actions(25100000,0,0,0,0);
@@ -367,6 +368,14 @@ private:
             else if(Buttons[3])
             {
                 Actions(22130000,0,0,0,0);
+            }
+            else if(Buttons[4])
+            {
+                Actions(22140000,0,0,0,0);
+            }
+            else if(Buttons[5])
+            {
+                Actions(22150000,0,0,0,0);
             }
             else if(Buttons[7])
             {
@@ -415,11 +424,6 @@ private:
                 Last_Operation_Time = this->get_clock()->now();
                 ErrorCode = sport_client->Damp();
                 break;
-            case 16170000:
-                Last_Operation = "Stop Move. ";
-                Last_Operation_Time = this->get_clock()->now();
-                ErrorCode = sport_client->StopMove();
-                break;
             case 14150000:
                 Last_Operation_Time = this->get_clock()->now();
                 ErrorCode = motion_client->CheckMode(ModeCheckForm,ModeCheckMode);
@@ -452,7 +456,7 @@ private:
                     if(Forward_Speed>=0)
                         Forward_Speed = Forward_Speed / 2.5 * 3.8;
         
-                    Last_Operation = "Moving to Forward: " + std::to_string(Forward_Speed) 
+                    Last_Motion = "Moving to Forward: " + std::to_string(Forward_Speed) 
                     + "; Leftward: " + std::to_string(Leftward_Speed)
                     + "; Turning: " + std::to_string(Turning_Speed);
         
@@ -463,7 +467,7 @@ private:
                     ErrorCode = sport_client->Move(Forward_Speed, Leftward_Speed, Turning_Speed);
                 }
                 break;
-            case 25161700:
+            case 25262700:
                 if(Value2==-1)
                 {
                     Last_Operation = "Speed Scale 25%. ";
@@ -524,7 +528,7 @@ private:
                 break;
             case 25140000:
                 Last_Operation = "Reset Estimator Position. ";
-                publishVoiceChatCommand("Estimator_Position_Reset");
+                PublishStringCommand("Estimator Position Reset");
                 
                 break;
             case 25170000:
@@ -596,7 +600,7 @@ private:
                 break;
             case 22202100:
                 {
-                    Last_Operation = "Gimbal Yaw Vel: " + std::to_string(Value1)
+                    Last_Motion = "Gimbal Yaw Vel: " + std::to_string(Value1)
                         + "; Gimbal Pitch Vel: " + std::to_string(Value2);
                     Last_Operation_Time = this->get_clock()->now();
                     std_msgs::msg::Float64MultiArray angle_msg;
@@ -612,15 +616,22 @@ private:
                     float YawAngle = 0.6 * Value1;
                     float PitchAngle = -0.75 * Value2;
         
-                    Last_Operation = "PitchAngle: " + std::to_string(PitchAngle)
+                    Last_Motion = "PitchAngle: " + std::to_string(PitchAngle)
                     + "; YawAngle: " + std::to_string(YawAngle);
         
                     Last_Operation_Time = this->get_clock()->now();
-        
-                    std::cout << "Twisting... " << std::endl;
-        
                     ErrorCode = sport_client->Euler(0.0, PitchAngle, YawAngle);
                 }
+                break;
+            case 22140000:
+                Last_Operation = "Gimbal Angle Reset. ";
+                Last_Operation_Time = this->get_clock()->now();
+                PublishStringCommand("Gimbal Angle Reset");
+                break;
+            case 22150000:
+                Last_Operation = "Gimbal Control Enable Change. ";
+                Last_Operation_Time = this->get_clock()->now();
+                PublishStringCommand("Gimbal Control Enable Change");
                 break;
             case 22100000:
                 Last_Operation = "Motion 1 Hello. ";
@@ -648,13 +659,13 @@ private:
                 {
                     Last_Operation = "Listening. ";
                     ErrorCode = Vui_client->SetBrightness(3);
-                    publishVoiceChatCommand("voice chat start");
+                    PublishStringCommand("voice chat start");
                 }
                 else
                 {
                     Last_Operation = "Replying. ";
                     ErrorCode = Vui_client->SetBrightness(0);
-                    publishVoiceChatCommand("voice chat stop");
+                    PublishStringCommand("voice chat stop");
                 }
                 Last_Operation_Time = this->get_clock()->now();
                 break;

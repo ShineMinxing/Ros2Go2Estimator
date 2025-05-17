@@ -1,10 +1,16 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/imu.hpp>
+#include <std_msgs/msg/float64_multi_array.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 
 // Unitree DDS
 #include <unitree/robot/channel/channel_subscriber.hpp>
 #include <unitree/common/time/time_tool.hpp>
+#include <unitree/idl/go2/LowState_.hpp>
 #include <unitree/idl/ros2/PointCloud2_.hpp>
 
 // OpenCV & GStreamer
@@ -22,26 +28,39 @@ public:
     this->get_parameter_or<std::string>(
       "network_interface", network_if, std::string("enxf8e43b808e06"));
 
+    std::string pub_joint_topic;
+    this->get_parameter_or<std::string>(
+      "pub_joint_topic", pub_joint_topic, std::string("NoYamlRead/Go2Joint"));
+
+    std::string pub_imu_topic;
+    this->get_parameter_or<std::string>(
+      "pub_imu_topic", pub_imu_topic, std::string("NoYamlRead/Go2IMU"));
+
     std::string pub_cloud_topic;
     this->get_parameter_or<std::string>(
-      "pub_cloud_topic", pub_cloud_topic, std::string("TEST/Go2Lidar"));
+      "pub_cloud_topic", pub_cloud_topic, std::string("NoYamlRead/Go2Lidar"));
 
     std::string pub_camera_topic;
     this->get_parameter_or<std::string>(
-      "pub_camera_topic", pub_camera_topic, std::string("TEST/Go2Camera"));
+      "pub_camera_topic", pub_camera_topic, std::string("NoYamlRead/Go2Camera"));
 
-    std::string dds_topic_in;
+    std::string dds_lowstate_topic;
+      this->get_parameter_or("dds_lowstate_topic", dds_lowstate_topic, std::string("rt/lowstate"));
+
+    std::string dds_pointcloud_topic;
     this->get_parameter_or<std::string>(
-      "dds_topic", dds_topic_in, std::string("rt/utlidar/cloud"));
+      "dds_pointcloud_topic", dds_pointcloud_topic, std::string("rt/utlidar/cloud"));
 
     std::string gst_pipeline;
     this->get_parameter_or<std::string>(
       "gst_pipeline", gst_pipeline,
       std::string(
         "udpsrc address=230.1.1.1 port=1720 multicast-iface=enxf8e43b808e06 ! "
-        "application/x-rtp, media=video, encoding-name=H264 ! rtph264depay ! "
-        "h264parse ! avdec_h264 ! videoconvert ! video/x-raw,width=1280,height=720,format=BGR ! "
-        "appsink drop=1 sync=false"
+        "application/x-rtp,media=video,encoding-name=H264 ! rtph264depay ! "
+        "h264parse ! nvv4l2decoder enable-max-performance=1 ! "
+        "nvvidconv output-buffers=1 ! "
+        "video/x-raw,format=BGRx,width=1280,height=720 ! "
+        "videoconvert ! video/x-raw,format=BGR ! appsink drop=1 sync=false"
       )
     );
 
@@ -50,15 +69,21 @@ public:
 
     // 2) ROS2 发布者
     pub_cloud_  = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_cloud_topic,  10);
-    pub_camera_ = this->create_publisher<sensor_msgs::msg::Image>     (pub_camera_topic, 10);
+    pub_camera_ = this->create_publisher<sensor_msgs::msg::Image>(pub_camera_topic, 10);
+    pub_imu_    = this->create_publisher<sensor_msgs::msg::Imu>(pub_imu_topic, 10);
+    pub_joint_  = this->create_publisher<std_msgs::msg::Float64MultiArray>(pub_joint_topic, 10);
+
 
     // 3) DDS 订阅
-    subscriber_ = std::make_unique<
-      unitree::robot::ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>
-    >(dds_topic_in);
-    subscriber_->InitChannel(
-      std::bind(&DDSToRosNode::CbPointCloud, this, std::placeholders::_1)
-    );
+    Pointcloud_subscriber = std::make_unique<
+      unitree::robot::ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>>(dds_pointcloud_topic);
+    Pointcloud_subscriber->InitChannel(
+      std::bind(&DDSToRosNode::CbPointCloud, this, std::placeholders::_1));
+
+    Lowstate_subscriber = std::make_unique<
+      unitree::robot::ChannelSubscriber<unitree_go::msg::dds_::LowState_>>(dds_lowstate_topic);
+    Lowstate_subscriber->InitChannel(
+      std::bind(&DDSToRosNode::LowStateCallback, this, std::placeholders::_1), 1);
 
     // 4) OpenCV 拉流
     cap_ = std::make_shared<cv::VideoCapture>(gst_pipeline, cv::CAP_GSTREAMER);
@@ -103,6 +128,57 @@ private:
     pub_cloud_->publish(cloud);
   }
 
+  void LowStateCallback(const void* message)
+  {
+    const auto& low_state = *static_cast<const unitree_go::msg::dds_::LowState_*>(message);
+    rclcpp::Time stamp = this->get_clock()->now();
+
+    /* ---------- ① IMU -> sensor_msgs/Imu ---------- */
+    sensor_msgs::msg::Imu imu_msg;
+    imu_msg.header.stamp    = stamp;
+    imu_msg.header.frame_id = "base_imu";
+
+    /* RPY → Quaternion */
+    tf2::Quaternion q_tf;
+    double roll  =  low_state.imu_state().rpy()[0];
+    double pitch =  low_state.imu_state().rpy()[1];
+    double yaw   =  low_state.imu_state().rpy()[2];
+    q_tf.setRPY(roll, pitch, yaw);
+    imu_msg.orientation             = tf2::toMsg(q_tf);
+    imu_msg.orientation_covariance  = {0.0};
+
+    /* 角速度（rad/s） */
+    imu_msg.angular_velocity.x = low_state.imu_state().gyroscope()[0];
+    imu_msg.angular_velocity.y = low_state.imu_state().gyroscope()[1];
+    imu_msg.angular_velocity.z = low_state.imu_state().gyroscope()[2];
+
+    /* 线加速度（m/s²） */
+    imu_msg.linear_acceleration.x = low_state.imu_state().accelerometer()[0];
+    imu_msg.linear_acceleration.y = low_state.imu_state().accelerometer()[1];
+    imu_msg.linear_acceleration.z = low_state.imu_state().accelerometer()[2];
+
+    pub_imu_->publish(imu_msg);
+
+    /* ---------- ② 关节/足端 -> Float64MultiArray ---------- */
+    std_msgs::msg::Float64MultiArray joint_msg;
+    /* 数据布置：
+      data[ 0..11] : 12× 关节位置  (q)
+      data[12..23] : 12× 关节速度  (dq)
+      data[24..27] : 4 × 足端力    (foot_force)
+    */
+    joint_msg.data.resize(28);
+    // 电机位置 & 速度
+    for (int leg = 0; leg < 4; ++leg) {
+        for (int i = 0; i < 3; ++i) {
+            int idx = leg * 3 + i;
+            joint_msg.data[idx]       = low_state.motor_state()[idx].q();      // 位置
+            joint_msg.data[12 + idx]  = low_state.motor_state()[idx].dq();     // 速度
+        }
+        joint_msg.data[24 + leg] = low_state.foot_force()[leg];                // 足端力
+    }
+    pub_joint_->publish(joint_msg);
+  }
+
   void timer_callback()
   {
     cv::Mat frame;
@@ -122,11 +198,13 @@ private:
     }
   }
 
+
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cloud_;
-  rclcpp::Publisher<sensor_msgs::msg::Image>     ::SharedPtr pub_camera_;
-  std::unique_ptr<
-    unitree::robot::ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>
-  > subscriber_;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_camera_;
+  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr   pub_imu_;
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr pub_joint_;
+  std::unique_ptr<unitree::robot::ChannelSubscriber<unitree_go::msg::dds_::LowState_>> Lowstate_subscriber;
+  std::unique_ptr<unitree::robot::ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>> Pointcloud_subscriber;
   std::shared_ptr<cv::VideoCapture> cap_;
   rclcpp::TimerBase::SharedPtr timer_;
 };

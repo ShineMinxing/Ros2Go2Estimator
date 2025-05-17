@@ -4,11 +4,14 @@ dds_rostopic_node:
     network_interface: "br0"
     
     # ROS2 发布的话题名
+    pub_imu_topic: "SMX/Go2IMU"
+    pub_joint_topic: "SMX/Go2Joint"
     pub_cloud_topic: "SMX/Go2Lidar"
     pub_camera_topic: "SMX/Go2Camera"
 
     # DDS 订阅的原始 topic
-    dds_topic: "rt/utlidar/cloud"
+    dds_lowstate_topic: "rt/lowstate"
+    dds_pointcloud_topic: "rt/utlidar/cloud"
 
     # GStreamer 拉流管线
     gst_pipeline: >
@@ -20,11 +23,10 @@ dds_rostopic_node:
 
 fusion_estimator_node:
   ros__parameters:
-    # 网络接口
-    network_interface: "br0"
 
-    # 订阅 Go2 DDS 低层状态的 Topic
-    dds_lowstate_topic: "rt/lowstate"
+    # 订阅Go2传感器Topic
+    sub_imu_topic: "SMX/Go2IMU"
+    sub_joint_topic: "SMX/Go2Joint"
 
     # 订阅复位/模式命令的 ROS2 Topic
     sub_mode_topic: "SMX/JoyStringCmd"
@@ -98,8 +100,8 @@ sport_control_node:
     joy_topic:       "/joy"
     sport_cmd_topic: "SMX/SportCmd"
     guide_topic:     "/cmd_vel"
-    joy_string_cmd:     "SMX/JoyStringCmd"
-    joy_float_cmd:    "SMX/JoyFloatCmd"
+    joy_string_cmd:  "SMX/JoyStringCmd"
+    joy_float_cmd:   "SMX/JoyFloatCmd"
 
     # 导航目标 pose 的 frame_id（sendGoal 中用）
     map_frame_id:    "map"

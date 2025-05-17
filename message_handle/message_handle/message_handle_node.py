@@ -45,10 +45,10 @@ class MessageHandleNode(Node):
 
         # —— 从参数服务器读取所有配置 —— #
         p = self.declare_parameter
-        self.sub_pc_topic   = p('sub_pointcloud_topic', '/TEST/Go2Lidar').value
-        self.pub_scan_topic = p('pub_laserscan_topic',  '/TEST/Scan').value
-        self.sub_odom_topic   = p('sub_odom_topic',   '/TEST/Odom').value
-        self.sub_odom2d_topic = p('sub_odom2d_topic', '/TEST/Odom_2D').value
+        self.sub_pc_topic   = p('sub_pointcloud_topic', '/NoYamlRead/Go2Lidar').value
+        self.pub_scan_topic = p('pub_laserscan_topic',  '/NoYamlRead/Scan').value
+        self.sub_odom_topic   = p('sub_odom_topic',   '/NoYamlRead/Odom').value
+        self.sub_odom2d_topic = p('sub_odom2d_topic', '/NoYamlRead/Odom_2D').value
 
         self.angle_min       = p('angle_min',       -math.pi/2).value
         self.angle_max       = p('angle_max',        math.pi/2).value

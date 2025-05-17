@@ -1,137 +1,110 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
- <tabbed_widget parent="main_window" name="Main Window">
-  <Tab containers="1" tab_name="Basic">
+ <tabbed_widget name="Main Window" parent="main_window">
+  <Tab tab_name="Basic" containers="1">
    <Container>
-    <DockSplitter count="3" orientation="-" sizes="0.35;0.35;0.3">
-     <DockSplitter count="2" orientation="|" sizes="0.5;0.5">
+    <DockSplitter sizes="0.349887;0.349887;0.300226" count="3" orientation="-">
+     <DockSplitter sizes="0.500334;0.499666" count="2" orientation="|">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="6.510202" right="1742343353.877719" left="1742343315.427507" bottom="-0.788812"/>
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1747465153.701157" bottom="-0.029833" left="1747465148.702086" top="0.028195"/>
         <limitY/>
-        <curve name="/SMX/Estimation/estimated_xyz[0]" color="#ff0006"/>
-        <curve name="/SMX/Estimation/estimated_xyz[3]" color="#ffe400"/>
-        <curve name="/SMX/Estimation/estimated_xyz[6]" color="#0500ff"/>
+        <curve name="/SMX/Estimation/estimated_xyz.0" color="#1f77b4"/>
+        <curve name="/SMX/Estimation/estimated_xyz.1" color="#ff7f0e"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="6.364581" right="1742343353.877719" left="1742343315.427507" bottom="-0.287919"/>
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1747465153.701157" bottom="-0.016252" left="1747465148.702086" top="0.016221"/>
         <limitY/>
-        <curve name="/SMX/Estimation/estimated_rpy[0]" color="#ff0600"/>
-        <curve name="/SMX/Estimation/estimated_rpy[3]" color="#fff300"/>
-        <curve name="/SMX/Estimation/estimated_rpy[6]" color="#0031ff"/>
-       </plot>
-      </DockArea>
-     </DockSplitter>
-     <DockSplitter count="2" orientation="|" sizes="0.5;0.5">
-      <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="0.083122" right="1742343353.877719" left="1742343315.427507" bottom="-0.157512"/>
-        <limitY/>
-        <curve name="/SMX/Estimation/estimated_xyz[1]" color="#ff1000"/>
-        <curve name="/SMX/Estimation/estimated_xyz[4]" color="#fff400"/>
-        <curve name="/SMX/Estimation/estimated_xyz[7]" color="#000aff"/>
-       </plot>
-      </DockArea>
-      <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="0.078906" right="1742343353.877719" left="1742343315.427507" bottom="-0.093493"/>
-        <limitY/>
-        <curve name="/SMX/Estimation/estimated_rpy[1]" color="#ff0300"/>
-        <curve name="/SMX/Estimation/estimated_rpy[4]" color="#efff00"/>
-        <curve name="/SMX/Estimation/estimated_rpy[7]" color="#0011ff"/>
+        <curve name="/SMX/Estimation/estimated_rpy.0" color="#1f77b4"/>
+        <curve name="/SMX/Estimation/estimated_rpy.1" color="#ff7f0e"/>
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter count="2" orientation="|" sizes="0.5;0.5">
+     <DockSplitter sizes="0.500334;0.499666" count="2" orientation="|">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="0.965470" right="1742343353.877719" left="1742343315.427507" bottom="-1.326712"/>
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1747465153.701157" bottom="-0.028236" left="1747465148.702086" top="0.035402"/>
         <limitY/>
-        <curve name="/SMX/Estimation/estimated_xyz[2]" color="#ff0200"/>
-        <curve name="/SMX/Estimation/estimated_xyz[5]" color="#ffee00"/>
-        <curve name="/SMX/Estimation/estimated_xyz[8]" color="#001fff"/>
+        <curve name="/SMX/Estimation/estimated_xyz.3" color="#d62728"/>
+        <curve name="/SMX/Estimation/estimated_xyz.4" color="#17becf"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="0.083303" right="1742343353.877719" left="1742343315.427507" bottom="-0.088648"/>
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1747465153.701157" bottom="-0.027887" left="1747465148.702086" top="0.015835"/>
         <limitY/>
-        <curve name="/SMX/Estimation/estimated_rpy[2]" color="#ff0300"/>
-        <curve name="/SMX/Estimation/estimated_rpy[5]" color="#efff00"/>
-        <curve name="/SMX/Estimation/estimated_rpy[8]" color="#0024ff"/>
+        <curve name="/SMX/Estimation/estimated_rpy.3" color="#d62728"/>
+        <curve name="/SMX/Estimation/estimated_rpy.4" color="#f14cc1"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter sizes="0.500334;0.499666" count="2" orientation="|">
+      <DockArea name="...">
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1747465153.701157" bottom="-0.022587" left="1747465148.702086" top="0.342062"/>
+        <limitY/>
+        <curve name="/SMX/Estimation/estimated_xyz.6" color="#1ac938"/>
+        <curve name="/SMX/Estimation/estimated_xyz.7" color="#bcbd22"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1747465153.701157" bottom="-0.103606" left="1747465148.702086" top="0.020227"/>
+        <limitY/>
+        <curve name="/SMX/Estimation/estimated_rpy.6" color="#1ac938"/>
+        <curve name="/SMX/Estimation/estimated_rpy.7" color="#9467bd"/>
        </plot>
       </DockArea>
      </DockSplitter>
     </DockSplitter>
    </Container>
   </Tab>
-  <Tab containers="1" tab_name="RawHip">
+  <Tab tab_name="RawHip" containers="1">
    <Container>
-    <DockSplitter count="1" orientation="-" sizes="1">
-     <DockSplitter count="2" orientation="|" sizes="0.5;0.5">
-      <DockSplitter count="3" orientation="-" sizes="0.35;0.35;0.3">
+    <DockSplitter sizes="1" count="1" orientation="-">
+     <DockSplitter sizes="0.500334;0.499666" count="2" orientation="|">
+      <DockSplitter sizes="0.349887;0.349887;0.300226" count="3" orientation="-">
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="0.034534" right="1742343353.877719" left="1742343315.427507" bottom="-0.060060"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="1742343353.877719" bottom="-0.060060" left="1742343315.427507" top="0.034534"/>
          <limitY/>
-         <curve name="/SMX/Estimation/data_check_d[0]" color="#ff001d"/>
-         <curve name="/SMX/Estimation/data_check_d[3]" color="#fffd00"/>
-         <curve name="/SMX/Estimation/data_check_d[6]" color="#0032ff"/>
-         <curve name="/SMX/Estimation/data_check_d[9]" color="#00ff0f"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="0.137334" right="1742343353.877719" left="1742343315.427507" bottom="-0.093291"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="1742343353.877719" bottom="-0.093291" left="1742343315.427507" top="0.137334"/>
          <limitY/>
-         <curve name="/SMX/Estimation/data_check_d[1]" color="#ff2300"/>
-         <curve name="/SMX/Estimation/data_check_d[4]" color="#fbff00"/>
-         <curve name="/SMX/Estimation/data_check_d[7]" color="#0030ff"/>
-         <curve name="/SMX/Estimation/data_check_d[10]" color="#16ff00"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="-0.308207" right="1742343353.877719" left="1742343315.427507" bottom="-0.335790"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="1742343353.877719" bottom="-0.335790" left="1742343315.427507" top="-0.308207"/>
          <limitY/>
-         <curve name="/SMX/Estimation/data_check_d[2]" color="#ff0900"/>
-         <curve name="/SMX/Estimation/data_check_d[5]" color="#f3ff00"/>
-         <curve name="/SMX/Estimation/data_check_d[8]" color="#0029f5"/>
-         <curve name="/SMX/Estimation/data_check_d[11]" color="#0bff00"/>
         </plot>
        </DockArea>
       </DockSplitter>
-      <DockSplitter count="3" orientation="-" sizes="0.35;0.35;0.3">
+      <DockSplitter sizes="0.332957;0.334086;0.332957" count="3" orientation="-">
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="0.275346" right="1742343353.877719" left="1742343315.427507" bottom="-0.230168"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="0.000000" bottom="-0.100000" left="0.000000" top="0.100000"/>
          <limitY/>
          <curve name="/SMX/Estimation/data_check_e[0]" color="#ff2500"/>
-         <curve name="/SMX/Estimation/data_check_e[3]" color="#fdff00"/>
-         <curve name="/SMX/Estimation/data_check_e[6]" color="#003cff"/>
-         <curve name="/SMX/Estimation/data_check_e[9]" color="#00ff0e"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="0.125726" right="1742343353.877719" left="1742343315.427507" bottom="-0.111120"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="0.000000" bottom="-0.100000" left="0.000000" top="0.100000"/>
          <limitY/>
          <curve name="/SMX/Estimation/data_check_e[1]" color="#ff1400"/>
-         <curve name="/SMX/Estimation/data_check_e[4]" color="#ffea00"/>
-         <curve name="/SMX/Estimation/data_check_e[7]" color="#0025ff"/>
-         <curve name="/SMX/Estimation/data_check_e[10]" color="#08ff00"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="-0.290060" right="1742343353.877719" left="1742343315.427507" bottom="-0.345410"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="0.000000" bottom="-0.100000" left="0.000000" top="0.100000"/>
          <limitY/>
          <curve name="/SMX/Estimation/data_check_e[2]" color="#ff0b00"/>
-         <curve name="/SMX/Estimation/data_check_e[5]" color="#fffd00"/>
-         <curve name="/SMX/Estimation/data_check_e[8]" color="#0040ff"/>
-         <curve name="/SMX/Estimation/data_check_e[11]" color="#00ff05"/>
         </plot>
        </DockArea>
       </DockSplitter>
@@ -139,84 +112,60 @@
     </DockSplitter>
    </Container>
   </Tab>
-  <Tab containers="1" tab_name="WorldHip">
+  <Tab tab_name="WorldHip" containers="1">
    <Container>
-    <DockSplitter count="3" orientation="-" sizes="0.35;0.35;0.3">
-     <DockSplitter count="2" orientation="|" sizes="0.5;0.5">
+    <DockSplitter sizes="0.349887;0.349887;0.300226" count="3" orientation="-">
+     <DockSplitter sizes="0.500334;0.499666" count="2" orientation="|">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="-0.603241" right="1742343353.877719" left="1742343315.427507" bottom="-0.639870"/>
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1742343353.877719" bottom="-0.639870" left="1742343315.427507" top="-0.603241"/>
         <limitY/>
-        <curve name="/SMX/Estimation/feet_based_position[0]" color="#ff000c"/>
-        <curve name="/SMX/Estimation/feet_based_position[3]" color="#fbff00"/>
-        <curve name="/SMX/Estimation/feet_based_position[6]" color="#0039ff"/>
-        <curve name="/SMX/Estimation/feet_based_position[9]" color="#15ff00"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="0.157710" right="1742343353.877719" left="1742343315.427507" bottom="-0.235431"/>
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1742343353.877719" bottom="-0.235431" left="1742343315.427507" top="0.157710"/>
         <limitY/>
-        <curve name="/SMX/Estimation/feet_based_velocity[0]" color="#ff0300"/>
-        <curve name="/SMX/Estimation/feet_based_velocity[3]" color="#fdff00"/>
-        <curve name="/SMX/Estimation/feet_based_velocity[6]" color="#0023ff"/>
-        <curve name="/SMX/Estimation/feet_based_velocity[9]" color="#06ff00"/>
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter count="2" orientation="|" sizes="0.5;0.5">
+     <DockSplitter sizes="0.500334;0.499666" count="2" orientation="|">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="6.342730" right="1742343353.877719" left="1742343315.427507" bottom="6.332243"/>
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1742343353.877719" bottom="6.332243" left="1742343315.427507" top="6.342730"/>
         <limitY/>
-        <curve name="/SMX/Estimation/feet_based_position[1]" color="#ff1100"/>
-        <curve name="/SMX/Estimation/feet_based_position[4]" color="#fff800"/>
-        <curve name="/SMX/Estimation/feet_based_position[7]" color="#002bff"/>
-        <curve name="/SMX/Estimation/feet_based_position[10]" color="#33ff00"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="0.151753" right="1742343353.877719" left="1742343315.427507" bottom="-0.293389"/>
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1742343353.877719" bottom="-0.293389" left="1742343315.427507" top="0.151753"/>
         <limitY/>
-        <curve name="/SMX/Estimation/feet_based_velocity[1]" color="#ff1500"/>
-        <curve name="/SMX/Estimation/feet_based_velocity[4]" color="#fff600"/>
-        <curve name="/SMX/Estimation/feet_based_velocity[7]" color="#0020ff"/>
-        <curve name="/SMX/Estimation/feet_based_velocity[10]" color="#2aff00"/>
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter count="2" orientation="|" sizes="0.5;0.5">
+     <DockSplitter sizes="0.500334;0.499666" count="2" orientation="|">
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="0.370453" right="1742343353.877719" left="1742343315.427507" bottom="0.337523"/>
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1742343353.877719" bottom="0.337523" left="1742343315.427507" top="0.370453"/>
         <limitY/>
-        <curve name="/SMX/Estimation/feet_based_position[2]" color="#ff1300"/>
-        <curve name="/SMX/Estimation/feet_based_position[5]" color="#fffe01"/>
-        <curve name="/SMX/Estimation/feet_based_position[8]" color="#000fff"/>
-        <curve name="/SMX/Estimation/feet_based_position[11]" color="#21ff00"/>
        </plot>
       </DockArea>
       <DockArea name="...">
-       <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-        <range top="0.075679" right="1742343353.877719" left="1742343315.427507" bottom="-0.090924"/>
+       <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+        <range right="1742343353.877719" bottom="-0.090924" left="1742343315.427507" top="0.075679"/>
         <limitY/>
-        <curve name="/SMX/Estimation/feet_based_velocity[2]" color="#ff0900"/>
-        <curve name="/SMX/Estimation/feet_based_velocity[5]" color="#f9ff00"/>
-        <curve name="/SMX/Estimation/feet_based_velocity[8]" color="#0040ff"/>
-        <curve name="/SMX/Estimation/feet_based_velocity[11]" color="#19ff00"/>
        </plot>
       </DockArea>
      </DockSplitter>
     </DockSplitter>
    </Container>
   </Tab>
-  <Tab containers="1" tab_name="FootForce">
+  <Tab tab_name="FootForce" containers="1">
    <Container>
-    <DockSplitter count="2" orientation="-" sizes="0.5;0.5">
+    <DockSplitter sizes="0.500564;0.499436" count="2" orientation="-">
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range top="40.200000" right="1742343353.877719" left="1742343315.427507" bottom="31.800000"/>
+      <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+       <range right="0.000000" bottom="-0.100000" left="0.000000" top="0.100000"/>
        <limitY/>
        <curve name="/SMX/Estimation/others[0]" color="#ff0003"/>
        <curve name="/SMX/Estimation/others[1]" color="#ffdd00"/>
@@ -225,8 +174,8 @@
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-       <range top="41.008465" right="1742343353.877719" left="1742343315.427507" bottom="-1.347081"/>
+      <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+       <range right="0.000000" bottom="-0.100000" left="0.000000" top="0.100000"/>
        <limitY/>
        <curve name="/SMX/Estimation/others[0]" color="#00ff16"/>
        <curve name="/SMX/Estimation/data_check_e[0]" color="#ff1a0e"/>
@@ -237,73 +186,49 @@
     </DockSplitter>
    </Container>
   </Tab>
-  <Tab containers="1" tab_name="JointMessage">
+  <Tab tab_name="JointMessage" containers="1">
    <Container>
-    <DockSplitter count="1" orientation="-" sizes="1">
-     <DockSplitter count="3" orientation="|" sizes="0.336957;0.336957;0.326087">
-      <DockSplitter count="2" orientation="-" sizes="0.5;0.5">
+    <DockSplitter sizes="1" count="1" orientation="-">
+     <DockSplitter sizes="0.337116;0.336449;0.326435" count="3" orientation="|">
+      <DockSplitter sizes="0.500564;0.499436" count="2" orientation="-">
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="0.112934" right="1742343353.877719" left="1742343315.427507" bottom="-0.149938"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="1742343353.877719" bottom="-0.149938" left="1742343315.427507" top="0.112934"/>
          <limitY/>
-         <curve name="/SMX/Estimation/data_check_b[0]" color="#ff0006"/>
-         <curve name="/SMX/Estimation/data_check_b[3]" color="#fdff00"/>
-         <curve name="/SMX/Estimation/data_check_b[6]" color="#0002ff"/>
-         <curve name="/SMX/Estimation/data_check_b[9]" color="#25ff00"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="0.940105" right="1742343353.877719" left="1742343315.427507" bottom="-0.455665"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="1742343353.877719" bottom="-0.455665" left="1742343315.427507" top="0.940105"/>
          <limitY/>
-         <curve name="/SMX/Estimation/data_check_c[0]" color="#ff0006"/>
-         <curve name="/SMX/Estimation/data_check_c[3]" color="#fdff00"/>
-         <curve name="/SMX/Estimation/data_check_c[6]" color="#0002ff"/>
-         <curve name="/SMX/Estimation/data_check_c[9]" color="#25ff00"/>
         </plot>
        </DockArea>
       </DockSplitter>
-      <DockSplitter count="2" orientation="-" sizes="0.5;0.5">
+      <DockSplitter sizes="0.500564;0.499436" count="2" orientation="-">
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="1.046148" right="1742343353.877719" left="1742343315.427507" bottom="0.722311"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="1742343353.877719" bottom="0.722311" left="1742343315.427507" top="1.046148"/>
          <limitY/>
-         <curve name="/SMX/Estimation/data_check_b[1]" color="#ff0006"/>
-         <curve name="/SMX/Estimation/data_check_b[4]" color="#fdff00"/>
-         <curve name="/SMX/Estimation/data_check_b[7]" color="#0002ff"/>
-         <curve name="/SMX/Estimation/data_check_b[10]" color="#25ff00"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="0.480953" right="1742343353.877719" left="1742343315.427507" bottom="-0.674729"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="1742343353.877719" bottom="-0.674729" left="1742343315.427507" top="0.480953"/>
          <limitY/>
-         <curve name="/SMX/Estimation/data_check_c[1]" color="#ff0006"/>
-         <curve name="/SMX/Estimation/data_check_c[4]" color="#fdff00"/>
-         <curve name="/SMX/Estimation/data_check_c[7]" color="#0002ff"/>
-         <curve name="/SMX/Estimation/data_check_c[10]" color="#25ff00"/>
         </plot>
        </DockArea>
       </DockSplitter>
-      <DockSplitter count="2" orientation="-" sizes="0.5;0.5">
+      <DockSplitter sizes="0.500564;0.499436" count="2" orientation="-">
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="-1.354465" right="1742343353.877719" left="1742343315.427507" bottom="-1.610233"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="1742343353.877719" bottom="-1.610233" left="1742343315.427507" top="-1.354465"/>
          <limitY/>
-         <curve name="/SMX/Estimation/data_check_b[2]" color="#ff0006"/>
-         <curve name="/SMX/Estimation/data_check_b[5]" color="#fdff00"/>
-         <curve name="/SMX/Estimation/data_check_b[8]" color="#0002ff"/>
-         <curve name="/SMX/Estimation/data_check_b[11]" color="#25ff00"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="0.270545" right="1742343353.877719" left="1742343315.427507" bottom="-0.391866"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="1742343353.877719" bottom="-0.391866" left="1742343315.427507" top="0.270545"/>
          <limitY/>
-         <curve name="/SMX/Estimation/data_check_c[2]" color="#ff0006"/>
-         <curve name="/SMX/Estimation/data_check_c[5]" color="#fdff00"/>
-         <curve name="/SMX/Estimation/data_check_c[8]" color="#0002ff"/>
-         <curve name="/SMX/Estimation/data_check_c[11]" color="#25ff00"/>
         </plot>
        </DockArea>
       </DockSplitter>
@@ -311,57 +236,44 @@
     </DockSplitter>
    </Container>
   </Tab>
-  <Tab containers="1" tab_name="Temp">
+  <Tab tab_name="Temp" containers="1">
    <Container>
-    <DockSplitter count="1" orientation="-" sizes="1">
-     <DockSplitter count="2" orientation="|" sizes="0.5;0.5">
-      <DockSplitter count="2" orientation="-" sizes="0.5;0.5">
+    <DockSplitter sizes="1" count="1" orientation="-">
+     <DockSplitter sizes="0.500334;0.499666" count="2" orientation="|">
+      <DockSplitter sizes="0.500564;0.499436" count="2" orientation="-">
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="6.510202" right="1742343353.877719" left="1742343315.427507" bottom="-0.788812"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="1742343353.877719" bottom="-0.788812" left="1742343315.427507" top="6.510202"/>
          <limitY/>
-         <curve name="/SMX/Estimation/estimated_xyz[0]" color="#ff0006"/>
-         <curve name="/SMX/Estimation/estimated_xyz[3]" color="#ffe400"/>
-         <curve name="/SMX/Estimation/estimated_xyz[6]" color="#0500ff"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="XYPlot" flip_x="false" flip_y="false">
-         <range top="6.336450" right="-0.614462" left="-0.615040" bottom="6.335024"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="XYPlot">
+         <range right="0.197368" bottom="-0.100000" left="-0.197368" top="0.100000"/>
          <limitY/>
-         <curve curve_x="/SMX/Estimation/estimated_xyz[0]" curve_y="/SMX/Estimation/estimated_xyz[3]" name="2DTrajectory" color="#1f77b4"/>
         </plot>
        </DockArea>
       </DockSplitter>
-      <DockSplitter count="3" orientation="-" sizes="0.35;0.35;0.3">
+      <DockSplitter sizes="0.332957;0.334086;0.332957" count="3" orientation="-">
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="0.275346" right="1742343353.877719" left="1742343315.427507" bottom="-0.230168"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="0.000000" bottom="-0.100000" left="0.000000" top="0.100000"/>
          <limitY/>
          <curve name="/SMX/Estimation/data_check_e[0]" color="#ff2500"/>
-         <curve name="/SMX/Estimation/data_check_e[3]" color="#fdff00"/>
-         <curve name="/SMX/Estimation/data_check_e[6]" color="#003cff"/>
-         <curve name="/SMX/Estimation/data_check_e[9]" color="#00ff0e"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="0.125726" right="1742343353.877719" left="1742343315.427507" bottom="-0.111120"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="0.000000" bottom="-0.100000" left="0.000000" top="0.100000"/>
          <limitY/>
          <curve name="/SMX/Estimation/data_check_e[1]" color="#ff1400"/>
-         <curve name="/SMX/Estimation/data_check_e[4]" color="#ffea00"/>
-         <curve name="/SMX/Estimation/data_check_e[7]" color="#0025ff"/>
-         <curve name="/SMX/Estimation/data_check_e[10]" color="#08ff00"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot style="Lines" mode="TimeSeries" flip_x="false" flip_y="false">
-         <range top="-0.290060" right="1742343353.877719" left="1742343315.427507" bottom="-0.345410"/>
+        <plot style="Lines" flip_x="false" flip_y="false" mode="TimeSeries">
+         <range right="0.000000" bottom="-0.100000" left="0.000000" top="0.100000"/>
          <limitY/>
          <curve name="/SMX/Estimation/data_check_e[2]" color="#ff0b00"/>
-         <curve name="/SMX/Estimation/data_check_e[5]" color="#fffd00"/>
-         <curve name="/SMX/Estimation/data_check_e[8]" color="#0040ff"/>
-         <curve name="/SMX/Estimation/data_check_e[11]" color="#00ff05"/>
         </plot>
        </DockArea>
       </DockSplitter>
@@ -369,14 +281,14 @@
     </DockSplitter>
    </Container>
   </Tab>
-  <currentTabIndex index="3"/>
+  <currentTabIndex index="0"/>
  </tabbed_widget>
  <use_relative_time_offset enabled="0"/>
  <!-- - - - - - - - - - - - - - - -->
  <!-- - - - - - - - - - - - - - - -->
  <Plugins>
   <plugin ID="DataLoad CSV">
-   <parameters time_axis="" delimiter="0"/>
+   <default delimiter="0" time_axis=""/>
   </plugin>
   <plugin ID="DataLoad MCAP"/>
   <plugin ID="DataLoad ROS2 bags">
@@ -385,7 +297,6 @@
    <max_array_size value="100"/>
    <boolean_strings_to_number value="true"/>
    <remove_suffix_from_strings value="true"/>
-   <selected_topics value=""/>
   </plugin>
   <plugin ID="DataLoad ULog"/>
   <plugin ID="ROS2 Topic Subscriber">
@@ -394,7 +305,6 @@
    <max_array_size value="100"/>
    <boolean_strings_to_number value="true"/>
    <remove_suffix_from_strings value="true"/>
-   <selected_topics value="/SMX/Estimation"/>
   </plugin>
   <plugin ID="UDP Server"/>
   <plugin ID="WebSocket Server"/>

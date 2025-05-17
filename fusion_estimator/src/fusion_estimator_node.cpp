@@ -10,9 +10,8 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <std_msgs/msg/string.hpp>
-
-#include "unitree/robot/channel/channel_subscriber.hpp"
-#include "unitree/idl/go2/LowState_.hpp"
+#include <sensor_msgs/msg/imu.hpp>
+#include <std_msgs/msg/float64_multi_array.hpp>
 
 #include "fusion_estimator/msg/fusion_estimator_test.hpp"
 #include "GO2FusionEstimator/Estimator/EstimatorPortN.h"
@@ -29,18 +28,18 @@ public:
     : Node("fusion_estimator_node", options)
     {
         /* ────────────── ① 读取所有可能的参数 ────────────── */
-        std::string network_if;
-        this->get_parameter_or("network_interface", network_if, std::string("enxf8e43b808e06"));
-        std::string dds_topic;
-        this->get_parameter_or("dds_lowstate_topic", dds_topic, std::string("rt/lowstate"));
+        std::string sub_imu_topic;
+        this->get_parameter_or("sub_imu_topic", sub_imu_topic, std::string("NoYamlRead/Go2IMU"));
+        std::string sub_joint_topic;
+        this->get_parameter_or("sub_joint_topic", sub_joint_topic, std::string("NoYamlRead/Go2Joint"));
         std::string sub_mode_topic;
-        this->get_parameter_or("sub_mode_topic", sub_mode_topic, std::string("TEST/JoyStringCmd"));
+        this->get_parameter_or("sub_mode_topic", sub_mode_topic, std::string("NoYamlRead/JoyStringCmd"));
         std::string pub_estimation_topic;
-        this->get_parameter_or("pub_estimation_topic", pub_estimation_topic, std::string("TEST/Estimation"));
+        this->get_parameter_or("pub_estimation_topic", pub_estimation_topic, std::string("NoYamlRead/Estimation"));
         std::string pub_odom_topic;
-        this->get_parameter_or("pub_odom_topic", pub_odom_topic, std::string("TEST/Odom"));
+        this->get_parameter_or("pub_odom_topic", pub_odom_topic, std::string("NoYamlRead/Odom"));
         std::string pub_odom_2d_topic;
-        this->get_parameter_or("pub_odom2d_topic", pub_odom_2d_topic, std::string("TEST/Odom_2D"));
+        this->get_parameter_or("pub_odom2d_topic", pub_odom_2d_topic, std::string("NoYamlRead/Odom_2D"));
         std::string odom_frame;
         this->get_parameter_or("odom_frame", odom_frame, std::string("odom"));
         std::string base_frame;
@@ -50,17 +49,16 @@ public:
         std::string urdf_path_cfg;
         this->get_parameter_or("urdf_file", urdf_path_cfg, std::string("cfg/go2_description.urdf"));
 
-        /* ────────────── ② 初始化 DDS / 订阅 / 发布 ────────────── */
-        unitree::robot::ChannelFactory::Instance()->Init(0, network_if.c_str());
 
-        Lowstate_subscriber = std::make_shared<
-        unitree::robot::ChannelSubscriber<unitree_go::msg::dds_::LowState_>>(dds_topic);
-        Lowstate_subscriber->InitChannel(
-        std::bind(&FusionEstimatorNode::LowStateCallback, this, std::placeholders::_1), 1);
-
-        Mode_cmd_sub = this->create_subscription<std_msgs::msg::String>(
-        sub_mode_topic, 10,
-        std::bind(&FusionEstimatorNode::mode_cmd_callback, this, std::placeholders::_1));
+        go2_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
+            sub_imu_topic, 10,
+            std::bind(&FusionEstimatorNode::imu_callback, this, std::placeholders::_1));
+        go2_joint_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+            sub_joint_topic, 10,
+            std::bind(&FusionEstimatorNode::joint_callback, this, std::placeholders::_1));
+        mode_cmd_sub = this->create_subscription<std_msgs::msg::String>(
+            sub_mode_topic, 10,
+            std::bind(&FusionEstimatorNode::mode_cmd_callback, this, std::placeholders::_1));
 
         FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
         pub_estimation_topic, 10);
@@ -87,28 +85,28 @@ public:
 
         /* ────────────── ④ 读取 URDF 并填充腿部参数 ────────────── */
         urdf_path_cfg_ = urdf_path_cfg;   // 保存到成员变量，ObtainParameter() 会用
-        RCLCPP_INFO(get_logger(), "FusionEstimatorNode started, DDS=%s  URDF=%s",
-                    dds_topic.c_str(), urdf_path_cfg_.c_str());
+        RCLCPP_INFO(get_logger(), "FusionEstimatorNode started, URDF=%s",
+                    urdf_path_cfg_.c_str());
     }
 
     /* —— 在 main() 里会显式调用 —— */
     void ObtainParameter();
 
 private:
-    /* ───────────── 类型别名 & 成员变量 ───────────── */
-    using LowStateSubPtr =
-        unitree::robot::ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_>;
 
     std::vector<EstimatorPortN*> StateSpaceModel1_Sensors;
 
     rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr FETest_publisher;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher, SMXFE_2D_publisher;
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr Mode_cmd_sub;
-    LowStateSubPtr Lowstate_subscriber;
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr go2_imu_sub;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr go2_joint_sub;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr mode_cmd_sub;
 
     std::shared_ptr<SensorIMUAcc>     Sensor_IMUAcc;
     std::shared_ptr<SensorIMUMagGyro> Sensor_IMUMagGyro;
     std::shared_ptr<SensorLegs>       Sensor_Legs;
+
+    fusion_estimator::msg::FusionEstimatorTest fusion_msg;
 
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr ParameterCorrectCallback;
 
@@ -144,44 +142,25 @@ private:
         return result;
     }
 
-    void LowStateCallback(const void* message)
+    void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
-        // 接收LowState数据
-        const auto& low_state = *(unitree_go::msg::dds_::LowState_*)message;
-
-        // 创建自定义消息对象
-        auto fusion_msg = fusion_estimator::msg::FusionEstimatorTest();
-        
-        fusion_msg.stamp = this->get_clock()->now();
-
-
-        for(int i=0; i<3; i++){
-            fusion_msg.data_check_a[0+i] = low_state.imu_state().accelerometer()[i];
-            fusion_msg.data_check_a[3+i] = low_state.imu_state().rpy()[i];
-            fusion_msg.data_check_a[6+i] = low_state.imu_state().gyroscope()[i];
-        }
-
-        for(int LegNumber = 0; LegNumber<4; LegNumber++)
-        {
-            for(int i = 0; i < 3; i++)
-            {
-                fusion_msg.data_check_b[LegNumber*3+i] = low_state.motor_state()[LegNumber*3+i].q();
-                fusion_msg.data_check_c[LegNumber*3+i] = low_state.motor_state()[LegNumber*3+i].dq();
-            }
-        }
-
-        // Start Estimation
-        double LatestMessage[3][100]={0};
-        static double LastMessage[3][100]={0};
-
         rclcpp::Clock ros_clock(RCL_SYSTEM_TIME);
         rclcpp::Time CurrentTime = ros_clock.now();
         double CurrentTimestamp =  CurrentTime.seconds();
 
-        for(int i = 0; i < 3; i++)
-        {
-            LatestMessage[0][3*i+2] = low_state.imu_state().accelerometer()[i];
-        }
+        fusion_msg.stamp = this->get_clock()->now();
+
+        tf2::Quaternion q(msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
+        double roll, pitch, yaw;
+        tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+        double LatestMessage[3][100]={0};
+        static double LastMessage[3][100]={0};
+
+        LatestMessage[0][3*0+2] = msg->linear_acceleration.x;
+        LatestMessage[0][3*1+2] = msg->linear_acceleration.y;
+        LatestMessage[0][3*2+2] = msg->linear_acceleration.z;
+
         for(int i = 0; i < 9; i++)
         {
             if(LastMessage[0][i] != LatestMessage[0][i])
@@ -198,14 +177,12 @@ private:
             fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i];
         }
 
-        for(int i = 0; i < 3; i++)
-        {
-            LatestMessage[1][3*i] = low_state.imu_state().rpy()[i];
-        }
-        for(int i = 0; i < 3; i++)
-        {
-            LatestMessage[1][3*i+1] = low_state.imu_state().gyroscope()[i];
-        }
+        LatestMessage[1][3*0] = roll;
+        LatestMessage[1][3*1] = pitch;
+        LatestMessage[1][3*2] = yaw;
+        LatestMessage[1][3*0+1] = msg->angular_velocity.x;
+        LatestMessage[1][3*1+1] = msg->angular_velocity.y;
+        LatestMessage[1][3*2+1] = msg->angular_velocity.z;
         for(int i = 0; i < 9; i++)
         {
             if(LastMessage[1][i] != LatestMessage[1][i])
@@ -222,16 +199,42 @@ private:
             fusion_msg.estimated_rpy[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
         }
 
+        for(int i=0; i<3; i++){
+            fusion_msg.data_check_a[0+i] = LatestMessage[0][3*i+2];
+            fusion_msg.data_check_a[3+i] = LatestMessage[1][3*i];
+            fusion_msg.data_check_a[6+i] = LatestMessage[1][3*i+1];
+        }
+    }
+
+    void joint_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
+    {
+        rclcpp::Clock ros_clock(RCL_SYSTEM_TIME);
+        rclcpp::Time CurrentTime = ros_clock.now();
+        double CurrentTimestamp =  CurrentTime.seconds();
+
+        fusion_msg.stamp = this->get_clock()->now();
+
+        const auto& arr = msg->data;
+        if (arr.size() < 28) return;
+        /* 数据布置：
+        data[ 0..11] : 12× 关节位置  (q)
+        data[12..23] : 12× 关节速度  (dq)
+        data[24..27] : 4 × 足端力    (foot_force)
+        */
+        double LatestMessage[3][100]={0};
+        static double LastMessage[3][100]={0};
+
         for(int LegNumber = 0; LegNumber<4; LegNumber++)
         {
             for(int i = 0; i < 3; i++)
             {
-                LatestMessage[2][LegNumber*3+i] = low_state.motor_state()[LegNumber*3+i].q();
-                LatestMessage[2][12+ LegNumber*3+i] = low_state.motor_state()[LegNumber*3+i].dq();
+                LatestMessage[2][LegNumber*3+i] = arr[LegNumber*3+i];
+                LatestMessage[2][12+LegNumber*3+i] = arr[12+LegNumber*3+i];
+                fusion_msg.data_check_b[LegNumber*3+i] = LatestMessage[2][LegNumber*3+i];
+                fusion_msg.data_check_c[LegNumber*3+i] = LatestMessage[2][12+LegNumber*3+i];
             }
-            LatestMessage[2][24 + LegNumber] = low_state.foot_force()[LegNumber];
-            fusion_msg.others[LegNumber] = low_state.foot_force()[LegNumber];
-            fusion_msg.others[LegNumber] = fusion_msg.others[LegNumber];
+            LatestMessage[2][24 + LegNumber] = arr[24 + LegNumber];
+            fusion_msg.others[LegNumber] = arr[24 + LegNumber];
         }
         for(int i = 0; i < 28; i++)
         {
@@ -370,7 +373,7 @@ private:
     // 回调函数，处理SportCmd消息
     void mode_cmd_callback(const std_msgs::msg::String::SharedPtr msg)
     {
-        if (msg->data == "Estimator_Position_Reset")
+        if (msg->data == "Estimator Position Reset")
         {
             for(int i=0; i<4; i++)
             {

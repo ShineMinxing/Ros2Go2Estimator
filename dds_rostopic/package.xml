@@ -12,6 +12,11 @@
   <depend>unitree_sdk2</depend>
   <depend>opencv4</depend>
   <depend>cv_bridge</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
   <exec_depend>image_transport</exec_depend>
   <exec_depend>gstreamer</exec_depend>
 

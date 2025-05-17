@@ -15,10 +15,4 @@ def generate_launch_description():
             executable='g1_gimbal_node',
             output='screen',
         ),
-        # control 节点
-        Node(
-            package='g1_control',
-            executable='g1_control_node',
-            output='screen',
-        ),
     ])

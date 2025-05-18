@@ -416,6 +416,11 @@ private:
                 Last_Operation_Time = this->get_clock()->now();
                 ErrorCode = sport_client->Damp();
                 break;
+            case 16170000:
+                Last_Operation = "Stop Move. ";
+                Last_Operation_Time = this->get_clock()->now();
+                ErrorCode = sport_client->StopMove();
+                break;
             case 14150000:
                 Last_Operation_Time = this->get_clock()->now();
                 ErrorCode = motion_client->CheckMode(ModeCheckForm,ModeCheckMode);

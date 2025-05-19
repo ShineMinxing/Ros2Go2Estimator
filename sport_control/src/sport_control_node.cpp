@@ -621,24 +621,24 @@ private:
                 }
                 break;
             case 22100000:
-                Last_Operation = "Gimbal Control Enable.";
+                Last_Operation = "IMU Follow Mode Enable.";
                 Last_Operation_Time = this->get_clock()->now();
-                PublishStringCommand("Gimbal Control Enable");
+                PublishStringCommand("IMU Follow Mode Enable");
                 break;
             case 22110000:
-                Last_Operation = "Gimbal Control Disable.";
+                Last_Operation = "Auto Track Mode Enable.";
                 Last_Operation_Time = this->get_clock()->now();
-                PublishStringCommand("Gimbal Control Disable");
+                PublishStringCommand("Auto Track Mode Enable");
                 break;
             case 22120000:
-                Last_Operation = "Gimbal Angle Reset.";
+                Last_Operation = "Auto Motion Mode Enable.";
                 Last_Operation_Time = this->get_clock()->now();
-                PublishStringCommand("Gimbal Angle Reset");
+                PublishStringCommand("Auto Motion Mode Enable");
                 break;
             case 22130000:
-                Last_Operation = "Gimbal Control Motion Enable Change. ";
+                Last_Operation = "All Stop and Reset. ";
                 Last_Operation_Time = this->get_clock()->now();
-                PublishStringCommand("Gimbal Control Motion");
+                PublishStringCommand("All Stop and Reset");
                 break;
             case 22170000:
                 ChattingEnable = 1 - ChattingEnable;

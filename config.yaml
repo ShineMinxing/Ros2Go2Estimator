@@ -20,8 +20,8 @@ dds_rostopic_node:
       videoconvert ! video/x-raw,width=1280,height=720,format=BGR !
       appsink drop=1 sync=false
     pub_camera_topic: "SMX/Go2Camera"
-    pub_camera_raw_enable_: false
-    pub_camera_compressed_enable_: false
+    pub_camera_raw_enable: false
+    pub_camera_compressed_enable: false
 
 fusion_estimator_node:
   ros__parameters:

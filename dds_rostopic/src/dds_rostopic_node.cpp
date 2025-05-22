@@ -49,8 +49,8 @@ public:
     this->get_parameter_or<std::string>(
       "dds_pointcloud_topic", dds_pointcloud_topic, std::string("rt/utlidar/cloud"));
 
-    this->get_parameter_or<bool>("pub_camera_raw_enable_", pub_camera_raw_enable_, false);
-    this->get_parameter_or<bool>("pub_camera_compressed_enable_", pub_camera_compressed_enable_, false);
+    this->get_parameter_or<bool>("pub_camera_raw_enable", pub_camera_raw_enable_, false);
+    this->get_parameter_or<bool>("pub_camera_compressed_enable", pub_camera_compressed_enable_, false);
 
     std::string gst_pipeline;
     this->get_parameter_or<std::string>(

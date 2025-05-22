@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <tf2/LinearMath/Quaternion.h>
@@ -16,6 +17,7 @@
 // OpenCV & GStreamer
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
+#include <opencv2/imgcodecs.hpp> 
 
 class DDSToRosNode : public rclcpp::Node
 {
@@ -40,16 +42,15 @@ public:
     this->get_parameter_or<std::string>(
       "pub_cloud_topic", pub_cloud_topic, std::string("NoYamlRead/Go2Lidar"));
 
-    std::string pub_camera_topic;
-    this->get_parameter_or<std::string>(
-      "pub_camera_topic", pub_camera_topic, std::string("NoYamlRead/Go2Camera"));
-
     std::string dds_lowstate_topic;
       this->get_parameter_or("dds_lowstate_topic", dds_lowstate_topic, std::string("rt/lowstate"));
 
     std::string dds_pointcloud_topic;
     this->get_parameter_or<std::string>(
       "dds_pointcloud_topic", dds_pointcloud_topic, std::string("rt/utlidar/cloud"));
+
+    this->get_parameter_or<bool>("pub_camera_raw_enable_", pub_camera_raw_enable_, false);
+    this->get_parameter_or<bool>("pub_camera_compressed_enable_", pub_camera_compressed_enable_, false);
 
     std::string gst_pipeline;
     this->get_parameter_or<std::string>(
@@ -64,12 +65,23 @@ public:
       )
     );
 
+    std::string pub_camera_topic;
+    this->get_parameter_or<std::string>(
+      "pub_camera_topic", pub_camera_topic, std::string("NoYamlRead/Go2Camera"));
+
     // 1) 初始化 DDS
     unitree::robot::ChannelFactory::Instance()->Init(0, network_if.c_str());
 
     // 2) ROS2 发布者
     pub_cloud_  = this->create_publisher<sensor_msgs::msg::PointCloud2>(pub_cloud_topic,  10);
-    pub_camera_ = this->create_publisher<sensor_msgs::msg::Image>(pub_camera_topic, 10);
+    if (pub_camera_compressed_enable_) {
+      pub_camera_compressed_ = this->create_publisher<sensor_msgs::msg::CompressedImage>(
+        pub_camera_topic + "_Compressed", 10);
+    }
+    if (pub_camera_raw_enable_) {
+      pub_camera_raw_ = this->create_publisher<sensor_msgs::msg::Image>(
+        pub_camera_topic + "_Raw", 10);
+    }
     pub_imu_    = this->create_publisher<sensor_msgs::msg::Imu>(pub_imu_topic, 10);
     pub_joint_  = this->create_publisher<std_msgs::msg::Float64MultiArray>(pub_joint_topic, 10);
 
@@ -79,25 +91,26 @@ public:
       unitree::robot::ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>>(dds_pointcloud_topic);
     Pointcloud_subscriber->InitChannel(
       std::bind(&DDSToRosNode::CbPointCloud, this, std::placeholders::_1));
-
     Lowstate_subscriber = std::make_unique<
       unitree::robot::ChannelSubscriber<unitree_go::msg::dds_::LowState_>>(dds_lowstate_topic);
     Lowstate_subscriber->InitChannel(
       std::bind(&DDSToRosNode::LowStateCallback, this, std::placeholders::_1), 1);
 
-    // 4) OpenCV 拉流
-    cap_ = std::make_shared<cv::VideoCapture>(gst_pipeline, cv::CAP_GSTREAMER);
-    if (!cap_->isOpened()) {
-      RCLCPP_ERROR(this->get_logger(), "无法打开视频流");
-      rclcpp::shutdown();
-      return;
+    // 4) OpenCV 拉流 and 定时发布视频
+    if (pub_camera_raw_enable_ || pub_camera_compressed_enable_) {
+      cap_ = std::make_shared<cv::VideoCapture>(gst_pipeline, cv::CAP_GSTREAMER);
+      if (!cap_->isOpened()) {
+        RCLCPP_ERROR(this->get_logger(), "无法打开视频流");
+        rclcpp::shutdown();
+        return;
+      }
+      timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(30),
+        std::bind(&DDSToRosNode::timer_callback, this)
+      );
     }
 
-    // 5) 定时发布视频
-    timer_ = this->create_wall_timer(
-      std::chrono::milliseconds(30),
-      std::bind(&DDSToRosNode::timer_callback, this)
-    );
+    RCLCPP_INFO(get_logger(), "dds_rostopic_node started");
   }
 
 private:
@@ -183,30 +196,44 @@ private:
   {
     cv::Mat frame;
     if (cap_->read(frame)) {
-      sensor_msgs::msg::Image img;
-      img.header.stamp = this->get_clock()->now();
-      img.header.frame_id = "camera";
-      img.height = frame.rows;
-      img.width  = frame.cols;
-      img.encoding     = "bgr8";
-      img.is_bigendian = false;
-      img.step         = static_cast<sensor_msgs::msg::Image::_step_type>(frame.step);
-      img.data.assign(frame.datastart, frame.dataend);
-      pub_camera_->publish(img);
+      if (pub_camera_raw_enable_) {
+        auto msg = sensor_msgs::msg::Image();
+        msg.header = msg.header;
+        msg.height = frame.rows;
+        msg.width  = frame.cols;
+        msg.encoding     = "bgr8";
+        msg.is_bigendian = false;
+        msg.step         = static_cast<sensor_msgs::msg::Image::_step_type>(frame.step);
+        msg.data.assign(frame.datastart, frame.dataend);
+        pub_camera_raw_->publish(msg);
+      }
+
+      if (pub_camera_compressed_enable_) {
+        std::vector<uchar> buf;
+        cv::imencode(".jpg", frame, buf);
+        sensor_msgs::msg::CompressedImage cim;
+        cim.header.stamp    = this->get_clock()->now();
+        cim.header.frame_id = "camera";
+        cim.format = "jpeg";
+        cim.data   = std::move(buf);
+        pub_camera_compressed_->publish(cim);
+      }
     } else {
       RCLCPP_WARN(this->get_logger(), "采集视频帧失败");
     }
   }
 
-
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cloud_;
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_camera_;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_camera_raw_;
+  rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr pub_camera_compressed_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr   pub_imu_;
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr pub_joint_;
   std::unique_ptr<unitree::robot::ChannelSubscriber<unitree_go::msg::dds_::LowState_>> Lowstate_subscriber;
   std::unique_ptr<unitree::robot::ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>> Pointcloud_subscriber;
   std::shared_ptr<cv::VideoCapture> cap_;
   rclcpp::TimerBase::SharedPtr timer_;
+  bool pub_camera_raw_enable_;
+  bool pub_camera_compressed_enable_;
 };
 
 int main(int argc, char **argv)

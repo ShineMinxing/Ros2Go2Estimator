@@ -14,6 +14,8 @@ find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(compressed_image_transport REQUIRED)
 
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
 include_directories(${GSTREAMER_INCLUDE_DIRS})
@@ -43,6 +45,8 @@ ament_target_dependencies(dds_rostopic_node
   unitree_sdk2
   OpenCV
   cv_bridge
+  image_transport
+  compressed_image_transport
 )
 
 install(TARGETS

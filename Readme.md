@@ -46,7 +46,7 @@
 
 - Use Ubuntu 22.04, ROS2 Humble
 ```bash
-sudo apt install ros-humble-joy ros-humble-nav2-msgs ros-humble-slam-toolbox ros-humble-nav2-bringup python3-pip libopencv-dev ros-humble-cv-bridge
+sudo apt install ros-humble-joy ros-humble-nav2-msgs ros-humble-slam-toolbox ros-humble-nav2-bringup python3-pip libopencv-dev ros-humble-cv-bridge ros-humble-image-transport ros-humble-compressed-image-transport
 mkdir -p ~/ros2_ws/LeggedRobot/src && cd ~/ros2_ws/LeggedRobot/src
 git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
 cd ..

@@ -7,7 +7,6 @@ dds_rostopic_node:
     pub_imu_topic: "SMX/Go2IMU"
     pub_joint_topic: "SMX/Go2Joint"
     pub_cloud_topic: "SMX/Go2Lidar"
-    pub_camera_topic: "SMX/Go2Camera"
 
     # DDS 订阅的原始 topic
     dds_lowstate_topic: "rt/lowstate"
@@ -20,6 +19,9 @@ dds_rostopic_node:
       rtph264depay ! h264parse ! avdec_h264 !
       videoconvert ! video/x-raw,width=1280,height=720,format=BGR !
       appsink drop=1 sync=false
+    pub_camera_topic: "SMX/Go2Camera"
+    pub_camera_raw_enable_: false
+    pub_camera_compressed_enable_: false
 
 fusion_estimator_node:
   ros__parameters:

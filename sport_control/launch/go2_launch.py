@@ -5,14 +5,6 @@ from launch.actions import ExecuteProcess, TimerAction
 
 def generate_launch_description():
     return LaunchDescription([
-        # 第 1 组：立即启动
-        Node(
-            package='voice_chat',
-            executable='voice_chat_node',
-            name='voice_chat_node',
-            output='screen'
-        ),
-
         ExecuteProcess(
             cmd=[
                 "x-terminal-emulator",

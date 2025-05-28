@@ -9,13 +9,13 @@ slam_toolbox:
     odom_topic: /SMX/Odom_2D
 
     # TF发布频率 (Hz)
-    transform_publish_period: 0.0
+    transform_publish_period: 0.1
     transform_timeout: 0.1
     tf_message_filter_queue_size: 200
 
     # 激光扫描匹配相关参数
     max_laser_range: 30.0          # 激光雷达最大范围 (单位:米)
-    min_laser_range: 0.1           # 激光雷达最小范围
+    min_laser_range: 0.99          # 激光雷达最小范围
     max_iterations: 20             # 匹配最大迭代次数
     minimum_travel_distance: 0.03
     minimum_travel_heading: 0.05
@@ -25,10 +25,10 @@ slam_toolbox:
     resolution: 0.05
 
     # 优化参数
-    use_scan_matching: false
+    use_scan_matching: true
     use_scan_barycenter: false
-    position_covariance_scale: 1.0
-    yaw_covariance_scale: 1.0
+    position_covariance_scale: 0.001
+    yaw_covariance_scale: 0.001
     do_loop_closing: false
     loop_match_minimum_response_fine: 0.8
     distance_variance_penalty: 1.0   

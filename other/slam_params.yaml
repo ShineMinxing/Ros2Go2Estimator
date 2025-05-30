@@ -7,6 +7,9 @@ slam_toolbox:
     base_frame: base_link_2D
     scan_topic: /SMX/Scan
     odom_topic: /SMX/Odom_2D
+    odom_linear_covariance: 0.1    # 里程计线速度噪声
+    odom_angular_covariance: 0.1   # 里程计角速度噪声
+    use_odom_motion: true          # 是否使用里程计运动模型
 
     # TF发布频率 (Hz)
     transform_publish_period: 0.1
@@ -14,27 +17,27 @@ slam_toolbox:
     tf_message_filter_queue_size: 200
 
     # 激光扫描匹配相关参数
-    max_laser_range: 30.0          # 激光雷达最大范围 (单位:米)
-    min_laser_range: 0.99          # 激光雷达最小范围
-    max_iterations: 20             # 匹配最大迭代次数
-    minimum_travel_distance: 0.03
-    minimum_travel_heading: 0.05
+    max_laser_range: 15.0          # 激光雷达最大范围 (单位:米)
+    min_laser_range: 0.50          # 激光雷达最小范围
+    max_iterations: 100            # 匹配最大迭代次数
+    minimum_travel_distance: 0.1
+    minimum_travel_heading: 0.1
 
     # 绘图
-    map_update_interval: 2.0
-    resolution: 0.05
+    map_update_interval: 0.1
+    resolution: 0.1
 
     # 优化参数
     use_scan_matching: true
     use_scan_barycenter: false
-    position_covariance_scale: 0.001
-    yaw_covariance_scale: 0.001
-    do_loop_closing: false
-    loop_match_minimum_response_fine: 0.8
-    distance_variance_penalty: 1.0   
-    angle_variance_penalty: 1.0    
-    optimization_period: 0.2       # 优化间隔 (秒)
-    loop_search_max_distance: 5.0  # 回环检测最大距离 (米)
+    do_loop_closing: true
+    position_covariance_scale: 1.0
+    yaw_covariance_scale: 1.0
+    loop_match_minimum_response_fine: 0.5
+    distance_variance_penalty: 0.01
+    angle_variance_penalty: 0.01    
+    optimization_period: 0.5       # 优化间隔 (秒)
+    loop_search_max_distance: 0.5  # 回环检测最大距离 (米)
 
     # CPU和内存控制
     throttle_scans: 1

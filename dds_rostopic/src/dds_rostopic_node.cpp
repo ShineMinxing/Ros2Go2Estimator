@@ -209,8 +209,10 @@ private:
       }
 
       if (pub_camera_compressed_enable_) {
+        cv::Mat resized;
+        cv::resize(frame, resized, cv::Size(256, 256));
         std::vector<uchar> buf;
-        cv::imencode(".jpg", frame, buf);
+        cv::imencode(".jpg", resized, buf);
         sensor_msgs::msg::CompressedImage cim;
         cim.header.stamp    = this->get_clock()->now();
         cim.header.frame_id = "camera";

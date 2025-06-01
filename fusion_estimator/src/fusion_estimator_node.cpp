@@ -87,6 +87,12 @@ public:
         urdf_path_cfg_ = urdf_path_cfg;   // 保存到成员变量，ObtainParameter() 会用
         RCLCPP_INFO(get_logger(), "FusionEstimatorNode started, URDF=%s",
                     urdf_path_cfg_.c_str());
+
+        
+        for (int i = 0; i < 9; ++i) {
+            position_correct[i] = 0;
+            orientation_correct[i] = 0;
+        }
     }
 
     /* —— 在 main() 里会显式调用 —— */
@@ -112,6 +118,8 @@ private:
 
     std::string odom_frame_id_, child_frame_id_, child_frame_id_2d_;
     std::string urdf_path_cfg_;
+    double position_correct[9];
+    double orientation_correct[9];
 
     rcl_interfaces::msg::SetParametersResult Modify_Par_Fun(
     const std::vector<rclcpp::Parameter> & parameters)
@@ -119,21 +127,20 @@ private:
         rcl_interfaces::msg::SetParametersResult result;
         result.successful = true;
         result.reason = "Sensor_IMUMagGyro->SensorQuaternion is corrected.";
-        double AngleCorrect[3] = {0};
 
         for (const auto & param : parameters)
         {
             if (param.get_name() == "Modify_Par_1")
-                AngleCorrect[0] = param.as_double() * M_PI / 180.0;
+                orientation_correct[0] = param.as_double() * M_PI / 180.0;
             if (param.get_name() == "Modify_Par_2")
-                AngleCorrect[1] = param.as_double() * M_PI / 180.0;
+                orientation_correct[1] = param.as_double() * M_PI / 180.0;
             if (param.get_name() == "Modify_Par_3")
-                AngleCorrect[2] = param.as_double() * M_PI / 180.0;
+                orientation_correct[2] = param.as_double() * M_PI / 180.0;
         }
 
-        Eigen::AngleAxisd rollAngle(AngleCorrect[2], Eigen::Vector3d::UnitZ());  // 绕 X 轴旋转
-        Eigen::AngleAxisd pitchAngle(AngleCorrect[1], Eigen::Vector3d::UnitY()); // 绕 Y 轴旋转
-        Eigen::AngleAxisd yawAngle(AngleCorrect[0], Eigen::Vector3d::UnitX());   // 绕 Z 轴旋转
+        Eigen::AngleAxisd rollAngle(orientation_correct[0], Eigen::Vector3d::UnitZ());  // 绕 X 轴旋转
+        Eigen::AngleAxisd pitchAngle(orientation_correct[1], Eigen::Vector3d::UnitY()); // 绕 Y 轴旋转
+        Eigen::AngleAxisd yawAngle(orientation_correct[2], Eigen::Vector3d::UnitX());   // 绕 Z 轴旋转
 
         Sensor_IMUMagGyro->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
         Sensor_IMUMagGyro->SensorQuaternionInv = Sensor_IMUMagGyro->SensorQuaternion.inverse();
@@ -174,12 +181,12 @@ private:
             }
         }
         for(int i=0; i<9; i++){
-            fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i];
+            fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i] + position_correct[i];
         }
 
-        LatestMessage[1][3*0] = roll;
-        LatestMessage[1][3*1] = pitch;
-        LatestMessage[1][3*2] = yaw;
+        LatestMessage[1][3*0] = roll + orientation_correct[0];
+        LatestMessage[1][3*1] = pitch + orientation_correct[3];
+        LatestMessage[1][3*2] = yaw  + orientation_correct[6];
         LatestMessage[1][3*0+1] = msg->angular_velocity.x;
         LatestMessage[1][3*1+1] = msg->angular_velocity.y;
         LatestMessage[1][3*2+1] = msg->angular_velocity.z;
@@ -247,6 +254,9 @@ private:
                 }
                 break;
             }
+        }
+        for(int i=0; i<9; i++){
+            fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i] + position_correct[i];
         }
         for(int i=0; i<4; i++){
             for(int j=0; j<3; j++){
@@ -379,10 +389,17 @@ private:
             {
                 Sensor_Legs->FootfallPositionRecordIsInitiated[i] = 0;
             }
-            StateSpaceModel1_Sensors[0]->EstimatedState[0] = 0;
-            StateSpaceModel1_Sensors[0]->EstimatedState[3] = 0;
-            StateSpaceModel1_Sensors[0]->EstimatedState[6] = 0;
-            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received Estimator Position Reset command");
+            for(int i=0; i<9; i++)
+            {
+                position_correct[i] = 0;
+                orientation_correct[i] = 0;
+            }
+            position_correct[0] = -StateSpaceModel1_Sensors[0]->EstimatedState[0];
+            position_correct[3] = -StateSpaceModel1_Sensors[0]->EstimatedState[3];
+            position_correct[6] = 0.22 -StateSpaceModel1_Sensors[0]->EstimatedState[6];
+            orientation_correct[6] = -StateSpaceModel1_Sensors[1]->EstimatedState[6];
+
+            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received Estimator Position and Yaw Reset Command");
         }
     }
 };

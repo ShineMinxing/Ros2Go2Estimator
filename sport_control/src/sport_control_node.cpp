@@ -118,7 +118,7 @@ private:
     bool ContinuousGaitEnable = 0;
     bool ChattingEnable = 0;
     float MotionEnable = 0;
-    float SpeedScalse = 0.25;
+    float SpeedScalse = 0.50;
     std::string ModeCheckForm = "unknown";
     std::string ModeCheckMode = "unknown";
 

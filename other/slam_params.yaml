@@ -17,18 +17,18 @@ slam_toolbox:
     tf_message_filter_queue_size: 200
 
     # 激光扫描匹配相关参数
-    max_laser_range: 15.0          # 激光雷达最大范围 (单位:米)
-    min_laser_range: 0.50          # 激光雷达最小范围
-    max_iterations: 100            # 匹配最大迭代次数
-    minimum_travel_distance: 0.1
-    minimum_travel_heading: 0.1
+    max_laser_range: 30.0          # 激光雷达最大范围 (单位:米)
+    min_laser_range: 0.20          # 激光雷达最小范围
+    max_iterations: 500            # 匹配最大迭代次数
+    minimum_travel_distance: 0.05
+    minimum_travel_heading: 0.05
 
     # 绘图
     map_update_interval: 0.1
-    resolution: 0.1
+    resolution: 0.25
 
     # 优化参数
-    use_scan_matching: true
+    use_scan_matching: false
     use_scan_barycenter: false
     do_loop_closing: true
     position_covariance_scale: 1.0

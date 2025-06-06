@@ -8,6 +8,7 @@ Panels:
         - /Status1
         - /TF1
         - /TF1/Frames1
+        - /LaserScan1
         - /Map3
         - /Image1
       Splitter Ratio: 0.5
@@ -102,7 +103,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.029999999329447746
+      Size (m): 0.10000000149011612
       Style: Flat Squares
       Topic:
         Depth: 5
@@ -313,7 +314,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 2.105901002883911
+      Distance: 5.655064582824707
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -329,7 +330,7 @@ Visualization Manager:
       Name: Current View
       Near Clip Distance: 0.009999999776482582
       Pitch: 0.7853981852531433
-      Target Frame: odom
+      Target Frame: base_link_2D
       Value: Orbit (rviz)
       Yaw: 0.7853981852531433
     Saved:

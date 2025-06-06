@@ -28,7 +28,7 @@ namespace DataFusion
 
     protected:
 
-    double FootEffortThreshold = 20;
+    double FootEffortThreshold = 30;
     bool FootIsOnGround[4], FootWasOnGround[4], FootLanding[4];
     int LatestFeetEffort;
     double FootfallPositionRecord[4][3]={0};

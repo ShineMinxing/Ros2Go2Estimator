@@ -14,7 +14,7 @@ amcl:
     scan_topic: "/SMX/Scan"
     laser_model_type: "likelihood_field"
     laser_max_range: 30.0
-    laser_min_range: 0.1
+    laser_min_range: 0.5
     laser_likelihood_max_dist: 2.0
     max_beams: 180
 
@@ -97,8 +97,8 @@ controller_server:
       min_vel_x: 0.0
       min_vel_y: 0.0
       max_vel_x: 1.0
-      max_vel_y: 0.0
-      max_vel_theta: 1.0
+      max_vel_y: 1.0
+      max_vel_theta: 0.5
       min_speed_xy: 0.0
       max_speed_xy: 1.0
       min_speed_theta: 0.0
@@ -141,7 +141,7 @@ global_costmap:
       robot_base_frame: base_link
       use_sim_time: false
       robot_radius: 0.3
-      resolution: 0.05
+      resolution: 0.25
       lethal_cost_threshold: 30 #~~~~~~~~~~~~~~~~~~
       plugins: ["static_layer", "voxel_layer", "inflation_layer"] # "obstacle_layer",      
 
@@ -194,9 +194,9 @@ local_costmap:
       robot_base_frame: base_link
       use_sim_time: false
       rolling_window: true
-      width: 5
-      height: 5
-      resolution: 0.05
+      width: 10
+      height: 10
+      resolution: 0.25
       lethal_cost_threshold: 30 #~~~~~~~~~~~~~~~~~~
       always_send_full_costmap: True
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]  # 关键：添加插件

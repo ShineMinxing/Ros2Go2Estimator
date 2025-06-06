@@ -132,7 +132,7 @@ namespace DataFusion
             FootfallPositionRecord[LegNumber][2] = StateSpaceModel->EstimatedState[6] + Observation[6];
 
             static double MapHeightStore[3][100] = {0};   
-            double Scope = 0.1, DataAvailablePeriod = 60;
+            double Scope = 0.2, DataAvailablePeriod = 60;
             int i = 0;
             double distance = 0, Zdifference = 0, Temp[4] = {0,0,0,0};
             double AngleA = atan(abs(Observation[3]) / abs(Observation[0]));

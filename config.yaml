@@ -1,7 +1,7 @@
 dds_rostopic_node:
   ros__parameters:
     # 网络接口
-    network_interface: "br0"
+    network_interface: "wlp0s20f3"
     
     # ROS2 发布的话题名
     pub_imu_topic: "SMX/Go2IMU"
@@ -14,7 +14,7 @@ dds_rostopic_node:
 
     # GStreamer 拉流管线
     gst_pipeline: >
-      udpsrc address=230.1.1.1 port=1720 multicast-iface=br0 !
+      udpsrc address=230.1.1.1 port=1720 multicast-iface=wlp0s20f3 !
       application/x-rtp, media=video, encoding-name=H264 !
       rtph264depay ! h264parse ! avdec_h264 !
       videoconvert ! video/x-raw,width=1280,height=720,format=BGR !
@@ -73,7 +73,7 @@ message_handle_node:
     angle_min: -1.5708    # -π/2
     angle_max:  1.5708    #  π/2
     angle_increment: 0.0056
-    range_min: 0.3
+    range_min: 0.5
     range_max: 30.0
     min_height: 0.1
     max_height: 10.0
@@ -96,7 +96,7 @@ message_handle_node:
 sport_control_node:
   ros__parameters:
     # 网络接口
-    network_interface: "br0"
+    network_interface: "wlp0s20f3"
 
     # 各个 ROS 话题名称
     joy_topic:       "/joy"

@@ -75,7 +75,7 @@ message_handle_node:
     angle_increment: 0.0056
     range_min: 0.5
     range_max: 30.0
-    min_height: 0.1
+    min_height: 0.2
     max_height: 10.0
 
     # TF frames

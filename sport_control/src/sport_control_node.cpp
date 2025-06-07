@@ -96,6 +96,10 @@ private:
 
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr guide_sub_;
     double guide_x_vel = 0, guide_y_vel = 0, guide_yaw_vel = 0;
+    struct Waypoint { double x, y, yaw_deg; };
+    std::vector<Waypoint> patrol_points_{{16.3, -0.85, 0.0}, {23.8, 6.81, 1.57}, {27.1, 96.3, 2.2}, {-10.0, 98.0, -1.57}, {27.1, 96.3, -1.57}, {23.8, 6.81, -1.57}}; 
+    size_t patrol_idx_  = 0;   // 当前巡逻点索引
+    bool   patrol_enable_ = false;  // true 表示正在巡逻
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr joy_string_cmd_pub;
     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr joy_float_cmd_pub;
@@ -218,9 +222,35 @@ private:
             RCLCPP_ERROR(this->get_logger(), "Unknown result code");
             break;
         }
+        if (patrol_enable_) this->loopGoal();
         };
     // 3. 异步发送目标
     nav_to_pose_client->async_send_goal(goal_msg, send_goal_options);
+    }
+
+    void startPatrol()
+    {
+        if (patrol_enable_) return;           // 已在巡逻，无需重复启动
+        patrol_enable_ = true;
+        patrol_idx_    = 0;                   // 从第 0 个点开始
+        RCLCPP_INFO(get_logger(), "Patrol START -> 共 %zu 个点", patrol_points_.size());
+        loopGoal();                           // 立刻发送首个 Goal
+    }
+
+    void stopPatrol()
+    {
+        patrol_enable_ = false;
+        RCLCPP_INFO(get_logger(), "Patrol STOP");
+    }
+
+    // ===== 核心：loopGoal() 递推发送下一目标 =====
+    void loopGoal()
+    {
+        if (!patrol_enable_ || patrol_points_.empty()) return;
+
+        const auto & wp = patrol_points_[patrol_idx_];
+        patrol_idx_ = (patrol_idx_ + 1) % patrol_points_.size();
+        sendGoal(wp.x, wp.y, wp.yaw_deg);
     }
 
     void obtain_key_value(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -659,30 +689,30 @@ private:
             case 22260000:
                 if(Value1==1)
                 {
-                    Last_Operation = "Go To Meeting Room. ";
-                    ErrorCode = Vui_client->SetBrightness(0);
-                    sendGoal(-16, 3, 1.57);
+                    Last_Operation = "Start Patrol. ";
+                    ErrorCode = Vui_client->SetBrightness(3);
+                    startPatrol();
                 }
                 else if(Value1==-1)
                 {
                     Last_Operation = "Go to Warehouse. ";
                     ErrorCode = Vui_client->SetBrightness(0);
-                    sendGoal(-3, 10, 0);
+                    sendGoal(20, 1, 0);
                 }
                 Last_Operation_Time = this->get_clock()->now();
                 break;
             case 22270000:
                 if(Value1==1)
                 {
-                    Last_Operation = "Go To Wash Room. ";
-                    ErrorCode = Vui_client->SetBrightness(3);
-                    sendGoal(-8, 16, 1.57);
+                    Last_Operation = "Stop Patrol. ";
+                    ErrorCode = Vui_client->SetBrightness(0);
+                    stopPatrol();
                 }
                 else if(Value1==-1)
                 {
-                    Last_Operation = "Go To Office Room. ";
-                    ErrorCode = Vui_client->SetBrightness(3);
-                    sendGoal(0, 0, 0);
+                    Last_Operation = "Go To Start Point. ";
+                    ErrorCode = Vui_client->SetBrightness(0);
+                    sendGoal(16.3, -0.85, 0);
                 }
                 Last_Operation_Time = this->get_clock()->now();
                 break;

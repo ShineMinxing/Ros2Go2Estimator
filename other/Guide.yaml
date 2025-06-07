@@ -4,9 +4,9 @@ amcl:
 
     # 启用初始位姿设定，并在启动时自动设置
     set_initial_pose: true
-    initial_pose: {x: 0.0, y: 0.0, z: 0.0, yaw: 0.0}
+    initial_pose: {x: 16.3, y: -0.85, z: 0.0, yaw: 0.0}
 
-    base_frame_id: "base_link"
+    base_frame_id: "base_link_2D"
     odom_frame_id: "odom"
     global_frame_id: "map"
 
@@ -56,18 +56,33 @@ bt_navigator:
   ros__parameters:
     use_sim_time: false
     global_frame: map
-    robot_base_frame: base_link
+    robot_base_frame: base_link_2D
     odom_topic: "/SMX/Odom"
+    
+    default_bt_xml_filename: "/home/unitree/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/other/Guide_waypoints.xml"
+
+    ## ——下面这两段就是行为树里要用到的 {waypoint1}{waypoint2}——
+    waypoint1:
+      header: {frame_id: map}
+      pose:
+        position:   {x: 13.0, y:  0.0, z: 0.0}
+        orientation:{w:  1.0}
+    waypoint2:
+      header: {frame_id: map}
+      pose:
+        position:   {x: 20.0, y:  3.0, z: 0.0}
+        orientation:{w:  1.0}
+
     progress_checker_plugins: ["progress_checker"]
-    goal_checker_plugins: ["goal_checker"]
+    goal_checker_plugins:   ["goal_checker"]
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
       required_movement_radius: 0.3
       movement_time_allowance: 10.0
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.1
+      xy_goal_tolerance: 0.5
+      yaw_goal_tolerance: 0.5
 
 planner_server:
   ros__parameters:
@@ -83,12 +98,12 @@ controller_server:
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
       required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+      movement_time_allowance: 60.0
 
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.2
-      yaw_goal_tolerance: 0.1
+      xy_goal_tolerance: 0.5
+      yaw_goal_tolerance: 0.5
       stateful: True
 
     FollowPath:
@@ -98,7 +113,7 @@ controller_server:
       min_vel_y: 0.0
       max_vel_x: 1.0
       max_vel_y: 1.0
-      max_vel_theta: 0.5
+      max_vel_theta: 1.0
       min_speed_xy: 0.0
       max_speed_xy: 1.0
       min_speed_theta: 0.0
@@ -112,8 +127,9 @@ controller_server:
       vy_samples: 5
       vtheta_samples: 20
       sim_time: 1.7
-      transform_tolerance: 0.1
-      xy_goal_tolerance: 0.1
+      transform_tolerance: 0.5
+      xy_goal_tolerance: 0.5
+      yaw_goal_tolerance: 0.5
       trans_stopped_velocity: 0.1
       short_circuit_trajectory_evaluation: True
       publish_cost_grid_pc: true
@@ -138,7 +154,7 @@ global_costmap:
       update_frequency: 5.0
       publish_frequency: 2.0
       global_frame: map
-      robot_base_frame: base_link
+      robot_base_frame: base_link_2D
       use_sim_time: false
       robot_radius: 0.3
       resolution: 0.25
@@ -160,7 +176,7 @@ global_costmap:
         observation_sources: laser
         laser:
           topic: /SMX/Scan          # 你的激光话题
-          sensor_frame: base_link     # 你的激光坐标系与base_link相同
+          sensor_frame: base_link_2D     # 你的激光坐标系与base_link相同
           data_type: LaserScan        # 如果是LaserScan类型
           marking: true
           clearing: true
@@ -173,7 +189,7 @@ global_costmap:
         map_subscribe_transient_local: True
         enabled: true
         subscribe_to_updates: true
-        transform_tolerance: 0.1
+        transform_tolerance: 0.5
 
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
@@ -191,7 +207,7 @@ local_costmap:
       update_frequency: 10.0
       publish_frequency: 10.0
       global_frame: odom
-      robot_base_frame: base_link
+      robot_base_frame: base_link_2D
       use_sim_time: false
       rolling_window: true
       width: 10
@@ -206,7 +222,7 @@ local_costmap:
         map_subscribe_transient_local: True
         enabled: true
         subscribe_to_updates: true
-        transform_tolerance: 0.1
+        transform_tolerance: 0.5
 
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"

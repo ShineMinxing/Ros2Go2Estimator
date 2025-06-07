@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!-- 无限循环：waypoint1 → waypoint2 → waypoint1 … -->
+<root main_tree_to_execute="Patrol">
+
+  <BehaviorTree ID="Patrol">
+    <!-- num_cycles="0" 表示无限循环 -->
+    <Repeat num_cycles="0">
+      <Sequence name="round_trip">
+
+        <!-- 直接写 Action / NavigateToPose，goal 绑定到黑板变量 -->
+        <Action ID="NavigateToPose" goal="{waypoint1}"/>
+        <Action ID="NavigateToPose" goal="{waypoint2}"/>
+
+      </Sequence>
+    </Repeat>
+  </BehaviorTree>
+
+</root>

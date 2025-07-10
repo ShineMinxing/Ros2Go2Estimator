@@ -40,7 +40,8 @@
 
 5. 机器狗与吊舱的协同光点/人脸跟踪
 [![实验5](https://i0.hdslb.com/bfs/archive/5496e9d0b40915c62b69701fd1e23af7d6ffe7de.jpg)](https://www.bilibili.com/video/BV1faG1z3EFF/)
-- 额外安装https://github.com/ShineMinxing/Ros2ImageProcess.git，https://github.com/ShineMinxing/Ros2AmovG1.git
+- 额外安装https://github.com/ShineMinxing/Ros2ImageProcess.git
+- 额外安装https://github.com/ShineMinxing/Ros2AmovG1.git
 
 ## ⚙️ 安装指南
 

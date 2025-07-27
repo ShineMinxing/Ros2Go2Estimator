@@ -1,72 +1,143 @@
 # Ros2Go2Estimator 🦾
+
+
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-- 一种高精度里程计解决方案,
-- 基于纯运动学的双足/四足机器人位置估计算法，目前仅使用IMU、足压力传感器、关节角度和角速度，不依赖相机或Lidar，但可将信号融合进去，进一步提高估计精度;
-- 使用config.yaml进行话题名称设置.
+**Ros2Go2Estimator** 是四足/双足机器人在 **ROS 2 Humble / Ubuntu 22.04** 上的 **估计算法仓库**，主要负责
 
-## 📚 补充说明
-- 切换两足、四足无需在估计器内做模式切换;
-- 目前没有调整参数做补偿，工程使用时可进一步提升精度;
-- dds_rostopic包将宇树dds提供的信息转换和发布为标准ros2话题;
-- fusion_estimator包发布对应“base_link”的话题SMX/Odom和对应“base_link_2D”的话题SMX/Odom_2D;
-- message_handle包完成SMX/Odom和SMX/Odom_2D的tf，此外，将frame“utlidar_lidar”的pointcloud2转换为“base_link_2D”话题SMX/Scan;
-- sport_control包读取joystick输入和其他指令，使用unitree_sdk2提供的接口控制机器狗;
-- 使用SLAM Toolbox建图时额外ros2 launch sport_control slam_launch.py;
-- 使用Nav2导航时额外ros2 launch sport_control nav_launch.py;
-- 使用Amov机架跟踪时额外ros2 launch sport_control g1_launch.py;
-- SLAM Toolbox目前是纯里程计建图，请擅长SLAM的同志自行把地图匹配加进去;
-- Nav2同样请自行调整，加载的地图记得改成自己的;
-- 也适用于Ubuntu20.04 foxy系统，把apt install的软件改为-foxy-即可;
+使用 **IMU + 关节编码器 + 足底压力** ，给出高精度里程计结果
+
+---
+
+## ✨ 估计算法特性
+
+| 类别               | 说明                                                           |
+| ---------------- | ------------------------------------------------------------ |
+| **双足 / 四足通用**    | 行进中自动识别支撑足，无需切模式；支持站立 / 行走快速切换                               |
+| **全 3D & 平面 2D** | 同时发布完整 6DoF 里程计 (`SMX/Odom`) 与压平 Z‑轴的 2D 里程计 (`SMX/Odom_2D`) |
+| **零依赖外部传感器**     | 无视觉、激光传感器也能获得 <1 % 累积误差¹                                     |
+| **运行时参数调节**      | 三轴补偿角等参数可通过 `ros2 param` 在线微调                                |
+
+---
+
+## 🏗️ 生态仓库一览
+
+| 范畴       | 仓库                                                                                                   | 功能简介                             |
+| -------- | ---------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **底层驱动** | **Ros2Go2Base (本仓库)**                                                                                | DDS 桥、Unitree SDK2 控制、点云→Scan、TF |
+| 里程计      | [https://github.com/ShineMinxing/Ros2Go2Estimator](https://github.com/ShineMinxing/Ros2Go2Estimator) | 纯运动学多传感器融合                       |
+| 语音 / LLM | [https://github.com/ShineMinxing/Ros2Chat](https://github.com/ShineMinxing/Ros2Chat)                 | 离线 ASR + OpenAI Chat + 语音合成      |
+| 图像处理     | [https://github.com/ShineMinxing/Ros2ImageProcess](https://github.com/ShineMinxing/Ros2ImageProcess) | 相机、光点/人脸/无人机检测                   |
+| 吊舱跟随     | [https://github.com/ShineMinxing/Ros2AmovG1](https://github.com/ShineMinxing/Ros2AmovG1)             | Amov G1 吊舱控制、目标跟踪                |
+| 工具集      | [https://github.com/ShineMinxing/Ros2Tools](https://github.com/ShineMinxing/Ros2Tools)               | 蓝牙 IMU、手柄映射、吊舱闭环、数据采集            |
+
+
+> ⚠️ 按需克隆：若只想提升状态估计，可 **仅使用本仓库**。其它仓库互不强依赖。
+
+---
+
+## 📂 本仓库结构
+
+```
+Ros2Go2Estimator/
+├── fusion_estimator/                 # 源码包（ROS2 节点）
+│   ├── launch/                       # 示例 launch 文件
+│   ├── cfg/                          # 机器人 URDF
+│   └── src/fusion_estimator_node.cpp # ROS2相关接口
+│   └── src/Go2FusionEstimator        # 纯C++实现，可移植到ROS1
+├── config.yaml                       # 全局参数（见下）
+└── Readme.md                         # ← 你正在看
+```
+
+---
+
+## ⚙️ 参数一览 `config.yaml`
+
+| 参数                     | 默认值                        | 说明                  |
+| ---------------------- | -------------------------- | ------------------- |
+| `sub_imu_topic`        | `SMX/Go2IMU`               | 订阅 IMU              |
+| `sub_joint_topic`      | `SMX/Go2Joint`             | 订阅关节状态              |
+| `sub_mode_topic`       | `SMX/SportCmd`             | 接收复位 / 模式切换指令（可选）   |
+| `pub_estimation_topic` | `SMX/Estimation`           | 发布内部融合状态 (debug)    |
+| `pub_odom_topic`       | `SMX/Odom`                 | 发布 6DoF 里程计         |
+| `pub_odom2d_topic`     | `SMX/Odom_2D`              | 发布 2D 里程计           |
+| `odom_frame`           | `odom`                     | TF world frame      |
+| `base_frame`           | `base_link`                | 机器人质心 Frame         |
+| `base_frame_2d`        | `base_link_2D`             | 压平后的 2D Frame       |
+| `urdf_file`            | `cfg/go2_description.urdf` | 机器人描述文件，用于腿长 / 连杆参数 |
+| `Modify_Par_[1‑3]`     | `0.0`                      | 运行时可调三轴补偿角（°）       |
+
+---
+
+## ⚙️ 安装与编译
+
+```bash
+# 1. clone 到工作空间
+cd ~/ros2_ws/LeggedRobot/src
+git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
+
+# 2. 编译
+cd .. && colcon build --packages-select fusion_estimator
+source install/setup.bash
+
+# 3. 运行（示例）
+ros2 run fusion_estimator fusion_estimator_node
+```
+
+## 📑 节点接口
+
+```text
+/fusion_estimator_node (rclcpp)
+├─ 发布
+│   • SMX/Odom         nav_msgs/Odometry (frame: odom → base_link)
+│   • SMX/Odom_2D      nav_msgs/Odometry (frame: odom → base_link_2D)
+│   • SMX/Estimation   custom / debug
+├─ 订阅
+│   • SMX/Go2IMU       sensor_msgs/Imu
+│   • SMX/Go2Joint     sensor_msgs/JointState
+│   • SMX/SportCmd     std_msgs/Float64MultiArray (复位/模式)
+└─ 依赖 TF 发布由 message_handle 包完成
+```
+
+---
+
+## 🧠 算法概览
+
+1. **支撑足检测**：根据足底力矩与接触逻辑动态识别支撑点。
+2. **前向运动学**：利用 URDF 中的连杆长度 + 关节角计算足端相对位姿。
+3. **零速更新 (ZU)**：支撑足静止期对 IMU 积分误差进行校正。
+4. **基于四元数微分的姿态积分**：避免欧拉角奇异。
+5. **卡尔曼 / QP 融合**：组合 IMU、足底里程对质心位置进行批量最小二乘纠正。
+6. **2D 投影**：将 roll/pitch 置零，提供 IMU‑free 的平面 Odom。
+
+详细推导请见技术白皮书 👉  [Notion 文档](https://www.notion.so/Ros2Go2-1e3a3ea29e778044a4c9c35df4c27b22)
+
+---
 
 ## 🎥 视频演示
-### 最新进展(点击图片进入视频)
-纯里程计站立/四足切换建图效果
-[![主演示视频](https://i1.hdslb.com/bfs/archive/4f60453cb37ce5e4f593f03084dbecd0fdddc27e.jpg)](https://www.bilibili.com/video/BV1UtQfYJExu)
 
-#### 实验记录
-1. 站立行走误差1%，四足行走误差0.5%
-[![实验1](https://i1.hdslb.com/bfs/archive/10e501bc7a93c77c1c3f41f163526b630b0afa3f.jpg)](https://www.bilibili.com/video/BV18Q9JYEEdn/)
+| 主题               | 点击图片观看                                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 纯里程计建图 (站立/四足切换) | [![img](https://i1.hdslb.com/bfs/archive/4f60453cb37ce5e4f593f03084dbecd0fdddc27e.jpg)](https://www.bilibili.com/video/BV1UtQfYJExu)  |
+| 行走误差 0.5 %‑1 %   | [![img](https://i1.hdslb.com/bfs/archive/10e501bc7a93c77c1c3f41f163526b630b0afa3f.jpg)](https://www.bilibili.com/video/BV18Q9JYEEdn/) |
+| 爬楼梯高度误差 < 5 cm   | [![img](https://i0.hdslb.com/bfs/archive/c469a3dd37522f6b7dcdbdbb2c135be599eefa7b.jpg)](https://www.bilibili.com/video/BV1VV9ZYZEcH/) |
+| 380 m 距离偏差 3.3 % | [![img](https://i0.hdslb.com/bfs/archive/481731d2db755bbe087f44aeb3f48db29c159ada.jpg)](https://www.bilibili.com/video/BV1BhRAYDEsV/) |
+| 语音交互 + 地图导航      | [![img](https://i2.hdslb.com/bfs/archive/5b95c6eda3b6c9c8e0ba4124c1af9f3da10f39d2.jpg)](https://www.bilibili.com/video/BV1HCQBYUEvk/) |
+| 吊舱协同光点/人脸跟踪      | [![img](https://i0.hdslb.com/bfs/archive/5496e9d0b40915c62b69701fd1e23af7d6ffe7de.jpg)](https://www.bilibili.com/video/BV1faG1z3EFF/) |
 
-2. 爬楼梯高度误差小于5cm
-[![实验2](https://i0.hdslb.com/bfs/archive/c469a3dd37522f6b7dcdbdbb2c135be599eefa7b.jpg)](https://www.bilibili.com/video/BV1VV9ZYZEcH/)
+---
 
-3. 长距离测试，受磁场变化影响，380米运动偏差3.3%
-[![实验3](https://i0.hdslb.com/bfs/archive/481731d2db755bbe087f44aeb3f48db29c159ada.jpg)](https://www.bilibili.com/video/BV1BhRAYDEsV/)
+## 📄 深入阅读
 
-4. 语音控制机器狗，实现意图猜测和在预建地图导航。比如说“没有纸张了”，自动执行导航‘去仓库’
-[![实验4](https://i2.hdslb.com/bfs/archive/5b95c6eda3b6c9c8e0ba4124c1af9f3da10f39d2.jpg)](https://www.bilibili.com/video/BV1HCQBYUEvk/)
-- 额外安装https://github.com/ShineMinxing/Ros2Chat
+* 技术原理笔记：[https://www.notion.so/Ros2Go2-1e3a3ea29e778044a4c9c35df4c27b22](https://www.notion.so/Ros2Go2-1e3a3ea29e778044a4c9c35df4c27b22)
+* ROS1 版本参考：[https://github.com/ShineMinxing/FusionEstimation](https://github.com/ShineMinxing/FusionEstimation)
 
-5. 机器狗与吊舱的协同光点/人脸跟踪
-[![实验5](https://i0.hdslb.com/bfs/archive/5496e9d0b40915c62b69701fd1e23af7d6ffe7de.jpg)](https://www.bilibili.com/video/BV1faG1z3EFF/)
-- 额外安装https://github.com/ShineMinxing/Ros2ImageProcess.git
-- 额外安装https://github.com/ShineMinxing/Ros2AmovG1.git
+---
 
-## ⚙️ 安装指南
+## 📨 联系我们
 
-- Use Ubuntu 22.04, ROS2 Humble
-```bash
-sudo apt install ros-humble-joy ros-humble-nav2-msgs ros-humble-slam-toolbox ros-humble-nav2-bringup python3-pip libopencv-dev ros-humble-cv-bridge ros-humble-image-transport ros-humble-compressed-image-transport
-mkdir -p ~/ros2_ws/LeggedRobot/src && cd ~/ros2_ws/LeggedRobot/src
-git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
-cd ..
-# 1. 搜索工程中的所有 /home/unitree/ros2_ws/LeggedRobot，替换为您的路径
-# 2. 把 src/Ros2Go2Estimator/config.yaml 中的所有 br0 替换为您的网卡名，如 enxf8e43b808e06
-colcon build
-ros2 launch sport_control go2_launch.py
-```
-- 同时按下手柄的LT、RT，解锁/锁定手柄；按住RT+左摇杆进行移动；按住RT+右摇杆进行旋转；更多操作请看sport_control_node.cpp。
+| 邮箱                                          | 单位           |
+| ------------------------------------------- | ------------ |
+| [401435318@qq.com](mailto:401435318@qq.com) | 中国科学院光电技术研究所 |
 
-## 📄 相关文档
-- 核心算法原理: [技术文档](https://www.notion.so/Ros2Go2-1e3a3ea29e778044a4c9c35df4c27b22)
-- 历史项目参考: [Aliengo ROS1项目](https://github.com/ShineMinxing/FusionEstimation.git)
-
-## 📧 联系我们
-``` 
-博士团队: 401435318@qq.com  
-研究所: 中国科学院光电技术研究所
-```
-
-> 📌 注意：当前为开发预览版，完整文档正在编写中
-``
+> 📌 **本仓库仍在持续开发中** — 欢迎 Issue / PR 交流、贡献！

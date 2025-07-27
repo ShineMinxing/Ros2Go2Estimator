@@ -9,9 +9,8 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <std_msgs/msg/string.hpp>
+#include "std_msgs/msg/float64_multi_array.hpp"
 #include <sensor_msgs/msg/imu.hpp>
-#include <std_msgs/msg/float64_multi_array.hpp>
 
 #include "fusion_estimator/msg/fusion_estimator_test.hpp"
 #include "GO2FusionEstimator/Estimator/EstimatorPortN.h"
@@ -32,8 +31,8 @@ public:
         this->get_parameter_or("sub_imu_topic", sub_imu_topic, std::string("NoYamlRead/Go2IMU"));
         std::string sub_joint_topic;
         this->get_parameter_or("sub_joint_topic", sub_joint_topic, std::string("NoYamlRead/Go2Joint"));
-        std::string sub_mode_topic;
-        this->get_parameter_or("sub_mode_topic", sub_mode_topic, std::string("NoYamlRead/JoyStringCmd"));
+        std::string sub_joystick_topic;
+        this->get_parameter_or("sub_joystick_topic", sub_joystick_topic, std::string("NoYamlRead/JoyStringCmd"));
         std::string pub_estimation_topic;
         this->get_parameter_or("pub_estimation_topic", pub_estimation_topic, std::string("NoYamlRead/Estimation"));
         std::string pub_odom_topic;
@@ -56,9 +55,9 @@ public:
         go2_joint_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             sub_joint_topic, 10,
             std::bind(&FusionEstimatorNode::joint_callback, this, std::placeholders::_1));
-        mode_cmd_sub = this->create_subscription<std_msgs::msg::String>(
-            sub_mode_topic, 10,
-            std::bind(&FusionEstimatorNode::mode_cmd_callback, this, std::placeholders::_1));
+        joystick_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+            sub_joystick_topic, 10,
+            std::bind(&FusionEstimatorNode::joystick_cmd_callback, this, std::placeholders::_1));
 
         FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
         pub_estimation_topic, 10);
@@ -106,7 +105,7 @@ private:
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher, SMXFE_2D_publisher;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr go2_imu_sub;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr go2_joint_sub;
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr mode_cmd_sub;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr joystick_cmd_sub;
 
     std::shared_ptr<SensorIMUAcc>     Sensor_IMUAcc;
     std::shared_ptr<SensorIMUMagGyro> Sensor_IMUMagGyro;
@@ -381,9 +380,9 @@ private:
     }
 
     // 回调函数，处理SportCmd消息
-    void mode_cmd_callback(const std_msgs::msg::String::SharedPtr msg)
+    void joystick_cmd_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
     {
-        if (msg->data == "Estimator Position Reset")
+        if (msg->data[0] == 25140000)
         {
             for(int i=0; i<4; i++)
             {

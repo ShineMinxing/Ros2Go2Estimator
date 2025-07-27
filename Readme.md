@@ -24,8 +24,8 @@
 
 | 范畴       | 仓库                                                                                                   | 功能简介                             |
 | -------- | ---------------------------------------------------------------------------------------------------- | -------------------------------- |
-| **底层驱动** | **Ros2Go2Base (本仓库)**                                                                                | DDS 桥、Unitree SDK2 控制、点云→Scan、TF |
-| 里程计      | [https://github.com/ShineMinxing/Ros2Go2Estimator](https://github.com/ShineMinxing/Ros2Go2Estimator) | 纯运动学多传感器融合                       |
+| **底层驱动** | [https://github.com/ShineMinxing/Ros2Go2Base](https://github.com/ShineMinxing/Ros2Go2Base)                                                                                 | DDS 桥、Unitree SDK2 控制、点云→Scan、TF |
+| 里程计      | **Ros2Go2Estimator (本仓库)**  | 纯运动学多传感器融合                       |
 | 语音 / LLM | [https://github.com/ShineMinxing/Ros2Chat](https://github.com/ShineMinxing/Ros2Chat)                 | 离线 ASR + OpenAI Chat + 语音合成      |
 | 图像处理     | [https://github.com/ShineMinxing/Ros2ImageProcess](https://github.com/ShineMinxing/Ros2ImageProcess) | 相机、光点/人脸/无人机检测                   |
 | 吊舱跟随     | [https://github.com/ShineMinxing/Ros2AmovG1](https://github.com/ShineMinxing/Ros2AmovG1)             | Amov G1 吊舱控制、目标跟踪                |

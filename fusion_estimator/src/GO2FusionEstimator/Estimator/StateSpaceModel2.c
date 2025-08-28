@@ -1,4 +1,4 @@
-// If you want to test another Estimator, substitue EstimatorXXXX_ to your estimator
+// used in go2 robot
 
 #include "EstimatorPortN.h"
 #include "Cpp_Estimators/Estimator2001_Kalman.h"

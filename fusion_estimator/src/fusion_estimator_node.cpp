@@ -31,8 +31,8 @@ public:
         this->get_parameter_or("sub_imu_topic", sub_imu_topic, std::string("NoYamlRead/Go2IMU"));
         std::string sub_joint_topic;
         this->get_parameter_or("sub_joint_topic", sub_joint_topic, std::string("NoYamlRead/Go2Joint"));
-        std::string sub_joystick_topic;
-        this->get_parameter_or("sub_joystick_topic", sub_joystick_topic, std::string("NoYamlRead/JoyStringCmd"));
+        std::string sub_mode_topic;
+        this->get_parameter_or("sub_mode_topic", sub_mode_topic, std::string("NoYamlRead/SportCmd"));
         std::string pub_estimation_topic;
         this->get_parameter_or("pub_estimation_topic", pub_estimation_topic, std::string("NoYamlRead/Estimation"));
         std::string pub_odom_topic;
@@ -56,7 +56,7 @@ public:
             sub_joint_topic, 10,
             std::bind(&FusionEstimatorNode::joint_callback, this, std::placeholders::_1));
         joystick_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-            sub_joystick_topic, 10,
+            sub_mode_topic, 10,
             std::bind(&FusionEstimatorNode::joystick_cmd_callback, this, std::placeholders::_1));
 
         FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(

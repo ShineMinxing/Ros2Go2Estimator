@@ -388,15 +388,13 @@ private:
             {
                 Sensor_Legs->FootfallPositionRecordIsInitiated[i] = 0;
             }
-            for(int i=0; i<9; i++)
-            {
-                position_correct[i] = 0;
-                orientation_correct[i] = 0;
-            }
+
+            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Former Px:%.3lf,Py:%.3lf,Pz:%.3lf,Yaw:%.3lf,Cx:%.3lf,Cy:%.3lf,Cz:%.3lf,Cyaw:%.3lf",StateSpaceModel1_Sensors[0]->EstimatedState[0],StateSpaceModel1_Sensors[0]->EstimatedState[3],StateSpaceModel1_Sensors[0]->EstimatedState[6],StateSpaceModel1_Sensors[1]->EstimatedState[6],position_correct[0],position_correct[3],position_correct[6],orientation_correct[6]);
+
             position_correct[0] = -StateSpaceModel1_Sensors[0]->EstimatedState[0];
             position_correct[3] = -StateSpaceModel1_Sensors[0]->EstimatedState[3];
-            position_correct[6] = 0.22 -StateSpaceModel1_Sensors[0]->EstimatedState[6];
-            orientation_correct[6] = -StateSpaceModel1_Sensors[1]->EstimatedState[6];
+            position_correct[6] = 0.34 -StateSpaceModel1_Sensors[0]->EstimatedState[6];
+            orientation_correct[6] = -StateSpaceModel1_Sensors[1]->EstimatedState[6] + orientation_correct[6];
 
             RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received Estimator Position and Yaw Reset Command");
         }

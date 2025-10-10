@@ -2,7 +2,7 @@
 
 namespace DataFusion
 {
-    void SensorLegs::SensorDataHandle(double* Message, double Time) 
+    void SensorLegsPos::SensorDataHandle(double* Message, double Time) 
     {
         ObservationTime = Time;
 
@@ -61,7 +61,7 @@ namespace DataFusion
         }
     }
 
-    void SensorLegs::Joint2HipFoot(int LegNumber)
+    void SensorLegsPos::Joint2HipFoot(int LegNumber)
     {
         double s1, s2, s3, c1, c2, c3, c23, s23, dq1, dq2, dq3;
         int SideSign;
@@ -98,6 +98,10 @@ namespace DataFusion
         Observation[0] = -Observation[0];
         Observation[1] = -Observation[1];
 
+        FootBodyPosition[LegNumber][0] = Observation[0] + SensorPosition[0];
+        FootBodyPosition[LegNumber][1] = Observation[3] - SensorPosition[1];
+        FootBodyPosition[LegNumber][2] = Observation[6] + SensorPosition[2];
+
         //Detect the moment of foot falling on the ground
         if(LatestFeetEffort >= FootEffortThreshold)
         {
@@ -121,7 +125,7 @@ namespace DataFusion
 
     }
 
-    void SensorLegs::PositionCorrect(int LegNumber){
+    void SensorLegsPos::PositionCorrect(int LegNumber){
 
         if(FootLanding[LegNumber]||FootfallPositionRecordIsInitiated[LegNumber]==0)
         {
@@ -195,5 +199,107 @@ namespace DataFusion
         Observation[0] = FootfallPositionRecord[LegNumber][0] - Observation[0];
         Observation[3] = FootfallPositionRecord[LegNumber][1] - Observation[3];
         Observation[6] = FootfallPositionRecord[LegNumber][2] - Observation[6];
+    }
+
+   void SensorLegsOri::SensorDataHandle(double* Message, double Time) 
+    {
+        ObservationTime = Time;
+
+        // 1) 读取足在身体系/世界系的位置（由 SensorLegsPos 写入 Double_Par）
+        double P_body[4][3];   // 身体系足点位置
+        double P_world[4][3];  // 世界系足点位置
+
+        for (int leg = 0; leg < 4; ++leg) {
+            for (int i = 0; i < 3; i++){
+                P_body[leg][i] = legs_pos_ref_->FootBodyPosition[leg][i];
+                P_world[leg][i] = legs_pos_ref_->FootfallPositionRecord[leg][i];
+            }
+        }
+
+        // 2) 统计在地足（用固定数组，不用 <vector>）
+        int n_ground = 0;
+        for (int leg = 0; leg < 4; leg++) {
+            if (legs_pos_ref_->FootIsOnGround[leg])
+                n_ground++;
+        }
+
+        // 不足两足在地：返回
+        if (n_ground < 2) {
+            return;
+        }
+
+        // 3) 仅保留 roll/pitch（去掉 yaw），把身体系差向量旋到“去 yaw”的世界平面
+        const double roll  = StateSpaceModel->EstimatedState[0];
+        const double pitch = StateSpaceModel->EstimatedState[3];
+        const double yaw   = StateSpaceModel->EstimatedState[6];
+
+        Eigen::Quaterniond Rp =
+            Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
+            Eigen::AngleAxisd(roll , Eigen::Vector3d::UnitX());
+
+        // 角度归一化
+        auto angle_wrap = [](double a) -> double {
+            while (a >  M_PI) a -= 2.0 * M_PI;
+            while (a < -M_PI) a += 2.0 * M_PI;
+            return a;
+        };
+
+        // 4) 基于两两配对估计 yaw（固定大小累加，圆统计）
+        double sx = 0.0, sy = 0.0; // 累加 cos/sin
+        for (int i = 0; i < 4; ++i) {
+            if(!legs_pos_ref_->FootIsOnGround[i])
+                continue;
+
+            for (int j = i + 1; j < 4; ++j) {
+                if(!legs_pos_ref_->FootIsOnGround[j])
+                    continue;
+
+                // 身体系差向量
+                double vb_x = P_body[j][0] - P_body[i][0];
+                double vb_y = P_body[j][1] - P_body[i][1];
+                double vb_z = P_body[j][2] - P_body[i][2];
+
+                // 用仅含 roll/pitch 的旋转（去 yaw）
+                Eigen::Vector3d v_body(vb_x, vb_y, vb_z);
+                Eigen::Vector3d v_rp = Rp * v_body;
+
+                // 世界系真实差向量
+                double vw_x = P_world[j][0] - P_world[i][0];
+                double vw_y = P_world[j][1] - P_world[i][1];
+                double vw_z = P_world[j][2] - P_world[i][2];
+
+                // 平面方位角
+                const double ang_rp = std::atan2(v_rp.y(), v_rp.x());
+                const double ang_w  = std::atan2(vw_y,     vw_x);
+
+                const double yaw_ij = angle_wrap(ang_w - ang_rp);
+                sx += std::cos(yaw_ij);
+                sy += std::sin(yaw_ij);
+
+                std::cout << "Leg" << i << "-" << j << " yaw " << yaw_ij << std::endl;
+                std::cout << " vb_x:" << vb_x << " vb_y:" << vb_y << " vb_z:" << vb_z << std::endl;
+                std::cout << " vw_x:" << vw_x << " vw_y:" << vw_y << " vw_z:" << vw_z << std::endl;
+                // for(int n=0; n<3; n++){
+                //     std::cout << " " << P_body[i][n] << " " << P_body[j][n] << std::endl;
+                // }
+                // for(int n=0; n<3; n++){
+                //     std::cout << " " << P_world[i][n] << " " << P_world[j][n] << std::endl;
+                // }
+            }
+        }
+
+        // 5) 与当前估计做指数平滑融合，避免跳变
+        if (sx != 0.0 || sy != 0.0) {
+            const double yaw_est = std::atan2(sy, sx);
+            const double yaw_now = StateSpaceModel->EstimatedState[6];
+            const double err     = angle_wrap(yaw_est - yaw_now);
+            const double alpha   = 1.0;  // 可调 0.05~1.0
+            StateSpaceModel->EstimatedState[6] = angle_wrap(yaw_now + alpha * err);
+            std::cout << "---yaw_now: " << yaw_now << "   yaw_est: " << StateSpaceModel->EstimatedState[6] << std::endl;
+            StateSpaceModel->Double_Par[52] = yaw_est;
+            StateSpaceModel->Double_Par[53] = yaw_now;
+            StateSpaceModel->Double_Par[54] = err;
+            StateSpaceModel->Double_Par[55] = StateSpaceModel->EstimatedState[6];
+        }
     }
 }

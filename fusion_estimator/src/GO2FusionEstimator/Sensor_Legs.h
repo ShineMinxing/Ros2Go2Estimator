@@ -6,11 +6,11 @@ using namespace Eigen;
 
 namespace DataFusion
 {
-  class SensorLegs : public Sensors
+  class SensorLegsPos : public Sensors
   {
     public:
 
-    SensorLegs(EstimatorPortN* StateSpaceModel_):Sensors(StateSpaceModel_)
+    SensorLegsPos(EstimatorPortN* StateSpaceModel_):Sensors(StateSpaceModel_)
     {
       for(int i=0;i<4;i++)
       {
@@ -24,17 +24,32 @@ namespace DataFusion
 
     Eigen::Matrix<double, 4, 13> KinematicParams;
     double Par_HipLength, Par_ThighLength, Par_CalfLength, Par_FootLength;
-    int FootfallPositionRecordIsInitiated[4] = {0};
+    double FootEffortThreshold = 30;
+    bool FootfallPositionRecordIsInitiated[4] = {0}, FootIsOnGround[4], FootWasOnGround[4], FootLanding[4];
+    int LatestFeetEffort;
+    double FootBodyPosition[4][3]={0}, FootfallPositionRecord[4][3]={0};
 
     protected:
-
-    double FootEffortThreshold = 30;
-    bool FootIsOnGround[4], FootWasOnGround[4], FootLanding[4];
-    int LatestFeetEffort;
-    double FootfallPositionRecord[4][3]={0};
 
     void Joint2HipFoot(int LegNumber);
     void PositionCorrect(int LegnNmber);
 
   };
+
+  class SensorLegsOri : public Sensors
+  {
+    public:
+
+    SensorLegsOri(EstimatorPortN* StateSpaceModel_):Sensors(StateSpaceModel_){}
+    void SensorDataHandle(double* Message, double Time) override;
+
+    inline void SetLegsPosRef(class SensorLegsPos* ref){ legs_pos_ref_ = ref; }
+
+    protected:
+
+    void OrientationCorrect();
+    class SensorLegsPos* legs_pos_ref_ = nullptr;
+    
+  };
+
 }

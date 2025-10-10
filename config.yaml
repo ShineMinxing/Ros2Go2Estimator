@@ -31,3 +31,7 @@ fusion_estimator_node:
     Modify_Par_1: 0.0
     Modify_Par_2: 0.0
     Modify_Par_3: 0.0
+
+    # 运动学估计使能
+    leg_pos_enable: true
+    leg_ori_enable: true

@@ -47,6 +47,8 @@ public:
         this->get_parameter_or("base_frame_2d", base_frame_2d, std::string("base_link_2D"));
         std::string urdf_path_cfg;
         this->get_parameter_or("urdf_file", urdf_path_cfg, std::string("cfg/go2_description.urdf"));
+        this->get_parameter_or("leg_pos_enable", leg_pos_enable, true);
+        this->get_parameter_or("leg_ori_enable", leg_ori_enable, true);
 
 
         go2_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
@@ -76,7 +78,9 @@ public:
         }
         Sensor_IMUAcc      = std::make_shared<SensorIMUAcc>     (StateSpaceModel1_Sensors[0]);
         Sensor_IMUMagGyro  = std::make_shared<SensorIMUMagGyro> (StateSpaceModel1_Sensors[1]);
-        Sensor_Legs        = std::make_shared<SensorLegs>       (StateSpaceModel1_Sensors[0]);
+        Sensor_LegsPos     = std::make_shared<SensorLegsPos>    (StateSpaceModel1_Sensors[0]);
+        Sensor_LegsOri     = std::make_shared<SensorLegsOri>    (StateSpaceModel1_Sensors[1]);
+        Sensor_LegsOri->SetLegsPosRef(Sensor_LegsPos.get());
 
         /* 可在线调三轴角度补偿 */
         ParameterCorrectCallback = this->add_on_set_parameters_callback(
@@ -109,7 +113,8 @@ private:
 
     std::shared_ptr<SensorIMUAcc>     Sensor_IMUAcc;
     std::shared_ptr<SensorIMUMagGyro> Sensor_IMUMagGyro;
-    std::shared_ptr<SensorLegs>       Sensor_Legs;
+    std::shared_ptr<SensorLegsPos>    Sensor_LegsPos;
+    std::shared_ptr<SensorLegsOri>    Sensor_LegsOri;
 
     fusion_estimator::msg::FusionEstimatorTest fusion_msg;
 
@@ -117,6 +122,7 @@ private:
 
     std::string odom_frame_id_, child_frame_id_, child_frame_id_2d_;
     std::string urdf_path_cfg_;
+    bool leg_pos_enable, leg_ori_enable;
     double position_correct[9];
     double orientation_correct[9];
 
@@ -179,9 +185,6 @@ private:
                 break;
             }
         }
-        for(int i=0; i<9; i++){
-            fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i] + position_correct[i];
-        }
 
         LatestMessage[1][3*0] = roll + orientation_correct[0];
         LatestMessage[1][3*1] = pitch + orientation_correct[3];
@@ -201,7 +204,9 @@ private:
                 break;
             }
         }
+
         for(int i=0; i<9; i++){
+            fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i] + position_correct[i];
             fusion_msg.estimated_rpy[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
         }
 
@@ -210,6 +215,8 @@ private:
             fusion_msg.data_check_a[3+i] = LatestMessage[1][3*i];
             fusion_msg.data_check_a[6+i] = LatestMessage[1][3*i+1];
         }
+
+        Msg_Publish();
     }
 
     void joint_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
@@ -242,33 +249,55 @@ private:
             LatestMessage[2][24 + LegNumber] = arr[24 + LegNumber];
             fusion_msg.others[LegNumber] = arr[24 + LegNumber];
         }
-        for(int i = 0; i < 28; i++)
+
+        if(leg_pos_enable)
         {
-            if(LastMessage[2][i] != LatestMessage[2][i])
+            double Last_Yaw = StateSpaceModel1_Sensors[1]->EstimatedState[6] - orientation_correct[6];
+            for(int i = 0; i < 28; i++)
             {
-                Sensor_Legs->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
-                for(int j = 0; j < 28; j++)
+                if(LastMessage[2][i] != LatestMessage[2][i])
                 {
-                    LastMessage[2][j] = LatestMessage[2][j];
+                    Sensor_LegsPos->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
+                    if(leg_ori_enable)
+                        Sensor_LegsOri->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
+                    for(int j = 0; j < 28; j++)
+                    {
+                        LastMessage[2][j] = LatestMessage[2][j];
+                    }
+                    break;
                 }
-                break;
             }
-        }
-        for(int i=0; i<9; i++){
-            fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i] + position_correct[i];
-        }
-        for(int i=0; i<4; i++){
-            for(int j=0; j<3; j++){
-                fusion_msg.data_check_d[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[6 * i + j];
-                fusion_msg.data_check_e[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[24 + 6 * i + j];
-                fusion_msg.feet_based_position[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[48 + 6 * i + j];
-                fusion_msg.feet_based_velocity[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[48 + 6 * i + j + 3];
+
+            if(leg_ori_enable)
+                orientation_correct[6] = StateSpaceModel1_Sensors[1]->EstimatedState[6] - Last_Yaw;
+            
+            for(int i=0; i<9; i++){
+                fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i] + position_correct[i];
+                fusion_msg.estimated_rpy[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
             }
+
+            for(int i=0; i<4; i++){
+                for(int j=0; j<3; j++){
+                    fusion_msg.data_check_d[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[6 * i + j];
+                    fusion_msg.feet_based_position[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[48 + 6 * i + j];
+                    fusion_msg.feet_based_velocity[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[48 + 6 * i + j + 3];
+                }
+            }
+
+            fusion_msg.data_check_e[0] = StateSpaceModel1_Sensors[1]->Double_Par[52];
+            fusion_msg.data_check_e[1] = StateSpaceModel1_Sensors[1]->Double_Par[53];
+            fusion_msg.data_check_e[2] = StateSpaceModel1_Sensors[1]->Double_Par[54];
+            fusion_msg.data_check_e[3] = StateSpaceModel1_Sensors[1]->Double_Par[55];
         }
 
+        Msg_Publish();
+    }
+
+    void Msg_Publish()
+    {
         FETest_publisher->publish(fusion_msg);
 
-        // 新增：构造标准 odometry 消息，并发布
+        // 构造标准 3D odometry 消息，并发布
         nav_msgs::msg::Odometry SMXFE_odom;
         SMXFE_odom.header.stamp = fusion_msg.stamp;
         SMXFE_odom.header.frame_id = odom_frame_id_;
@@ -324,7 +353,7 @@ private:
         // 发布 odometry 消息
         SMXFE_publisher->publish(SMXFE_odom);
 
-        // 新增：构造标准 odometry 消息，并发布
+        // 构造标准 2D odometry 消息，并发布
         nav_msgs::msg::Odometry SMXFE_odom_2D;
         SMXFE_odom_2D.header.stamp = fusion_msg.stamp;
         SMXFE_odom_2D.header.frame_id = odom_frame_id_;
@@ -386,7 +415,10 @@ private:
         {
             for(int i=0; i<4; i++)
             {
-                Sensor_Legs->FootfallPositionRecordIsInitiated[i] = 0;
+                Sensor_LegsPos->FootfallPositionRecordIsInitiated[i] = 0;
+                Sensor_LegsPos->FootWasOnGround[i] = 0;
+                Sensor_LegsPos->FootIsOnGround[i] = 0;
+                Sensor_LegsPos->FootLanding[i] = 0;
             }
 
             RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Former Px:%.3lf,Py:%.3lf,Pz:%.3lf,Yaw:%.3lf,Cx:%.3lf,Cy:%.3lf,Cz:%.3lf,Cyaw:%.3lf",StateSpaceModel1_Sensors[0]->EstimatedState[0],StateSpaceModel1_Sensors[0]->EstimatedState[3],StateSpaceModel1_Sensors[0]->EstimatedState[6],StateSpaceModel1_Sensors[1]->EstimatedState[6],position_correct[0],position_correct[3],position_correct[6],orientation_correct[6]);
@@ -404,7 +436,7 @@ private:
 void FusionEstimatorNode::ObtainParameter()
 {
     // 获得机器狗运动学参数
-    Sensor_Legs->KinematicParams  << 
+    Sensor_LegsPos->KinematicParams  << 
     0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
     0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
     -0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
@@ -455,16 +487,16 @@ void FusionEstimatorNode::ObtainParameter()
             if (!joint)
             {
                 std::cout << "未找到关节: " << jointName << " (" << leg << ")，使用默认值: ";
-                std::cout << Sensor_Legs->KinematicParams.row(i).segment(jm.col, 3) << std::endl;
+                std::cout << Sensor_LegsPos->KinematicParams.row(i).segment(jm.col, 3) << std::endl;
             }
             else
             {
                 urdf::Vector3 pos = joint->parent_to_joint_origin_transform.position;
-                Sensor_Legs->KinematicParams(i, jm.col)     = pos.x;
-                Sensor_Legs->KinematicParams(i, jm.col + 1) = pos.y;
-                Sensor_Legs->KinematicParams(i, jm.col + 2) = pos.z;
+                Sensor_LegsPos->KinematicParams(i, jm.col)     = pos.x;
+                Sensor_LegsPos->KinematicParams(i, jm.col + 1) = pos.y;
+                Sensor_LegsPos->KinematicParams(i, jm.col + 2) = pos.z;
                 std::cout << "Obtained KinematicPar for " << jointName << ": ";
-                std::cout << Sensor_Legs->KinematicParams.row(i).segment(jm.col, 3) << std::endl;
+                std::cout << Sensor_LegsPos->KinematicParams.row(i).segment(jm.col, 3) << std::endl;
             }
         }
         // 更新该腿 foot 连杆 collision 的球半径（存储在列 12）
@@ -472,7 +504,7 @@ void FusionEstimatorNode::ObtainParameter()
         urdf::LinkConstSharedPtr footLink = model->getLink(footLinkName);
         if (!footLink)
         {
-            std::cout << "未找到连杆: " << footLinkName << " (" << leg << ")，使用默认值: " << Sensor_Legs->KinematicParams(i, 12) << std::endl;
+            std::cout << "未找到连杆: " << footLinkName << " (" << leg << ")，使用默认值: " << Sensor_LegsPos->KinematicParams(i, 12) << std::endl;
         }
         else
         {
@@ -482,16 +514,16 @@ void FusionEstimatorNode::ObtainParameter()
                 urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(footLink->collision->geometry.get());
                 if (sphere)
                 {
-                    Sensor_Legs->KinematicParams(i, 12) = sphere->radius;
-                    std::cout << "Obtained KinematicPar for " << footLinkName << ": " << Sensor_Legs->KinematicParams(i, 12) << std::endl;
+                    Sensor_LegsPos->KinematicParams(i, 12) = sphere->radius;
+                    std::cout << "Obtained KinematicPar for " << footLinkName << ": " << Sensor_LegsPos->KinematicParams(i, 12) << std::endl;
                 }
             }
         }
 
-        Sensor_Legs->Par_HipLength = std::sqrt(Sensor_Legs->KinematicParams(0, 3)*Sensor_Legs->KinematicParams(0, 3) + Sensor_Legs->KinematicParams(0, 4)*Sensor_Legs->KinematicParams(0, 4) + Sensor_Legs->KinematicParams(0, 5)*Sensor_Legs->KinematicParams(0, 5));
-        Sensor_Legs->Par_ThighLength = std::sqrt(Sensor_Legs->KinematicParams(0, 6)*Sensor_Legs->KinematicParams(0, 6) + Sensor_Legs->KinematicParams(0, 7)*Sensor_Legs->KinematicParams(0, 7) + Sensor_Legs->KinematicParams(0, 8)*Sensor_Legs->KinematicParams(0, 8));
-        Sensor_Legs->Par_CalfLength = std::sqrt(Sensor_Legs->KinematicParams(0, 9)*Sensor_Legs->KinematicParams(0, 9) + Sensor_Legs->KinematicParams(0, 10)*Sensor_Legs->KinematicParams(0, 10) + Sensor_Legs->KinematicParams(0, 11)*Sensor_Legs->KinematicParams(0, 11));
-        Sensor_Legs->Par_FootLength = abs(Sensor_Legs->KinematicParams(0, 12));
+        Sensor_LegsPos->Par_HipLength = std::sqrt(Sensor_LegsPos->KinematicParams(0, 3)*Sensor_LegsPos->KinematicParams(0, 3) + Sensor_LegsPos->KinematicParams(0, 4)*Sensor_LegsPos->KinematicParams(0, 4) + Sensor_LegsPos->KinematicParams(0, 5)*Sensor_LegsPos->KinematicParams(0, 5));
+        Sensor_LegsPos->Par_ThighLength = std::sqrt(Sensor_LegsPos->KinematicParams(0, 6)*Sensor_LegsPos->KinematicParams(0, 6) + Sensor_LegsPos->KinematicParams(0, 7)*Sensor_LegsPos->KinematicParams(0, 7) + Sensor_LegsPos->KinematicParams(0, 8)*Sensor_LegsPos->KinematicParams(0, 8));
+        Sensor_LegsPos->Par_CalfLength = std::sqrt(Sensor_LegsPos->KinematicParams(0, 9)*Sensor_LegsPos->KinematicParams(0, 9) + Sensor_LegsPos->KinematicParams(0, 10)*Sensor_LegsPos->KinematicParams(0, 10) + Sensor_LegsPos->KinematicParams(0, 11)*Sensor_LegsPos->KinematicParams(0, 11));
+        Sensor_LegsPos->Par_FootLength = abs(Sensor_LegsPos->KinematicParams(0, 12));
     }
 
     // 获得IMU安装位置

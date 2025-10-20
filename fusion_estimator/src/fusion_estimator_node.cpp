@@ -49,6 +49,20 @@ public:
         this->get_parameter_or("urdf_file", urdf_path_cfg, std::string("cfg/go2_description.urdf"));
         this->get_parameter_or("leg_pos_enable", leg_pos_enable, true);
         this->get_parameter_or("leg_ori_enable", leg_ori_enable, true);
+        this->get_parameter_or("leg_ori_init_weight", leg_ori_init_weight, 0.001);
+        this->get_parameter_or("leg_ori_time_wight", leg_ori_time_wight, 100.0);
+
+
+        if(!(leg_ori_init_weight>-1.0 && leg_ori_init_weight<=1.0))
+        {
+            leg_ori_init_weight = 0.001;
+            RCLCPP_INFO(get_logger(), "leg_ori_init_weight to %lf",leg_ori_init_weight);
+        }
+        if(!(leg_ori_time_wight>0.0 && leg_ori_time_wight<=1000000.0))
+        {
+            leg_ori_time_wight = 100.0;
+            RCLCPP_INFO(get_logger(), "leg_ori_time_wight to %lf", leg_ori_time_wight);
+        }
 
 
         go2_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
@@ -88,8 +102,7 @@ public:
 
         /* ────────────── ④ 读取 URDF 并填充腿部参数 ────────────── */
         urdf_path_cfg_ = urdf_path_cfg;   // 保存到成员变量，ObtainParameter() 会用
-        RCLCPP_INFO(get_logger(), "FusionEstimatorNode started, URDF=%s",
-                    urdf_path_cfg_.c_str());
+        RCLCPP_INFO(get_logger(), "FusionEstimatorNode started, URDF=%s", urdf_path_cfg_.c_str());
 
         
         for (int i = 0; i < 9; ++i) {
@@ -123,6 +136,7 @@ private:
     std::string odom_frame_id_, child_frame_id_, child_frame_id_2d_;
     std::string urdf_path_cfg_;
     bool leg_pos_enable, leg_ori_enable;
+    double leg_ori_init_weight, leg_ori_time_wight;
     double position_correct[9];
     double orientation_correct[9];
 
@@ -239,7 +253,6 @@ private:
                 LatestMessage[2][12+LegNumber*3+i] = arr[12+LegNumber*3+i];
             }
             LatestMessage[2][24 + LegNumber] = arr[24 + LegNumber];
-            fusion_msg.others[LegNumber] = arr[24 + LegNumber];
         }
 
         if(leg_pos_enable)
@@ -250,8 +263,11 @@ private:
                 if(LastMessage[2][i] != LatestMessage[2][i])
                 {
                     Sensor_LegsPos->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
-                    if(leg_ori_enable)
+                    if(leg_ori_enable){
+                        StateSpaceModel1_Sensors[1]->Double_Par[97] = leg_ori_init_weight;
+                        StateSpaceModel1_Sensors[1]->Double_Par[98] = leg_ori_time_wight;
                         Sensor_LegsOri->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
+                    }
                     for(int j = 0; j < 28; j++)
                     {
                         LastMessage[2][j] = LatestMessage[2][j];
@@ -287,10 +303,6 @@ private:
 
             for(int i=0; i<48; i++)
                 fusion_msg.others[i] = StateSpaceModel1_Sensors[1]->Double_Par[i];
-            fusion_msg.data_check_e[0] = StateSpaceModel1_Sensors[1]->Double_Par[48];
-            fusion_msg.data_check_e[1] = StateSpaceModel1_Sensors[1]->Double_Par[49];
-            fusion_msg.data_check_e[2] = StateSpaceModel1_Sensors[1]->Double_Par[50];
-            fusion_msg.data_check_e[3] = StateSpaceModel1_Sensors[1]->Double_Par[51];
         }
 
         Msg_Publish();

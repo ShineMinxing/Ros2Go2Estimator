@@ -24,7 +24,7 @@ namespace DataFusion
 
     Eigen::Matrix<double, 4, 13> KinematicParams;
     double Par_HipLength, Par_ThighLength, Par_CalfLength, Par_FootLength;
-    double FootEffortThreshold = 30;
+    double FootEffortThreshold = 20;
     bool FootfallPositionRecordIsInitiated[4] = {0}, FootIsOnGround[4], FootWasOnGround[4], FootLanding[4];
     int LatestFeetEffort;
     double FootBodyPosition[4][3]={0}, FootfallPositionRecord[4][3]={0};

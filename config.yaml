@@ -35,3 +35,6 @@ fusion_estimator_node:
     # 运动学估计使能
     leg_pos_enable: true
     leg_ori_enable: true
+    # 运动学对角度的修正量初始系数（可负数），和多久增大到1.0
+    leg_ori_init_weight: 0.001
+    leg_ori_time_wight: 100.0

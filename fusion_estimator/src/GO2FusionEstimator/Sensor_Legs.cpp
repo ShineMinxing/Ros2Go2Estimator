@@ -203,11 +203,10 @@ namespace DataFusion
 
    void SensorLegsOri::SensorDataHandle(double* Message, double Time) 
     {
-        ObservationTime = Time;
-
         // 1) 读取足在身体系/世界系的位置（由 SensorLegsPos 写入 Double_Par）
         double P_body[4][3];   // 身体系足点位置
         double P_world[4][3];  // 世界系足点位置
+        static double TimeRecord = Time;
 
         for (int leg = 0; leg < 4; ++leg) {
             for (int i = 0; i < 3; i++){
@@ -227,6 +226,15 @@ namespace DataFusion
         if (n_ground < 2) {
             return;
         }
+        if (n_ground < 4){
+            TimeRecord = Time;
+            StateSpaceModel->Double_Par[96] = StateSpaceModel->Double_Par[97];
+        }
+        else{
+            StateSpaceModel->Double_Par[96] = (Time-TimeRecord) * (1.0 - StateSpaceModel->Double_Par[97]) / StateSpaceModel->Double_Par[98] + StateSpaceModel->Double_Par[97];
+            if(StateSpaceModel->Double_Par[96]>1.0)
+                StateSpaceModel->Double_Par[96] = 1.0;
+        }
 
         // 3) 仅保留 roll/pitch（去掉 yaw），把身体系差向量旋到“去 yaw”的世界平面
         const double roll  = StateSpaceModel->EstimatedState[0];
@@ -243,9 +251,6 @@ namespace DataFusion
             while (a < -M_PI) a += 2.0 * M_PI;
             return a;
         };
-
-        for(int i=0; i<100; i++)
-            StateSpaceModel->Double_Par[i] = 0;
 
         // 4) 基于两两配对估计 yaw（固定大小累加，圆统计）
         double sx = 0.0, sy = 0.0; // 累加 cos/sin
@@ -282,14 +287,6 @@ namespace DataFusion
                 int k = i+j;
                 if(i==0)
                     k--;
-                StateSpaceModel->Double_Par[k*8+0] = vb_x;
-                StateSpaceModel->Double_Par[k*8+1] = vb_y;
-                StateSpaceModel->Double_Par[k*8+2] = vw_x;
-                StateSpaceModel->Double_Par[k*8+3] = vw_y;
-                StateSpaceModel->Double_Par[k*8+4] = ang_rp;
-                StateSpaceModel->Double_Par[k*8+5] = yaw_ij;
-                StateSpaceModel->Double_Par[k*8+6] = std::cos(yaw_ij);
-                StateSpaceModel->Double_Par[k*8+7] = std::sin(yaw_ij);
 
             }
         }
@@ -299,13 +296,7 @@ namespace DataFusion
             const double yaw_est = std::atan2(sy, sx);
             const double yaw_now = StateSpaceModel->EstimatedState[6];
             const double err     = angle_wrap(yaw_est - yaw_now);
-            const double alpha   = 0.001;
-            StateSpaceModel->Double_Par[99] = angle_wrap(yaw_now + alpha * err);
-
-            StateSpaceModel->Double_Par[49] = yaw_est;
-            StateSpaceModel->Double_Par[50] = yaw_now;
-            StateSpaceModel->Double_Par[51] = err;
-            StateSpaceModel->Double_Par[52] = StateSpaceModel->EstimatedState[6];
+            StateSpaceModel->Double_Par[99] = angle_wrap(yaw_now + StateSpaceModel->Double_Par[96] * err);
         }
     }
 }

@@ -210,12 +210,6 @@ private:
             fusion_msg.estimated_rpy[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
         }
 
-        for(int i=0; i<3; i++){
-            fusion_msg.data_check_a[0+i] = LatestMessage[0][3*i+2];
-            fusion_msg.data_check_a[3+i] = LatestMessage[1][3*i];
-            fusion_msg.data_check_a[6+i] = LatestMessage[1][3*i+1];
-        }
-
         Msg_Publish();
     }
 
@@ -243,8 +237,6 @@ private:
             {
                 LatestMessage[2][LegNumber*3+i] = arr[LegNumber*3+i];
                 LatestMessage[2][12+LegNumber*3+i] = arr[12+LegNumber*3+i];
-                fusion_msg.data_check_b[LegNumber*3+i] = LatestMessage[2][LegNumber*3+i];
-                fusion_msg.data_check_c[LegNumber*3+i] = LatestMessage[2][12+LegNumber*3+i];
             }
             LatestMessage[2][24 + LegNumber] = arr[24 + LegNumber];
             fusion_msg.others[LegNumber] = arr[24 + LegNumber];
@@ -269,25 +261,36 @@ private:
             }
 
             if(leg_ori_enable)
-                orientation_correct[6] = StateSpaceModel1_Sensors[1]->EstimatedState[6] - Last_Yaw;
+                orientation_correct[6] = StateSpaceModel1_Sensors[1]->Double_Par[99] - Last_Yaw;
             
             for(int i=0; i<9; i++){
                 fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i] + position_correct[i];
                 fusion_msg.estimated_rpy[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
             }
+            
+            for(int LegNumber=0; LegNumber<4; LegNumber++){
+                for(int i=0; i<3; i++){
+                    fusion_msg.data_check_a[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[6 * LegNumber + i];
+                    fusion_msg.data_check_b[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[6 * LegNumber + 3 + i];
+                    fusion_msg.data_check_c[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[24 + 6 * LegNumber + i];
+                    fusion_msg.data_check_d[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[24 + 6 * LegNumber + 3 + i];
+                }
+            }
 
             for(int i=0; i<4; i++){
                 for(int j=0; j<3; j++){
-                    fusion_msg.data_check_d[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[6 * i + j];
                     fusion_msg.feet_based_position[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[48 + 6 * i + j];
                     fusion_msg.feet_based_velocity[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[48 + 6 * i + j + 3];
                 }
             }
 
-            fusion_msg.data_check_e[0] = StateSpaceModel1_Sensors[1]->Double_Par[52];
-            fusion_msg.data_check_e[1] = StateSpaceModel1_Sensors[1]->Double_Par[53];
-            fusion_msg.data_check_e[2] = StateSpaceModel1_Sensors[1]->Double_Par[54];
-            fusion_msg.data_check_e[3] = StateSpaceModel1_Sensors[1]->Double_Par[55];
+
+            for(int i=0; i<48; i++)
+                fusion_msg.others[i] = StateSpaceModel1_Sensors[1]->Double_Par[i];
+            fusion_msg.data_check_e[0] = StateSpaceModel1_Sensors[1]->Double_Par[48];
+            fusion_msg.data_check_e[1] = StateSpaceModel1_Sensors[1]->Double_Par[49];
+            fusion_msg.data_check_e[2] = StateSpaceModel1_Sensors[1]->Double_Par[50];
+            fusion_msg.data_check_e[3] = StateSpaceModel1_Sensors[1]->Double_Par[51];
         }
 
         Msg_Publish();
@@ -437,8 +440,8 @@ void FusionEstimatorNode::ObtainParameter()
 {
     // 获得机器狗运动学参数
     Sensor_LegsPos->KinematicParams  << 
-    0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
     0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
+    0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
     -0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
     -0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022;
     std::filesystem::path current_file(__FILE__);
@@ -462,7 +465,7 @@ void FusionEstimatorNode::ObtainParameter()
     // 设置输出格式：固定小数点，保留四位小数
     std::cout << std::fixed << std::setprecision(4);
     // 定义腿名称顺序，与 KinematicParams 的行对应
-    std::vector<std::string> legs = {"FL", "FR", "RL", "RR"};
+    std::vector<std::string> legs = {"FR", "FL", "RR", "RL"};
     // 定义关节映射结构，每个关节在 13 维向量中的起始列号（每个关节占 3 列）
     struct JointMapping {
         std::string suffix; // 关节后缀，如 "hip_joint"

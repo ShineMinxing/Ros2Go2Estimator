@@ -66,10 +66,10 @@ namespace DataFusion
         double s1, s2, s3, c1, c2, c3, c23, s23, dq1, dq2, dq3;
         int SideSign;
 
-        if (LegNumber == 1 || LegNumber == 2)
-            SideSign = 1;
-        else
+        if (LegNumber == 0 || LegNumber == 2)
             SideSign = -1;
+        else
+            SideSign = 1;
 
         s1 = sin(Observation[0]);
         s2 = sin(Observation[3]);
@@ -99,7 +99,7 @@ namespace DataFusion
         Observation[1] = -Observation[1];
 
         FootBodyPosition[LegNumber][0] = Observation[0] + SensorPosition[0];
-        FootBodyPosition[LegNumber][1] = Observation[3] - SensorPosition[1];
+        FootBodyPosition[LegNumber][1] = Observation[3] + SensorPosition[1];
         FootBodyPosition[LegNumber][2] = Observation[6] + SensorPosition[2];
 
         //Detect the moment of foot falling on the ground
@@ -244,6 +244,9 @@ namespace DataFusion
             return a;
         };
 
+        for(int i=0; i<100; i++)
+            StateSpaceModel->Double_Par[i] = 0;
+
         // 4) 基于两两配对估计 yaw（固定大小累加，圆统计）
         double sx = 0.0, sy = 0.0; // 累加 cos/sin
         for (int i = 0; i < 4; ++i) {
@@ -276,15 +279,18 @@ namespace DataFusion
                 sx += std::cos(yaw_ij);
                 sy += std::sin(yaw_ij);
 
-                std::cout << "Leg" << i << "-" << j << " yaw " << yaw_ij << std::endl;
-                std::cout << " vb_x:" << vb_x << " vb_y:" << vb_y << " vb_z:" << vb_z << std::endl;
-                std::cout << " vw_x:" << vw_x << " vw_y:" << vw_y << " vw_z:" << vw_z << std::endl;
-                // for(int n=0; n<3; n++){
-                //     std::cout << " " << P_body[i][n] << " " << P_body[j][n] << std::endl;
-                // }
-                // for(int n=0; n<3; n++){
-                //     std::cout << " " << P_world[i][n] << " " << P_world[j][n] << std::endl;
-                // }
+                int k = i+j;
+                if(i==0)
+                    k--;
+                StateSpaceModel->Double_Par[k*8+0] = vb_x;
+                StateSpaceModel->Double_Par[k*8+1] = vb_y;
+                StateSpaceModel->Double_Par[k*8+2] = vw_x;
+                StateSpaceModel->Double_Par[k*8+3] = vw_y;
+                StateSpaceModel->Double_Par[k*8+4] = ang_rp;
+                StateSpaceModel->Double_Par[k*8+5] = yaw_ij;
+                StateSpaceModel->Double_Par[k*8+6] = std::cos(yaw_ij);
+                StateSpaceModel->Double_Par[k*8+7] = std::sin(yaw_ij);
+
             }
         }
 
@@ -293,13 +299,13 @@ namespace DataFusion
             const double yaw_est = std::atan2(sy, sx);
             const double yaw_now = StateSpaceModel->EstimatedState[6];
             const double err     = angle_wrap(yaw_est - yaw_now);
-            const double alpha   = 1.0;  // 可调 0.05~1.0
-            StateSpaceModel->EstimatedState[6] = angle_wrap(yaw_now + alpha * err);
-            std::cout << "---yaw_now: " << yaw_now << "   yaw_est: " << StateSpaceModel->EstimatedState[6] << std::endl;
-            StateSpaceModel->Double_Par[52] = yaw_est;
-            StateSpaceModel->Double_Par[53] = yaw_now;
-            StateSpaceModel->Double_Par[54] = err;
-            StateSpaceModel->Double_Par[55] = StateSpaceModel->EstimatedState[6];
+            const double alpha   = 0.001;
+            StateSpaceModel->Double_Par[99] = angle_wrap(yaw_now + alpha * err);
+
+            StateSpaceModel->Double_Par[49] = yaw_est;
+            StateSpaceModel->Double_Par[50] = yaw_now;
+            StateSpaceModel->Double_Par[51] = err;
+            StateSpaceModel->Double_Par[52] = StateSpaceModel->EstimatedState[6];
         }
     }
 }

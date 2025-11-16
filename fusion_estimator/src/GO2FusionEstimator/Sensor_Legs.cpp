@@ -288,6 +288,8 @@ namespace DataFusion
                 if(i==0)
                     k--;
 
+                // printf("%d: ang_rp-%lf; ang_w-%lf; yaw_ij-%lf \n",k,ang_rp,ang_w,yaw_ij);
+
             }
         }
 

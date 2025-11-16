@@ -174,14 +174,14 @@ private:
         rclcpp::Time CurrentTime = ros_clock.now();
         double CurrentTimestamp =  CurrentTime.seconds();
 
+        double LatestMessage[3][100]={0};
+        static double LastMessage[3][100]={0};
+
         fusion_msg.stamp = this->get_clock()->now();
 
         tf2::Quaternion q(msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
         double roll, pitch, yaw;
         tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-
-        double LatestMessage[3][100]={0};
-        static double LastMessage[3][100]={0};
 
         LatestMessage[0][3*0+2] = msg->linear_acceleration.x;
         LatestMessage[0][3*1+2] = msg->linear_acceleration.y;
@@ -206,6 +206,12 @@ private:
         LatestMessage[1][3*0+1] = msg->angular_velocity.x;
         LatestMessage[1][3*1+1] = msg->angular_velocity.y;
         LatestMessage[1][3*2+1] = msg->angular_velocity.z;
+
+        // only fot test
+        // LatestMessage[1][3*0] = orientation_correct[0];
+        // LatestMessage[1][3*1] = orientation_correct[3];
+        // LatestMessage[1][3*2] = orientation_correct[6];
+        
         for(int i = 0; i < 9; i++)
         {
             if(LastMessage[1][i] != LatestMessage[1][i])
@@ -233,6 +239,9 @@ private:
         rclcpp::Time CurrentTime = ros_clock.now();
         double CurrentTimestamp =  CurrentTime.seconds();
 
+        double LatestMessage[3][100]={0};
+        static double LastMessage[3][100]={0};
+
         fusion_msg.stamp = this->get_clock()->now();
 
         const auto& arr = msg->data;
@@ -242,8 +251,6 @@ private:
         data[12..23] : 12× 关节速度  (dq)
         data[24..27] : 4 × 足端力    (foot_force)
         */
-        double LatestMessage[3][100]={0};
-        static double LastMessage[3][100]={0};
 
         for(int LegNumber = 0; LegNumber<4; LegNumber++)
         {

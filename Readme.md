@@ -22,17 +22,18 @@
 
 ## 🏗️ 生态仓库一览
 
-| 范畴       | 仓库                                                                                                   | 功能简介                             |
-| -------- | ---------------------------------------------------------------------------------------------------- | -------------------------------- |
-| **底层驱动** | [https://github.com/ShineMinxing/Ros2Go2Base](https://github.com/ShineMinxing/Ros2Go2Base)                                                                                 | DDS 桥、Unitree SDK2 控制、点云→Scan、TF |
-| 里程计      | **Ros2Go2Estimator (本仓库)**  | 纯运动学多传感器融合                       |
-| 语音 / LLM | [https://github.com/ShineMinxing/Ros2Chat](https://github.com/ShineMinxing/Ros2Chat)                 | 离线 ASR + OpenAI Chat + 语音合成      |
-| 图像处理     | [https://github.com/ShineMinxing/Ros2ImageProcess](https://github.com/ShineMinxing/Ros2ImageProcess) | 相机、光点/人脸/无人机检测                   |
-| 吊舱跟随     | [https://github.com/ShineMinxing/Ros2AmovG1](https://github.com/ShineMinxing/Ros2AmovG1)             | Amov G1 吊舱控制、目标跟踪                |
-| 工具集      | [https://github.com/ShineMinxing/Ros2Tools](https://github.com/ShineMinxing/Ros2Tools)               | 蓝牙 IMU、手柄映射、吊舱闭环、数据采集            |
+| 范畴         | 仓库                                                                                                   | 功能简介                                                                 |
+|------------|------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
+| **底层驱动**   | [https://github.com/ShineMinxing/Ros2Go2Base](https://github.com/ShineMinxing/Ros2Go2Base)         | DDS 桥、Unitree SDK2 控制、点云→Scan、TF                                      |
+| 里程计        | **Ros2Go2Estimator (本仓库)**                                                                        | 纯运动学多传感器融合，发布 `SMX/Odom` / `SMX/Odom_2D`                            |
+| SLAM / 建图  | [https://github.com/ShineMinxing/Ros2SLAM](https://github.com/ShineMinxing/Ros2SLAM)                 | 集成 Cartographer 3D、KISS-ICP、FAST-LIO2、Point-LIO 多 SLAM |
+| 语音 / LLM   | [https://github.com/ShineMinxing/Ros2Chat](https://github.com/ShineMinxing/Ros2Chat)                 | 离线 ASR + OpenAI Chat + 语音合成                                            |
+| 图像处理       | [https://github.com/ShineMinxing/Ros2ImageProcess](https://github.com/ShineMinxing/Ros2ImageProcess) | 相机、光点/人脸/无人机检测                                                       |
+| 吊舱跟随       | [https://github.com/ShineMinxing/Ros2AmovG1](https://github.com/ShineMinxing/Ros2AmovG1)             | Amov G1 吊舱控制、目标跟踪                                                    |
+| 工具集        | [https://github.com/ShineMinxing/Ros2Tools](https://github.com/ShineMinxing/Ros2Tools)               | 蓝牙 IMU、手柄映射、吊舱闭环、数据采集                                              |
 
+> ⚠️ 按需克隆：若只想提升状态估计，可 **仅使用本仓库**；如需联动建图，可搭配 [Ros2SLAM](https://github.com/ShineMinxing/Ros2SLAM) 与 [Ros2Go2Base](https://github.com/ShineMinxing/Ros2Go2Base) 使用，其它仓库互不强依赖。
 
-> ⚠️ 按需克隆：若只想提升状态估计，可 **仅使用本仓库**。其它仓库互不强依赖。
 
 ---
 
@@ -127,7 +128,7 @@ ros2 run fusion_estimator fusion_estimator_node
 | AR眼镜头部运动跟随         | [![img](https://i1.hdslb.com/bfs/archive/9e0462e12bf77dd9bbe8085d0d809f233256fdbd.jpg)](https://www.bilibili.com/video/BV1pXEdzFECW) |
 | YOLO无人机识别与跟随       | [![img](https://i1.hdslb.com/bfs/archive/a5ac45ec76ccb7c3fb18de9c6b8df48e8abe2b54.jpg)](https://www.bilibili.com/video/BV18v8xzJE4G) |
 | 机器狗光电吊舱与固定相机协同 | [![img](https://i2.hdslb.com/bfs/archive/07ac6082b7efdc2e2d200e18fc8074eec1d9cfba.jpg)](https://www.bilibili.com/video/BV1fTY7z7E5T) |
-| 多种神经网络位置预测        | [![img](https://i1.hdslb.com/bfs/archive/650062a4aeb28cb7bfdd15e658de1523f537efb7.jpg)](https://www.bilibili.com/video/BV1ytMizEEdG) |
+| 多种SLAM方法集成        | [![img](https://i1.hdslb.com/bfs/archive/f299bafc7486f71e061eb31f9f00347063e1e621.jpg)](https://www.bilibili.com/video/BV1ytMizEEdG) |
 
 ---
 

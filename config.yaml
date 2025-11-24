@@ -1,6 +1,5 @@
 fusion_estimator_node:
   ros__parameters:
-
     # 订阅Go2传感器Topic
     sub_imu_topic: "SMX/Go2IMU"
     sub_joint_topic: "SMX/Go2Joint"
@@ -27,14 +26,19 @@ fusion_estimator_node:
     # URDF 文件路径（相对于 package 根目录）
     urdf_file: "cfg/go2_description.urdf"
 
-    # 可在线调整的三轴补偿角，单位：度
-    Modify_Par_1: 0.0
-    Modify_Par_2: 0.0
-    Modify_Par_3: 0.0
+    # 可在线调整的三轴补偿角，单位：米/度， ros2 run rqt_reconfigure rqt_reconfigure， 如果leg_ori_enable则无法调整rpy
+    Modify_Par_X:     0.0
+    Modify_Par_Y:     0.0
+    Modify_Par_Z:     0.0
+    Modify_Par_roll:  0.0
+    Modify_Par_pitch: 0.0
+    Modify_Par_yaw:   0.0
 
+    # IMU使能
+    imu_data_enable: true
     # 运动学估计使能
     leg_pos_enable: true
     leg_ori_enable: true
-    # 运动学对角度的修正量初始系数（可负数），和多久增大到1.0
+    # 运动学对角度的修正量初始系数（可负数），和多久增大到1.0，如果不使用leg_ori_enable，leg_ori_init_weight设为1.0
     leg_ori_init_weight: 0.001
     leg_ori_time_wight: 1000.0

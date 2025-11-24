@@ -26,7 +26,7 @@ public:
     FusionEstimatorNode(const rclcpp::NodeOptions &options)
     : Node("fusion_estimator_node", options)
     {
-        /* ────────────── ① 读取所有可能的参数 ────────────── */
+        /* ────────────── 读取参数 ────────────── */
         std::string sub_imu_topic;
         this->get_parameter_or("sub_imu_topic", sub_imu_topic, std::string("NoYamlRead/Go2IMU"));
         std::string sub_joint_topic;
@@ -47,6 +47,7 @@ public:
         this->get_parameter_or("base_frame_2d", base_frame_2d, std::string("base_link_2D"));
         std::string urdf_path_cfg;
         this->get_parameter_or("urdf_file", urdf_path_cfg, std::string("cfg/go2_description.urdf"));
+        this->get_parameter_or("imu_data_enable", imu_data_enable, true);
         this->get_parameter_or("leg_pos_enable", leg_pos_enable, true);
         this->get_parameter_or("leg_ori_enable", leg_ori_enable, true);
         this->get_parameter_or("leg_ori_init_weight", leg_ori_init_weight, 0.001);
@@ -64,27 +65,26 @@ public:
             RCLCPP_INFO(get_logger(), "leg_ori_time_wight to %lf", leg_ori_time_wight);
         }
 
+        odom_frame_id_     = odom_frame;
+        child_frame_id_    = base_frame;
+        child_frame_id_2d_ = base_frame_2d;
 
-        go2_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
-            sub_imu_topic, 10,
-            std::bind(&FusionEstimatorNode::imu_callback, this, std::placeholders::_1));
-        go2_joint_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
-            sub_joint_topic, 10,
-            std::bind(&FusionEstimatorNode::joint_callback, this, std::placeholders::_1));
+        /* ────────────── 数据通信 ────────────── */
+        if(imu_data_enable)
+            go2_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(sub_imu_topic, 10, std::bind(&FusionEstimatorNode::imu_callback, this, std::placeholders::_1));
+        if(leg_pos_enable || leg_ori_enable)
+            go2_joint_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(sub_joint_topic, 10, std::bind(&FusionEstimatorNode::joint_callback, this, std::placeholders::_1));
         joystick_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             sub_mode_topic, 10,
             std::bind(&FusionEstimatorNode::joystick_cmd_callback, this, std::placeholders::_1));
+        parameter_sub = this->add_on_set_parameters_callback(std::bind(&FusionEstimatorNode::Modify_Par_Fun, this, std::placeholders::_1));
 
         FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
         pub_estimation_topic, 10);
         SMXFE_publisher   = this->create_publisher<nav_msgs::msg::Odometry>(pub_odom_topic, 10);
         SMXFE_2D_publisher= this->create_publisher<nav_msgs::msg::Odometry>(pub_odom_2d_topic, 10);
 
-        odom_frame_id_     = odom_frame;
-        child_frame_id_    = base_frame;
-        child_frame_id_2d_ = base_frame_2d;
-
-        /* ────────────── ③ 创建融合器对象 ────────────── */
+        /* ────────────── 创建融合器对象 ────────────── */
         for (int i = 0; i < 2; ++i) {
         auto * ptr = new EstimatorPortN;
         StateSpaceModel1_Initialization(ptr);
@@ -96,11 +96,8 @@ public:
         Sensor_LegsOri     = std::make_shared<SensorLegsOri>    (StateSpaceModel1_Sensors[1]);
         Sensor_LegsOri->SetLegsPosRef(Sensor_LegsPos.get());
 
-        /* 可在线调三轴角度补偿 */
-        ParameterCorrectCallback = this->add_on_set_parameters_callback(
-        std::bind(&FusionEstimatorNode::Modify_Par_Fun, this, std::placeholders::_1));
 
-        /* ────────────── ④ 读取 URDF 并填充腿部参数 ────────────── */
+        /* ────────────── 读取 URDF 并填充腿部参数 ────────────── */
         urdf_path_cfg_ = urdf_path_cfg;   // 保存到成员变量，ObtainParameter() 会用
         RCLCPP_INFO(get_logger(), "FusionEstimatorNode started, URDF=%s", urdf_path_cfg_.c_str());
 
@@ -123,6 +120,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr go2_imu_sub;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr go2_joint_sub;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr joystick_cmd_sub;
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_sub;
 
     std::shared_ptr<SensorIMUAcc>     Sensor_IMUAcc;
     std::shared_ptr<SensorIMUMagGyro> Sensor_IMUMagGyro;
@@ -131,11 +129,10 @@ private:
 
     fusion_estimator::msg::FusionEstimatorTest fusion_msg;
 
-    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr ParameterCorrectCallback;
 
     std::string odom_frame_id_, child_frame_id_, child_frame_id_2d_;
     std::string urdf_path_cfg_;
-    bool leg_pos_enable, leg_ori_enable;
+    bool imu_data_enable, leg_pos_enable, leg_ori_enable;
     double leg_ori_init_weight, leg_ori_time_wight;
     double position_correct[9];
     double orientation_correct[9];
@@ -149,21 +146,19 @@ private:
 
         for (const auto & param : parameters)
         {
-            if (param.get_name() == "Modify_Par_1")
+            if (param.get_name() == "Modify_Par_X")
+                position_correct[0] = param.as_double();
+            if (param.get_name() == "Modify_Par_Y")
+                position_correct[3] = param.as_double();
+            if (param.get_name() == "Modify_Par_Z")
+                position_correct[6] = param.as_double();
+            if (param.get_name() == "Modify_Par_roll")
                 orientation_correct[0] = param.as_double() * M_PI / 180.0;
-            if (param.get_name() == "Modify_Par_2")
-                orientation_correct[1] = param.as_double() * M_PI / 180.0;
-            if (param.get_name() == "Modify_Par_3")
-                orientation_correct[2] = param.as_double() * M_PI / 180.0;
+            if (param.get_name() == "Modify_Par_pitch")
+                orientation_correct[3] = param.as_double() * M_PI / 180.0;
+            if (param.get_name() == "Modify_Par_yaw")
+                orientation_correct[6] = param.as_double() * M_PI / 180.0;
         }
-
-        Eigen::AngleAxisd rollAngle(orientation_correct[0], Eigen::Vector3d::UnitZ());  // 绕 X 轴旋转
-        Eigen::AngleAxisd pitchAngle(orientation_correct[1], Eigen::Vector3d::UnitY()); // 绕 Y 轴旋转
-        Eigen::AngleAxisd yawAngle(orientation_correct[2], Eigen::Vector3d::UnitX());   // 绕 Z 轴旋转
-
-        Sensor_IMUMagGyro->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
-        Sensor_IMUMagGyro->SensorQuaternionInv = Sensor_IMUMagGyro->SensorQuaternion.inverse();
-        std::cout <<"Sensor_IMUMagGyro->SensorQuaternion: " << Sensor_IMUMagGyro->SensorQuaternion.coeffs().transpose() << std::endl;
 
         return result;
     }
@@ -187,43 +182,30 @@ private:
         LatestMessage[0][3*1+2] = msg->linear_acceleration.y;
         LatestMessage[0][3*2+2] = msg->linear_acceleration.z;
 
-        for(int i = 0; i < 9; i++)
-        {
-            if(LastMessage[0][i] != LatestMessage[0][i])
-            {
-                Sensor_IMUAcc->SensorDataHandle(LatestMessage[0], CurrentTimestamp);
-                for(int j = 0; j < 9; j++)
-                {
-                    LastMessage[0][j] = LatestMessage[0][j];
-                }
-                break;
-            }
-        }
-
         LatestMessage[1][3*0] = roll + orientation_correct[0];
         LatestMessage[1][3*1] = pitch + orientation_correct[3];
         LatestMessage[1][3*2] = yaw  + orientation_correct[6];
         LatestMessage[1][3*0+1] = msg->angular_velocity.x;
         LatestMessage[1][3*1+1] = msg->angular_velocity.y;
         LatestMessage[1][3*2+1] = msg->angular_velocity.z;
-
-        // only fot test
-        // LatestMessage[1][3*0] = orientation_correct[0];
-        // LatestMessage[1][3*1] = orientation_correct[3];
-        // LatestMessage[1][3*2] = orientation_correct[6];
         
         for(int i = 0; i < 9; i++)
         {
-            if(LastMessage[1][i] != LatestMessage[1][i])
-            {
-                Sensor_IMUMagGyro->SensorDataHandle(LatestMessage[1], CurrentTimestamp);
-                for(int j = 0; j < 9; j++)
-                {
-                    LastMessage[1][j] = LatestMessage[1][j];
-                }
+            if(LastMessage[0][i] != LatestMessage[0][i])
                 break;
-            }
+            if(LastMessage[1][i] != LatestMessage[1][i])
+                break;
+            if(i==8)
+                return;  //数据未变则视为重复发送，舍弃数据
         }
+        for(int j = 0; j < 9; j++)
+        {
+            LastMessage[0][j] = LatestMessage[0][j];
+            LastMessage[1][j] = LatestMessage[1][j];
+        }
+
+        Sensor_IMUAcc->SensorDataHandle(LatestMessage[0], CurrentTimestamp);
+        Sensor_IMUMagGyro->SensorDataHandle(LatestMessage[1], CurrentTimestamp);
 
         for(int i=0; i<9; i++){
             fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i] + position_correct[i];
@@ -262,42 +244,24 @@ private:
             LatestMessage[2][24 + LegNumber] = arr[24 + LegNumber];
         }
 
+        for(int i = 0; i < 28; i++)
+        {
+            if(LastMessage[2][i] != LatestMessage[2][i])
+                break;
+            if(i==27)
+                return;  //数据未变则视为重复发送，舍弃数据
+        }
+        for(int j = 0; j < 28; j++)
+        {
+            LastMessage[2][j] = LatestMessage[2][j];
+        }
+
         if(leg_pos_enable)
         {
-            double Last_Yaw = StateSpaceModel1_Sensors[1]->EstimatedState[6] - orientation_correct[6];
-            for(int i = 0; i < 28; i++)
-            {
-                if(LastMessage[2][i] != LatestMessage[2][i])
-                {
-                    Sensor_LegsPos->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
-                    if(leg_ori_enable){
-                        StateSpaceModel1_Sensors[1]->Double_Par[97] = leg_ori_init_weight;
-                        StateSpaceModel1_Sensors[1]->Double_Par[98] = leg_ori_time_wight;
-                        Sensor_LegsOri->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
-                    }
-                    for(int j = 0; j < 28; j++)
-                    {
-                        LastMessage[2][j] = LatestMessage[2][j];
-                    }
-                    break;
-                }
-            }
-
-            if(leg_ori_enable)
-                orientation_correct[6] = StateSpaceModel1_Sensors[1]->Double_Par[99] - Last_Yaw;
+            Sensor_LegsPos->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
             
             for(int i=0; i<9; i++){
                 fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i] + position_correct[i];
-                fusion_msg.estimated_rpy[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
-            }
-            
-            for(int LegNumber=0; LegNumber<4; LegNumber++){
-                for(int i=0; i<3; i++){
-                    fusion_msg.data_check_a[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[6 * LegNumber + i];
-                    fusion_msg.data_check_b[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[6 * LegNumber + 3 + i];
-                    fusion_msg.data_check_c[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[24 + 6 * LegNumber + i];
-                    fusion_msg.data_check_d[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[24 + 6 * LegNumber + 3 + i];
-                }
             }
 
             for(int i=0; i<4; i++){
@@ -306,10 +270,27 @@ private:
                     fusion_msg.feet_based_velocity[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[48 + 6 * i + j + 3];
                 }
             }
+            
+            for(int LegNumber=0; LegNumber<4; LegNumber++){
+                for(int i=0; i<3; i++){
+                    fusion_msg.data_check_a[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[6 * LegNumber + i];      //身体坐标系的足身相对位置
+                    fusion_msg.data_check_b[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[24 + 6 * LegNumber + i]; //世界坐标系的足身相对位置
+                }
+            }
+        }
+        if(leg_ori_enable)
+        {
+            double Last_Yaw = StateSpaceModel1_Sensors[1]->EstimatedState[6] - orientation_correct[6];
 
+            StateSpaceModel1_Sensors[1]->Double_Par[97] = leg_ori_init_weight;
+            StateSpaceModel1_Sensors[1]->Double_Par[98] = leg_ori_time_wight;
+            Sensor_LegsOri->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
 
-            for(int i=0; i<48; i++)
-                fusion_msg.others[i] = StateSpaceModel1_Sensors[1]->Double_Par[i];
+            orientation_correct[6] = StateSpaceModel1_Sensors[1]->Double_Par[99] - Last_Yaw;
+
+            for(int i=0; i<9; i++){
+                fusion_msg.estimated_rpy[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
+            }
         }
 
         Msg_Publish();

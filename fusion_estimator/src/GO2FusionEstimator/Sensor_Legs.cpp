@@ -299,6 +299,8 @@ namespace DataFusion
             const double yaw_now = StateSpaceModel->EstimatedState[6];
             const double err     = angle_wrap(yaw_est - yaw_now);
             StateSpaceModel->Double_Par[99] = angle_wrap(yaw_now + StateSpaceModel->Double_Par[96] * err);
+            StateSpaceModel->EstimatedState[6] = StateSpaceModel->Double_Par[99];
+            UpdateEst_Quaternion();
         }
     }
 }

@@ -26,7 +26,7 @@ fusion_estimator_node:
     # IMU使能
     imu_data_enable: true
     # IMU 位置 x, y, z（单位：m）and 姿态修正 roll, pitch, yaw（单位：度）
-    imu_params: [-0.02557, 0.0, 0.04232, 0.0, 1.7, 0.0]
+    imu_params: [-0.02557, 0.0, 0.04232, 0.0, 0.0, 0.0]
 
     # 运动学估计使能
     leg_pos_enable: true

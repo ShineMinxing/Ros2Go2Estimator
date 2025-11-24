@@ -23,22 +23,29 @@ fusion_estimator_node:
     base_frame: "base_link"
     base_frame_2d: "base_link_2D"
 
-    # URDF 文件路径（相对于 package 根目录）
-    urdf_file: "cfg/go2_description.urdf"
-
-    # 可在线调整的三轴补偿角，单位：米/度， ros2 run rqt_reconfigure rqt_reconfigure， 如果leg_ori_enable则无法调整rpy
-    Modify_Par_X:     0.0
-    Modify_Par_Y:     0.0
-    Modify_Par_Z:     0.0
-    Modify_Par_roll:  0.0
-    Modify_Par_pitch: 0.0
-    Modify_Par_yaw:   0.0
-
     # IMU使能
     imu_data_enable: true
+    # IMU 位置 x, y, z（单位：m）and 姿态修正 roll, pitch, yaw（单位：度）
+    imu_params: [-0.02557, 0.0, 0.04232, 0.0, 1.7, 0.0]
+
     # 运动学估计使能
     leg_pos_enable: true
     leg_ori_enable: true
     # 运动学对角度的修正量初始系数（可负数），和多久增大到1.0，如果不使用leg_ori_enable，leg_ori_init_weight设为1.0
     leg_ori_init_weight: 0.001
     leg_ori_time_wight: 1000.0
+    # 运动学参数，分别为FR FL RR RL腿的髋关节XYZ, 膝关节XYZ, 踝关节XYZ, 足的半径
+    kinematic_params: [
+      0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
+      0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
+     -0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
+     -0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022
+    ]
+
+    # 可在线调整的三轴补偿，单位：米 or 度， ros2 run rqt_reconfigure rqt_reconfigure， 如果leg_ori_enable则无法调整rpy
+    Modify_Par_X:     0.0
+    Modify_Par_Y:     0.0
+    Modify_Par_Z:     0.0
+    Modify_Par_roll:  0.0
+    Modify_Par_pitch: 0.0
+    Modify_Par_yaw:   0.0

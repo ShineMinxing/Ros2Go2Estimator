@@ -21,6 +21,10 @@ namespace DataFusion
       Eigen::AngleAxisd yawAngle(AngleCorrect[0], Eigen::Vector3d::UnitX());   // 绕 Z 轴旋转
       SensorQuaternion = yawAngle * pitchAngle * rollAngle;
       SensorQuaternionInv = SensorQuaternion.inverse();
+
+      SensorPosition[0] = -0.02557;
+      SensorPosition[1] = 0;
+      SensorPosition[2] = 0.04232;
     }
 
     void SensorDataHandle(double* Message, double Time)  override;
@@ -44,6 +48,10 @@ namespace DataFusion
       Eigen::AngleAxisd yawAngle(AngleCorrect[2], Eigen::Vector3d::UnitZ());   // 绕 Z 轴旋转
       SensorQuaternion = yawAngle * pitchAngle * rollAngle;
       SensorQuaternionInv = SensorQuaternion.inverse();
+
+      SensorPosition[0] = -0.02557;
+      SensorPosition[1] = 0;
+      SensorPosition[2] = 0.04232;
     }
 
     void SensorDataHandle(double* Message, double Time) override;

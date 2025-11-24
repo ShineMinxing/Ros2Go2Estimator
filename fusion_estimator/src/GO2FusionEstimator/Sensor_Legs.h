@@ -18,6 +18,15 @@ namespace DataFusion
         FootWasOnGround[i] = 1;
         FootLanding[i] = 0;
       }
+      KinematicParams  << 
+        0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
+        0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
+        -0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
+        -0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022;
+      Par_HipLength = 0.0955;
+      Par_ThighLength = 0.213;
+      Par_CalfLength = 0.213;
+      Par_FootLength = 0.022;
     }
 
     void SensorDataHandle(double* Message, double Time)  override;

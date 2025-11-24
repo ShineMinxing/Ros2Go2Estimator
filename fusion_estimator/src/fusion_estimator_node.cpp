@@ -5,7 +5,6 @@
 #include <fstream>
 #include <iomanip>
 
-#include <urdf_parser/urdf_parser.h>
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -26,6 +25,23 @@ public:
     FusionEstimatorNode(const rclcpp::NodeOptions &options)
     : Node("fusion_estimator_node", options)
     {
+        /* ────────────── 创建融合器对象 ────────────── */
+        for (int i = 0; i < 2; ++i) {
+        auto * ptr = new EstimatorPortN;
+        StateSpaceModel1_Initialization(ptr);
+        StateSpaceModel1_Sensors.emplace_back(ptr);
+        }
+        Sensor_IMUAcc      = std::make_shared<SensorIMUAcc>     (StateSpaceModel1_Sensors[0]);
+        Sensor_IMUMagGyro  = std::make_shared<SensorIMUMagGyro> (StateSpaceModel1_Sensors[1]);
+        Sensor_LegsPos     = std::make_shared<SensorLegsPos>    (StateSpaceModel1_Sensors[0]);
+        Sensor_LegsOri     = std::make_shared<SensorLegsOri>    (StateSpaceModel1_Sensors[1]);
+        Sensor_LegsOri->SetLegsPosRef(Sensor_LegsPos.get());
+        
+        for (int i = 0; i < 9; ++i) {
+            position_correct[i] = 0;
+            orientation_correct[i] = 0;
+        }
+
         /* ────────────── 读取参数 ────────────── */
         std::string sub_imu_topic;
         this->get_parameter_or("sub_imu_topic", sub_imu_topic, std::string("NoYamlRead/Go2IMU"));
@@ -39,21 +55,16 @@ public:
         this->get_parameter_or("pub_odom_topic", pub_odom_topic, std::string("NoYamlRead/Odom"));
         std::string pub_odom_2d_topic;
         this->get_parameter_or("pub_odom2d_topic", pub_odom_2d_topic, std::string("NoYamlRead/Odom_2D"));
-        std::string odom_frame;
-        this->get_parameter_or("odom_frame", odom_frame, std::string("odom"));
-        std::string base_frame;
-        this->get_parameter_or("base_frame", base_frame, std::string("base_link"));
-        std::string base_frame_2d;
-        this->get_parameter_or("base_frame_2d", base_frame_2d, std::string("base_link_2D"));
-        std::string urdf_path_cfg;
-        this->get_parameter_or("urdf_file", urdf_path_cfg, std::string("cfg/go2_description.urdf"));
+        this->get_parameter_or("odom_frame", odom_frame_id, std::string("odom"));
+        this->get_parameter_or("base_frame", child_frame_id, std::string("base_link"));
+        this->get_parameter_or("base_frame_2d", child_frame_2d_id, std::string("base_link_2D"));
+
         this->get_parameter_or("imu_data_enable", imu_data_enable, true);
         this->get_parameter_or("leg_pos_enable", leg_pos_enable, true);
         this->get_parameter_or("leg_ori_enable", leg_ori_enable, true);
+
         this->get_parameter_or("leg_ori_init_weight", leg_ori_init_weight, 0.001);
         this->get_parameter_or("leg_ori_time_wight", leg_ori_time_wight, 100.0);
-
-
         if(!(leg_ori_init_weight>-1.0 && leg_ori_init_weight<=1.0))
         {
             leg_ori_init_weight = 0.001;
@@ -65,9 +76,47 @@ public:
             RCLCPP_INFO(get_logger(), "leg_ori_time_wight to %lf", leg_ori_time_wight);
         }
 
-        odom_frame_id_     = odom_frame;
-        child_frame_id_    = base_frame;
-        child_frame_id_2d_ = base_frame_2d;
+        rclcpp::Parameter kin_param;
+        if (this->get_parameter("kinematic_params", kin_param)) 
+        {
+            auto v = kin_param.as_double_array();  // std::vector<double>
+            if (v.size() == 4u * 13u) {
+                // 用 Eigen::Map 把一维数组映射成 4×13 矩阵（行优先）
+                Eigen::Map<const Eigen::Matrix<double, 4, 13, Eigen::RowMajor>> kin_map(v.data());
+                Sensor_LegsPos->KinematicParams = kin_map;
+
+                // 用新的 KinematicParams 更新几何长度（若你想保持默认值可以直接删掉下面4行）
+                Sensor_LegsPos->Par_HipLength   = Sensor_LegsPos->KinematicParams.block<1,3>(0,3).norm();
+                Sensor_LegsPos->Par_ThighLength = Sensor_LegsPos->KinematicParams.block<1,3>(0,6).norm();
+                Sensor_LegsPos->Par_CalfLength  = Sensor_LegsPos->KinematicParams.block<1,3>(0,9).norm();
+                Sensor_LegsPos->Par_FootLength  = std::abs(Sensor_LegsPos->KinematicParams(0,12));
+                RCLCPP_INFO(this->get_logger(), "Kinematic Params Sucessfully Read.");
+            }
+        }
+
+        rclcpp::Parameter imu_param;
+        if (this->get_parameter("imu_params", imu_param)) {
+            auto v = imu_param.as_double_array();   // 期望 6 个
+            if (v.size() == 6u) {
+                Sensor_IMUAcc->SensorPosition[0]     = v[0];
+                Sensor_IMUAcc->SensorPosition[1]     = v[1];
+                Sensor_IMUAcc->SensorPosition[2]     = v[2];
+                Sensor_IMUMagGyro->SensorPosition[0] = v[0];
+                Sensor_IMUMagGyro->SensorPosition[1] = v[1];
+                Sensor_IMUMagGyro->SensorPosition[2] = v[2];
+                double r = v[3] * M_PI / 180.0;
+                double p = v[4] * M_PI / 180.0;
+                double y = v[5] * M_PI / 180.0;
+                Eigen::AngleAxisd rollAngle (y, Eigen::Vector3d::UnitZ());
+                Eigen::AngleAxisd pitchAngle(p, Eigen::Vector3d::UnitY());
+                Eigen::AngleAxisd yawAngle  (r, Eigen::Vector3d::UnitX());
+                Sensor_IMUAcc->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
+                Sensor_IMUAcc->SensorQuaternionInv = Sensor_IMUAcc->SensorQuaternion.inverse();
+                Sensor_IMUMagGyro->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
+                Sensor_IMUMagGyro->SensorQuaternionInv = Sensor_IMUMagGyro->SensorQuaternion.inverse();
+                RCLCPP_INFO(this->get_logger(), "IMU Params Sucessfully Read.");
+            }
+        }
 
         /* ────────────── 数据通信 ────────────── */
         if(imu_data_enable)
@@ -83,33 +132,7 @@ public:
         pub_estimation_topic, 10);
         SMXFE_publisher   = this->create_publisher<nav_msgs::msg::Odometry>(pub_odom_topic, 10);
         SMXFE_2D_publisher= this->create_publisher<nav_msgs::msg::Odometry>(pub_odom_2d_topic, 10);
-
-        /* ────────────── 创建融合器对象 ────────────── */
-        for (int i = 0; i < 2; ++i) {
-        auto * ptr = new EstimatorPortN;
-        StateSpaceModel1_Initialization(ptr);
-        StateSpaceModel1_Sensors.emplace_back(ptr);
-        }
-        Sensor_IMUAcc      = std::make_shared<SensorIMUAcc>     (StateSpaceModel1_Sensors[0]);
-        Sensor_IMUMagGyro  = std::make_shared<SensorIMUMagGyro> (StateSpaceModel1_Sensors[1]);
-        Sensor_LegsPos     = std::make_shared<SensorLegsPos>    (StateSpaceModel1_Sensors[0]);
-        Sensor_LegsOri     = std::make_shared<SensorLegsOri>    (StateSpaceModel1_Sensors[1]);
-        Sensor_LegsOri->SetLegsPosRef(Sensor_LegsPos.get());
-
-
-        /* ────────────── 读取 URDF 并填充腿部参数 ────────────── */
-        urdf_path_cfg_ = urdf_path_cfg;   // 保存到成员变量，ObtainParameter() 会用
-        RCLCPP_INFO(get_logger(), "FusionEstimatorNode started, URDF=%s", urdf_path_cfg_.c_str());
-
-        
-        for (int i = 0; i < 9; ++i) {
-            position_correct[i] = 0;
-            orientation_correct[i] = 0;
-        }
     }
-
-    /* —— 在 main() 里会显式调用 —— */
-    void ObtainParameter();
 
 private:
 
@@ -129,9 +152,7 @@ private:
 
     fusion_estimator::msg::FusionEstimatorTest fusion_msg;
 
-
-    std::string odom_frame_id_, child_frame_id_, child_frame_id_2d_;
-    std::string urdf_path_cfg_;
+    std::string odom_frame_id, child_frame_id, child_frame_2d_id;
     bool imu_data_enable, leg_pos_enable, leg_ori_enable;
     double leg_ori_init_weight, leg_ori_time_wight;
     double position_correct[9];
@@ -287,6 +308,8 @@ private:
             Sensor_LegsOri->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
 
             orientation_correct[6] = StateSpaceModel1_Sensors[1]->Double_Par[99] - Last_Yaw;
+            if(!imu_data_enable)
+                StateSpaceModel1_Sensors[1]->EstimatedState[6] = StateSpaceModel1_Sensors[1]->Double_Par[99];
 
             for(int i=0; i<9; i++){
                 fusion_msg.estimated_rpy[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
@@ -303,8 +326,8 @@ private:
         // 构造标准 3D odometry 消息，并发布
         nav_msgs::msg::Odometry SMXFE_odom;
         SMXFE_odom.header.stamp = fusion_msg.stamp;
-        SMXFE_odom.header.frame_id = odom_frame_id_;
-        SMXFE_odom.child_frame_id = child_frame_id_;
+        SMXFE_odom.header.frame_id = odom_frame_id;
+        SMXFE_odom.child_frame_id = child_frame_id;
 
         // 使用 fusion_msg.estimated_xyz 的前 3 个元素作为位置
         SMXFE_odom.pose.pose.position.x = fusion_msg.estimated_xyz[0];
@@ -359,8 +382,8 @@ private:
         // 构造标准 2D odometry 消息，并发布
         nav_msgs::msg::Odometry SMXFE_odom_2D;
         SMXFE_odom_2D.header.stamp = fusion_msg.stamp;
-        SMXFE_odom_2D.header.frame_id = odom_frame_id_;
-        SMXFE_odom_2D.child_frame_id = child_frame_id_2d_;
+        SMXFE_odom_2D.header.frame_id = odom_frame_id;
+        SMXFE_odom_2D.child_frame_id = child_frame_2d_id;
 
         // 使用 fusion_msg.estimated_xyz 的前 3 个元素作为位置
         SMXFE_odom_2D.pose.pose.position.x = fusion_msg.estimated_xyz[0];
@@ -436,122 +459,6 @@ private:
     }
 };
 
-void FusionEstimatorNode::ObtainParameter()
-{
-    // 获得机器狗运动学参数
-    Sensor_LegsPos->KinematicParams  << 
-    0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
-    0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
-    -0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022,
-    -0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022;
-    std::filesystem::path current_file(__FILE__);
-    std::filesystem::path package_dir = current_file.parent_path().parent_path();
-    std::filesystem::path urdf_path = package_dir / urdf_path_cfg_;
-    std::ifstream urdf_file(urdf_path);
-    if (!urdf_file.is_open())
-    {
-        std::cout << "无法打开文件: " << urdf_path << "，使用默认值。" << std::endl;
-        return;
-    }
-    // 读入文件内容
-    std::string urdf_xml((std::istreambuf_iterator<char>(urdf_file)), std::istreambuf_iterator<char>());
-    urdf_file.close();
-    urdf::ModelInterfaceSharedPtr model = urdf::parseURDF(urdf_xml);
-    if (!model)
-    {
-        std::cout << "解析URDF失败: " << urdf_path << "，使用默认值。" << std::endl;
-        return;
-    }
-    // 设置输出格式：固定小数点，保留四位小数
-    std::cout << std::fixed << std::setprecision(4);
-    // 定义腿名称顺序，与 KinematicParams 的行对应
-    std::vector<std::string> legs = {"FR", "FL", "RR", "RL"};
-    // 定义关节映射结构，每个关节在 13 维向量中的起始列号（每个关节占 3 列）
-    struct JointMapping {
-        std::string suffix; // 关节后缀，如 "hip_joint"
-        int col;            // 起始列号
-    };
-    // 对每条腿，映射 hip, thigh, calf, foot_joint 对应的参数
-    std::vector<JointMapping> jointMappings = {
-        { "hip_joint",   0 },
-        { "thigh_joint", 3 },
-        { "calf_joint",  6 },
-        { "foot_joint",  9 }
-    };
-    // 对每条腿更新各关节参数
-    for (size_t i = 0; i < legs.size(); i++)
-    {
-        const std::string& leg = legs[i];
-        for (const auto& jm : jointMappings)
-        {
-            // 拼接完整关节名称，如 "FL_hip_joint"
-            std::string jointName = leg + "_" + jm.suffix;
-            urdf::JointConstSharedPtr joint = model->getJoint(jointName);
-            if (!joint)
-            {
-                std::cout << "未找到关节: " << jointName << " (" << leg << ")，使用默认值: ";
-                std::cout << Sensor_LegsPos->KinematicParams.row(i).segment(jm.col, 3) << std::endl;
-            }
-            else
-            {
-                urdf::Vector3 pos = joint->parent_to_joint_origin_transform.position;
-                Sensor_LegsPos->KinematicParams(i, jm.col)     = pos.x;
-                Sensor_LegsPos->KinematicParams(i, jm.col + 1) = pos.y;
-                Sensor_LegsPos->KinematicParams(i, jm.col + 2) = pos.z;
-                std::cout << "Obtained KinematicPar for " << jointName << ": ";
-                std::cout << Sensor_LegsPos->KinematicParams.row(i).segment(jm.col, 3) << std::endl;
-            }
-        }
-        // 更新该腿 foot 连杆 collision 的球半径（存储在列 12）
-        std::string footLinkName = leg + "_foot";
-        urdf::LinkConstSharedPtr footLink = model->getLink(footLinkName);
-        if (!footLink)
-        {
-            std::cout << "未找到连杆: " << footLinkName << " (" << leg << ")，使用默认值: " << Sensor_LegsPos->KinematicParams(i, 12) << std::endl;
-        }
-        else
-        {
-            if (footLink->collision && footLink->collision->geometry &&
-                footLink->collision->geometry->type == urdf::Geometry::SPHERE)
-            {
-                urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(footLink->collision->geometry.get());
-                if (sphere)
-                {
-                    Sensor_LegsPos->KinematicParams(i, 12) = sphere->radius;
-                    std::cout << "Obtained KinematicPar for " << footLinkName << ": " << Sensor_LegsPos->KinematicParams(i, 12) << std::endl;
-                }
-            }
-        }
-
-        Sensor_LegsPos->Par_HipLength = std::sqrt(Sensor_LegsPos->KinematicParams(0, 3)*Sensor_LegsPos->KinematicParams(0, 3) + Sensor_LegsPos->KinematicParams(0, 4)*Sensor_LegsPos->KinematicParams(0, 4) + Sensor_LegsPos->KinematicParams(0, 5)*Sensor_LegsPos->KinematicParams(0, 5));
-        Sensor_LegsPos->Par_ThighLength = std::sqrt(Sensor_LegsPos->KinematicParams(0, 6)*Sensor_LegsPos->KinematicParams(0, 6) + Sensor_LegsPos->KinematicParams(0, 7)*Sensor_LegsPos->KinematicParams(0, 7) + Sensor_LegsPos->KinematicParams(0, 8)*Sensor_LegsPos->KinematicParams(0, 8));
-        Sensor_LegsPos->Par_CalfLength = std::sqrt(Sensor_LegsPos->KinematicParams(0, 9)*Sensor_LegsPos->KinematicParams(0, 9) + Sensor_LegsPos->KinematicParams(0, 10)*Sensor_LegsPos->KinematicParams(0, 10) + Sensor_LegsPos->KinematicParams(0, 11)*Sensor_LegsPos->KinematicParams(0, 11));
-        Sensor_LegsPos->Par_FootLength = abs(Sensor_LegsPos->KinematicParams(0, 12));
-    }
-
-    // 获得IMU安装位置
-    Eigen::Vector3d IMUPosition(-0.02557, 0, 0.04232);
-    std::string jointName = "imu_joint";
-    urdf::JointConstSharedPtr joint = model->getJoint(jointName);
-    if (!joint)
-    {
-        std::cout << "未找到关节: " << jointName << ", 使用默认值： ";
-        std::cout << IMUPosition.transpose() << std::endl;
-    }
-    else
-    {
-        urdf::Vector3 pos = joint->parent_to_joint_origin_transform.position;
-        std::cout << "Obtained Position for " << jointName << ": ";
-        std::cout << IMUPosition.transpose() << std::endl;
-    }
-    Sensor_IMUAcc->SensorPosition[0] = IMUPosition(0);
-    Sensor_IMUAcc->SensorPosition[1] = IMUPosition(1);
-    Sensor_IMUAcc->SensorPosition[2] = IMUPosition(2);
-    Sensor_IMUMagGyro->SensorPosition[0] = IMUPosition(0);
-    Sensor_IMUMagGyro->SensorPosition[1] = IMUPosition(1);
-    Sensor_IMUMagGyro->SensorPosition[2] = IMUPosition(2);
-}
-
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
@@ -565,7 +472,6 @@ int main(int argc, char ** argv)
     });
 
   auto node = std::make_shared<FusionEstimatorNode>(options);
-  node->ObtainParameter();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;

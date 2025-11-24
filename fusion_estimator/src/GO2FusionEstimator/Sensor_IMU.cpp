@@ -20,7 +20,7 @@ namespace DataFusion
       }
           
       ObservationCorrect_Acceleration();
-      Observation[8] -= 9.6;
+      Observation[8] -= 9.43;
       
       StateSpaceModel1_EstimatorPort(Observation, ObservationTime, StateSpaceModel);
 

@@ -107,9 +107,9 @@ public:
                 double r = v[3] * M_PI / 180.0;
                 double p = v[4] * M_PI / 180.0;
                 double y = v[5] * M_PI / 180.0;
-                Eigen::AngleAxisd rollAngle (y, Eigen::Vector3d::UnitZ());
+                Eigen::AngleAxisd rollAngle (r, Eigen::Vector3d::UnitX());
                 Eigen::AngleAxisd pitchAngle(p, Eigen::Vector3d::UnitY());
-                Eigen::AngleAxisd yawAngle  (r, Eigen::Vector3d::UnitX());
+                Eigen::AngleAxisd yawAngle  (y, Eigen::Vector3d::UnitZ());
                 Sensor_IMUAcc->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
                 Sensor_IMUAcc->SensorQuaternionInv = Sensor_IMUAcc->SensorQuaternion.inverse();
                 Sensor_IMUMagGyro->SensorQuaternion = yawAngle * pitchAngle * rollAngle;

@@ -52,9 +52,9 @@ namespace DataFusion
       //1. Calculate Sensor to Body Distance in World Frame
       Est_QuaternionTemp3 = Eigen::Quaterniond(0, SensorPosition[0], SensorPosition[1], SensorPosition[2]);
       Est_QuaternionTemp3 = Est_Quaternion * Est_QuaternionTemp3 * Est_QuaternionInv;
-      Est_SensorWorldPosition(0, 0) = Est_QuaternionTemp1.x();
-      Est_SensorWorldPosition(1, 0) = Est_QuaternionTemp1.y();
-      Est_SensorWorldPosition(2, 0) = Est_QuaternionTemp1.z();
+      Est_SensorWorldPosition(0, 0) = Est_QuaternionTemp3.x();
+      Est_SensorWorldPosition(1, 0) = Est_QuaternionTemp3.y();
+      Est_SensorWorldPosition(2, 0) = Est_QuaternionTemp3.z();
 
       //2. Calculate Sensor Angular Velocity in World Frame
       Est_BodyAngleVel(0, 0) = Observation[1];
@@ -108,7 +108,6 @@ namespace DataFusion
         Est_QuaternionTemp1 = Eigen::AngleAxisd(Observation[6], Eigen::Vector3d::UnitZ()) *
                             Eigen::AngleAxisd(Observation[3], Eigen::Vector3d::UnitY()) *
                             Eigen::AngleAxisd(Observation[0], Eigen::Vector3d::UnitX());
-        Est_QuaternionTemp2 = Est_Quaternion.inverse();
 
         //Obtain Body Quaternion in World Frame
         Est_QuaternionTemp2 = Est_QuaternionTemp1 * SensorQuaternionInv;

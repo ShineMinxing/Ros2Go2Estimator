@@ -26,11 +26,11 @@ fusion_estimator_node:
     # IMU使能
     imu_data_enable: true
     # IMU 位置 x, y, z（单位：m）and 姿态修正 roll, pitch, yaw（单位：度）
-    imu_params: [-0.02557, 0.0, 0.04232, 0.0, 0.0, 0.0]
+    imu_params: [-0.02557, 0.0, 0.04232, 0.0, -1.3, 0.0]
 
     # 运动学估计使能
     leg_pos_enable: true
-    leg_ori_enable: true
+    leg_ori_enable: false
     # 运动学对角度的修正量初始系数（可负数），和多久增大到1.0，如果不使用leg_ori_enable，leg_ori_init_weight设为1.0
     leg_ori_init_weight: 0.001
     leg_ori_time_wight: 1000.0

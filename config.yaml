@@ -25,8 +25,10 @@ fusion_estimator_node:
 
     # IMU使能
     imu_data_enable: true
-    # IMU 位置 x, y, z（单位：m）and 姿态修正 roll, pitch, yaw（单位：度）
-    imu_params: [-0.02557, 0.0, 0.04232, 0.0, -1.3, 0.0]
+    # IMU 磁力计位置角度，矫正至四个“足-身高度”相近
+    imu_gyro_params: [-0.02557, 0.0, 0.04232, 0.0, -0.85, 0.0]
+    # IMU 加速度计位置角度，矫正至XY加速度不离谱
+    imu_acc_params: [-0.02557, 0.0, 0.04232, 0.0, 1.6, 0.0]
 
     # 运动学估计使能
     leg_pos_enable: true

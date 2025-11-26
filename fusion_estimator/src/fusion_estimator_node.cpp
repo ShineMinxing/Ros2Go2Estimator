@@ -94,13 +94,29 @@ public:
             }
         }
 
-        rclcpp::Parameter imu_param;
-        if (this->get_parameter("imu_params", imu_param)) {
-            auto v = imu_param.as_double_array();   // 期望 6 个
+        rclcpp::Parameter imu_acc_params;
+        if (this->get_parameter("imu_acc_params", imu_acc_params)) {
+            auto v = imu_acc_params.as_double_array();
             if (v.size() == 6u) {
                 Sensor_IMUAcc->SensorPosition[0]     = v[0];
                 Sensor_IMUAcc->SensorPosition[1]     = v[1];
                 Sensor_IMUAcc->SensorPosition[2]     = v[2];
+                double r = v[3] * M_PI / 180.0;
+                double p = v[4] * M_PI / 180.0;
+                double y = v[5] * M_PI / 180.0;
+                Eigen::AngleAxisd rollAngle (r, Eigen::Vector3d::UnitX());
+                Eigen::AngleAxisd pitchAngle(p, Eigen::Vector3d::UnitY());
+                Eigen::AngleAxisd yawAngle  (y, Eigen::Vector3d::UnitZ());
+                Sensor_IMUAcc->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
+                Sensor_IMUAcc->SensorQuaternionInv = Sensor_IMUAcc->SensorQuaternion.inverse();
+                RCLCPP_INFO(this->get_logger(), "IMU Acc Params Sucessfully Read.");
+            }
+        }
+
+        rclcpp::Parameter imu_gyro_params;
+        if (this->get_parameter("imu_gyro_params", imu_gyro_params)) {
+            auto v = imu_gyro_params.as_double_array();
+            if (v.size() == 6u) {
                 Sensor_IMUMagGyro->SensorPosition[0] = v[0];
                 Sensor_IMUMagGyro->SensorPosition[1] = v[1];
                 Sensor_IMUMagGyro->SensorPosition[2] = v[2];
@@ -110,11 +126,9 @@ public:
                 Eigen::AngleAxisd rollAngle (r, Eigen::Vector3d::UnitX());
                 Eigen::AngleAxisd pitchAngle(p, Eigen::Vector3d::UnitY());
                 Eigen::AngleAxisd yawAngle  (y, Eigen::Vector3d::UnitZ());
-                Sensor_IMUAcc->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
-                Sensor_IMUAcc->SensorQuaternionInv = Sensor_IMUAcc->SensorQuaternion.inverse();
                 Sensor_IMUMagGyro->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
                 Sensor_IMUMagGyro->SensorQuaternionInv = Sensor_IMUMagGyro->SensorQuaternion.inverse();
-                RCLCPP_INFO(this->get_logger(), "IMU Params Sucessfully Read.");
+                RCLCPP_INFO(this->get_logger(), "IMU Gyro Params Sucessfully Read.");
             }
         }
 

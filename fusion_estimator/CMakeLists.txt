@@ -46,6 +46,10 @@ file(GLOB_RECURSE ESTIMATOR_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
 )
+list(FILTER ESTIMATOR_SOURCES EXCLUDE REGEX ".*/EstimatorFrame/Demo/.*")
+list(FILTER ESTIMATOR_SOURCES EXCLUDE REGEX ".*/EstimatorFrame/Estimator/EstimatorPortN_MatlabDLL.cpp")
+list(FILTER ESTIMATOR_SOURCES EXCLUDE REGEX ".*/EstimatorFrame/Estimator/EstimatorPortN_MatlabSO.cpp")
+
 
 # 获取 C++ 类型支持目标
 rosidl_get_typesupport_target(

@@ -7,14 +7,13 @@
 
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/LinearMath/Quaternion.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h> //#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp> doesn't work on Ubuntu20.04
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include <sensor_msgs/msg/imu.hpp>
 
 #include "fusion_estimator/msg/fusion_estimator_test.hpp"
-#include "GO2FusionEstimator/Estimator/EstimatorPortN.h"
+#include "GO2FusionEstimator/SensorBase.h"
 #include "GO2FusionEstimator/Sensor_Legs.h"
-#include "GO2FusionEstimator/Sensor_IMU.h"
 #include "GO2FusionEstimator/Sensor_IMU.h"
 
 using namespace DataFusion;
@@ -28,13 +27,13 @@ public:
         /* ────────────── 创建融合器对象 ────────────── */
         for (int i = 0; i < 2; ++i) {
         auto * ptr = new EstimatorPortN;
-        StateSpaceModel1_Initialization(ptr);
-        StateSpaceModel1_Sensors.emplace_back(ptr);
+        StateSpaceModel_Go2_Initialization(ptr);
+        StateSpaceModel_Go2_Sensors.emplace_back(ptr);
         }
-        Sensor_IMUAcc      = std::make_shared<SensorIMUAcc>     (StateSpaceModel1_Sensors[0]);
-        Sensor_IMUMagGyro  = std::make_shared<SensorIMUMagGyro> (StateSpaceModel1_Sensors[1]);
-        Sensor_LegsPos     = std::make_shared<SensorLegsPos>    (StateSpaceModel1_Sensors[0]);
-        Sensor_LegsOri     = std::make_shared<SensorLegsOri>    (StateSpaceModel1_Sensors[1]);
+        Sensor_IMUAcc      = std::make_shared<SensorIMUAcc>     (StateSpaceModel_Go2_Sensors[0]);
+        Sensor_IMUMagGyro  = std::make_shared<SensorIMUMagGyro> (StateSpaceModel_Go2_Sensors[1]);
+        Sensor_LegsPos     = std::make_shared<SensorLegsPos>    (StateSpaceModel_Go2_Sensors[0]);
+        Sensor_LegsOri     = std::make_shared<SensorLegsOri>    (StateSpaceModel_Go2_Sensors[1]);
         Sensor_LegsOri->SetLegsPosRef(Sensor_LegsPos.get());
         
         for (int i = 0; i < 9; ++i) {
@@ -150,7 +149,7 @@ public:
 
 private:
 
-    std::vector<EstimatorPortN*> StateSpaceModel1_Sensors;
+    std::vector<EstimatorPortN*> StateSpaceModel_Go2_Sensors;
 
     rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr FETest_publisher;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher, SMXFE_2D_publisher;
@@ -243,8 +242,8 @@ private:
         Sensor_IMUMagGyro->SensorDataHandle(LatestMessage[1], CurrentTimestamp);
 
         for(int i=0; i<9; i++){
-            fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i] + position_correct[i];
-            fusion_msg.estimated_rpy[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
+            fusion_msg.estimated_xyz[i] = StateSpaceModel_Go2_Sensors[0]->EstimatedState[i] + position_correct[i];
+            fusion_msg.estimated_rpy[i] = StateSpaceModel_Go2_Sensors[1]->EstimatedState[i];
         }
 
         Msg_Publish();
@@ -296,37 +295,37 @@ private:
             Sensor_LegsPos->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
             
             for(int i=0; i<9; i++){
-                fusion_msg.estimated_xyz[i] = StateSpaceModel1_Sensors[0]->EstimatedState[i] + position_correct[i];
+                fusion_msg.estimated_xyz[i] = StateSpaceModel_Go2_Sensors[0]->EstimatedState[i] + position_correct[i];
             }
 
             for(int i=0; i<4; i++){
                 for(int j=0; j<3; j++){
-                    fusion_msg.feet_based_position[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[48 + 6 * i + j];
-                    fusion_msg.feet_based_velocity[3 * i + j] = StateSpaceModel1_Sensors[0]->Double_Par[48 + 6 * i + j + 3];
+                    fusion_msg.feet_based_position[3 * i + j] = StateSpaceModel_Go2_Sensors[0]->Double_Par[48 + 6 * i + j];
+                    fusion_msg.feet_based_velocity[3 * i + j] = StateSpaceModel_Go2_Sensors[0]->Double_Par[48 + 6 * i + j + 3];
                 }
             }
             
             for(int LegNumber=0; LegNumber<4; LegNumber++){
                 for(int i=0; i<3; i++){
-                    fusion_msg.data_check_a[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[6 * LegNumber + i];      //身体坐标系的足身相对位置
-                    fusion_msg.data_check_b[3 * LegNumber + i] = StateSpaceModel1_Sensors[0]->Double_Par[24 + 6 * LegNumber + i]; //世界坐标系的足身相对位置
+                    fusion_msg.data_check_a[3 * LegNumber + i] = StateSpaceModel_Go2_Sensors[0]->Double_Par[6 * LegNumber + i];      //身体坐标系的足身相对位置
+                    fusion_msg.data_check_b[3 * LegNumber + i] = StateSpaceModel_Go2_Sensors[0]->Double_Par[24 + 6 * LegNumber + i]; //世界坐标系的足身相对位置
                 }
             }
         }
         if(leg_ori_enable)
         {
-            double Last_Yaw = StateSpaceModel1_Sensors[1]->EstimatedState[6] - orientation_correct[6];
+            double Last_Yaw = StateSpaceModel_Go2_Sensors[1]->EstimatedState[6] - orientation_correct[6];
 
-            StateSpaceModel1_Sensors[1]->Double_Par[97] = leg_ori_init_weight;
-            StateSpaceModel1_Sensors[1]->Double_Par[98] = leg_ori_time_wight;
+            StateSpaceModel_Go2_Sensors[1]->Double_Par[97] = leg_ori_init_weight;
+            StateSpaceModel_Go2_Sensors[1]->Double_Par[98] = leg_ori_time_wight;
             Sensor_LegsOri->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
 
-            orientation_correct[6] = StateSpaceModel1_Sensors[1]->Double_Par[99] - Last_Yaw;
+            orientation_correct[6] = StateSpaceModel_Go2_Sensors[1]->Double_Par[99] - Last_Yaw;
             if(!imu_data_enable)
-                StateSpaceModel1_Sensors[1]->EstimatedState[6] = StateSpaceModel1_Sensors[1]->Double_Par[99];
+                StateSpaceModel_Go2_Sensors[1]->EstimatedState[6] = StateSpaceModel_Go2_Sensors[1]->Double_Par[99];
 
             for(int i=0; i<9; i++){
-                fusion_msg.estimated_rpy[i] = StateSpaceModel1_Sensors[1]->EstimatedState[i];
+                fusion_msg.estimated_rpy[i] = StateSpaceModel_Go2_Sensors[1]->EstimatedState[i];
             }
         }
 
@@ -461,12 +460,12 @@ private:
                 Sensor_LegsPos->FootLanding[i] = 0;
             }
 
-            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Former Px:%.3lf,Py:%.3lf,Pz:%.3lf,Yaw:%.3lf,Cx:%.3lf,Cy:%.3lf,Cz:%.3lf,Cyaw:%.3lf",StateSpaceModel1_Sensors[0]->EstimatedState[0],StateSpaceModel1_Sensors[0]->EstimatedState[3],StateSpaceModel1_Sensors[0]->EstimatedState[6],StateSpaceModel1_Sensors[1]->EstimatedState[6],position_correct[0],position_correct[3],position_correct[6],orientation_correct[6]);
+            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Former Px:%.3lf,Py:%.3lf,Pz:%.3lf,Yaw:%.3lf,Cx:%.3lf,Cy:%.3lf,Cz:%.3lf,Cyaw:%.3lf",StateSpaceModel_Go2_Sensors[0]->EstimatedState[0],StateSpaceModel_Go2_Sensors[0]->EstimatedState[3],StateSpaceModel_Go2_Sensors[0]->EstimatedState[6],StateSpaceModel_Go2_Sensors[1]->EstimatedState[6],position_correct[0],position_correct[3],position_correct[6],orientation_correct[6]);
 
-            position_correct[0] = -StateSpaceModel1_Sensors[0]->EstimatedState[0];
-            position_correct[3] = -StateSpaceModel1_Sensors[0]->EstimatedState[3];
-            position_correct[6] = 0.34 -StateSpaceModel1_Sensors[0]->EstimatedState[6];
-            orientation_correct[6] = -StateSpaceModel1_Sensors[1]->EstimatedState[6] + orientation_correct[6];
+            position_correct[0] = -StateSpaceModel_Go2_Sensors[0]->EstimatedState[0];
+            position_correct[3] = -StateSpaceModel_Go2_Sensors[0]->EstimatedState[3];
+            position_correct[6] = 0.34 -StateSpaceModel_Go2_Sensors[0]->EstimatedState[6];
+            orientation_correct[6] = -StateSpaceModel_Go2_Sensors[1]->EstimatedState[6] + orientation_correct[6];
 
             RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received Estimator Position and Yaw Reset Command");
         }

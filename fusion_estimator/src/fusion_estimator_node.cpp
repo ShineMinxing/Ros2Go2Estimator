@@ -265,7 +265,7 @@ private:
         /* 数据布置：
         data[ 0..11] : 12× 关节位置  (q)
         data[12..23] : 12× 关节速度  (dq)
-        data[24..27] : 4 × 足端力    (foot_force)
+        data[24..35] : 12× 关节力矩  (torque)
         */
 
         for(int LegNumber = 0; LegNumber<4; LegNumber++)
@@ -274,18 +274,18 @@ private:
             {
                 LatestMessage[2][LegNumber*3+i] = arr[LegNumber*3+i];
                 LatestMessage[2][12+LegNumber*3+i] = arr[12+LegNumber*3+i];
+                LatestMessage[2][24+LegNumber*3+i] = arr[24+LegNumber*3+i];
             }
-            LatestMessage[2][24 + LegNumber] = arr[24 + LegNumber];
         }
 
-        for(int i = 0; i < 28; i++)
+        for(int i = 0; i < 36; i++)
         {
             if(LastMessage[2][i] != LatestMessage[2][i])
                 break;
-            if(i==27)
+            if(i==35)
                 return;  //数据未变则视为重复发送，舍弃数据
         }
-        for(int j = 0; j < 28; j++)
+        for(int j = 0; j < 36; j++)
         {
             LastMessage[2][j] = LatestMessage[2][j];
         }
@@ -309,6 +309,7 @@ private:
                 for(int i=0; i<3; i++){
                     fusion_msg.data_check_a[3 * LegNumber + i] = StateSpaceModel_Go2_Sensors[0]->Double_Par[6 * LegNumber + i];      //身体坐标系的足身相对位置
                     fusion_msg.data_check_b[3 * LegNumber + i] = StateSpaceModel_Go2_Sensors[0]->Double_Par[24 + 6 * LegNumber + i]; //世界坐标系的足身相对位置
+                    fusion_msg.data_check_c[3 * LegNumber + i] = StateSpaceModel_Go2_Sensors[0]->Double_Par[84 + LegNumber * 3 + i]; //足端力矩
                 }
             }
         }
@@ -481,7 +482,7 @@ int main(int argc, char ** argv)
     .automatically_declare_parameters_from_overrides(true)
     .arguments({
         "--ros-args",
-        "--params-file", "/home/unitree/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml"
+        "--params-file", "/home/unitree/ros2_ws/XJDL/src/Ros2Go2Estimator/config.yaml"
     });
 
   auto node = std::make_shared<FusionEstimatorNode>(options);

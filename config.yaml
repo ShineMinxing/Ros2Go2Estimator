@@ -39,7 +39,7 @@ fusion_estimator_node:
     ]
     # 运动学估计使能
     leg_pos_enable: true
-    foot_force_threshold: 11.0
+    foot_force_threshold: 10.0
     min_stair_height: 0.10
     stair_height_fogotten: 60.0
     leg_ori_enable: false

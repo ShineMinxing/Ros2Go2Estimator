@@ -1,0 +1,5 @@
+# large local artifacts
+stair_test/*.db3
+*.db3
+output_*.csv
+*.csv

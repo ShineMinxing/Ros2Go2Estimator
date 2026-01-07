@@ -59,20 +59,41 @@ public:
         this->get_parameter_or("base_frame_2d", child_frame_2d_id, std::string("base_link_2D"));
 
         this->get_parameter_or("imu_data_enable", imu_data_enable, true);
-        this->get_parameter_or("leg_pos_enable", leg_pos_enable, true);
-        this->get_parameter_or("leg_ori_enable", leg_ori_enable, true);
-
-        this->get_parameter_or("leg_ori_init_weight", leg_ori_init_weight, 0.001);
-        this->get_parameter_or("leg_ori_time_wight", leg_ori_time_wight, 100.0);
-        if(!(leg_ori_init_weight>-1.0 && leg_ori_init_weight<=1.0))
-        {
-            leg_ori_init_weight = 0.001;
-            RCLCPP_INFO(get_logger(), "leg_ori_init_weight to %lf",leg_ori_init_weight);
+        rclcpp::Parameter imu_acc_params;
+        if (this->get_parameter("imu_acc_params", imu_acc_params)) {
+            auto v = imu_acc_params.as_double_array();
+            if (v.size() == 6u) {
+                Sensor_IMUAcc->SensorPosition[0]     = v[0];
+                Sensor_IMUAcc->SensorPosition[1]     = v[1];
+                Sensor_IMUAcc->SensorPosition[2]     = v[2];
+                double r = v[3] * M_PI / 180.0;
+                double p = v[4] * M_PI / 180.0;
+                double y = v[5] * M_PI / 180.0;
+                Eigen::AngleAxisd rollAngle (r, Eigen::Vector3d::UnitX());
+                Eigen::AngleAxisd pitchAngle(p, Eigen::Vector3d::UnitY());
+                Eigen::AngleAxisd yawAngle  (y, Eigen::Vector3d::UnitZ());
+                Sensor_IMUAcc->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
+                Sensor_IMUAcc->SensorQuaternionInv = Sensor_IMUAcc->SensorQuaternion.inverse();
+                RCLCPP_INFO(this->get_logger(), "IMU Acc Params Sucessfully Read: [%.6f, %.6f, %.6f, %.6f, %.6f, %.6f] (m/deg)", v[0], v[1], v[2], v[3], v[4], v[5]);
+            }
         }
-        if(!(leg_ori_time_wight>0.0 && leg_ori_time_wight<=1000000.0))
-        {
-            leg_ori_time_wight = 100.0;
-            RCLCPP_INFO(get_logger(), "leg_ori_time_wight to %lf", leg_ori_time_wight);
+        rclcpp::Parameter imu_gyro_params;
+        if (this->get_parameter("imu_gyro_params", imu_gyro_params)) {
+            auto v = imu_gyro_params.as_double_array();
+            if (v.size() == 6u) {
+                Sensor_IMUMagGyro->SensorPosition[0] = v[0];
+                Sensor_IMUMagGyro->SensorPosition[1] = v[1];
+                Sensor_IMUMagGyro->SensorPosition[2] = v[2];
+                double r = v[3] * M_PI / 180.0;
+                double p = v[4] * M_PI / 180.0;
+                double y = v[5] * M_PI / 180.0;
+                Eigen::AngleAxisd rollAngle (r, Eigen::Vector3d::UnitX());
+                Eigen::AngleAxisd pitchAngle(p, Eigen::Vector3d::UnitY());
+                Eigen::AngleAxisd yawAngle  (y, Eigen::Vector3d::UnitZ());
+                Sensor_IMUMagGyro->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
+                Sensor_IMUMagGyro->SensorQuaternionInv = Sensor_IMUMagGyro->SensorQuaternion.inverse();
+                RCLCPP_INFO(this->get_logger(), "IMU Gyro Params Sucessfully Read: [%.6f, %.6f, %.6f, %.6f, %.6f, %.6f] (m/deg)", v[0], v[1], v[2], v[3], v[4], v[5]);
+            }
         }
 
         rclcpp::Parameter kin_param;
@@ -89,46 +110,29 @@ public:
                 Sensor_LegsPos->Par_ThighLength = Sensor_LegsPos->KinematicParams.block<1,3>(0,6).norm();
                 Sensor_LegsPos->Par_CalfLength  = Sensor_LegsPos->KinematicParams.block<1,3>(0,9).norm();
                 Sensor_LegsPos->Par_FootLength  = std::abs(Sensor_LegsPos->KinematicParams(0,12));
-                RCLCPP_INFO(this->get_logger(), "Kinematic Params Sucessfully Read.");
+                RCLCPP_INFO(this->get_logger(), "Kinematic Params Sucessfully Read: Hip=%.6f Thigh=%.6f Calf=%.6f Foot=%.6f", Sensor_LegsPos->Par_HipLength, Sensor_LegsPos->Par_ThighLength, Sensor_LegsPos->Par_CalfLength, Sensor_LegsPos->Par_FootLength);
             }
         }
+        this->get_parameter_or("leg_pos_enable", leg_pos_enable, true);
+        this->get_parameter_or("foot_force_threshold", foot_force_threshold, 20.0);
+        Sensor_LegsPos->FootEffortThreshold = foot_force_threshold;
+        this->get_parameter_or("min_stair_height", min_stair_height, 0.08);
+        Sensor_LegsPos->Environement_Height_Scope = min_stair_height;
+        this->get_parameter_or("stair_height_fogotten", stair_height_fogotten, 60.0);
+        Sensor_LegsPos->Data_Fading_Time = stair_height_fogotten;
 
-        rclcpp::Parameter imu_acc_params;
-        if (this->get_parameter("imu_acc_params", imu_acc_params)) {
-            auto v = imu_acc_params.as_double_array();
-            if (v.size() == 6u) {
-                Sensor_IMUAcc->SensorPosition[0]     = v[0];
-                Sensor_IMUAcc->SensorPosition[1]     = v[1];
-                Sensor_IMUAcc->SensorPosition[2]     = v[2];
-                double r = v[3] * M_PI / 180.0;
-                double p = v[4] * M_PI / 180.0;
-                double y = v[5] * M_PI / 180.0;
-                Eigen::AngleAxisd rollAngle (r, Eigen::Vector3d::UnitX());
-                Eigen::AngleAxisd pitchAngle(p, Eigen::Vector3d::UnitY());
-                Eigen::AngleAxisd yawAngle  (y, Eigen::Vector3d::UnitZ());
-                Sensor_IMUAcc->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
-                Sensor_IMUAcc->SensorQuaternionInv = Sensor_IMUAcc->SensorQuaternion.inverse();
-                RCLCPP_INFO(this->get_logger(), "IMU Acc Params Sucessfully Read.");
-            }
+        this->get_parameter_or("leg_ori_enable", leg_ori_enable, true);
+        this->get_parameter_or("leg_ori_init_weight", leg_ori_init_weight, 0.001);
+        this->get_parameter_or("leg_ori_time_wight", leg_ori_time_wight, 100.0);
+        if(!(leg_ori_init_weight>-1.0 && leg_ori_init_weight<=1.0))
+        {
+            leg_ori_init_weight = 0.001;
+            RCLCPP_INFO(get_logger(), "leg_ori_init_weight to %lf",leg_ori_init_weight);
         }
-
-        rclcpp::Parameter imu_gyro_params;
-        if (this->get_parameter("imu_gyro_params", imu_gyro_params)) {
-            auto v = imu_gyro_params.as_double_array();
-            if (v.size() == 6u) {
-                Sensor_IMUMagGyro->SensorPosition[0] = v[0];
-                Sensor_IMUMagGyro->SensorPosition[1] = v[1];
-                Sensor_IMUMagGyro->SensorPosition[2] = v[2];
-                double r = v[3] * M_PI / 180.0;
-                double p = v[4] * M_PI / 180.0;
-                double y = v[5] * M_PI / 180.0;
-                Eigen::AngleAxisd rollAngle (r, Eigen::Vector3d::UnitX());
-                Eigen::AngleAxisd pitchAngle(p, Eigen::Vector3d::UnitY());
-                Eigen::AngleAxisd yawAngle  (y, Eigen::Vector3d::UnitZ());
-                Sensor_IMUMagGyro->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
-                Sensor_IMUMagGyro->SensorQuaternionInv = Sensor_IMUMagGyro->SensorQuaternion.inverse();
-                RCLCPP_INFO(this->get_logger(), "IMU Gyro Params Sucessfully Read.");
-            }
+        if(!(leg_ori_time_wight>0.0 && leg_ori_time_wight<=1000000.0))
+        {
+            leg_ori_time_wight = 100.0;
+            RCLCPP_INFO(get_logger(), "leg_ori_time_wight to %lf", leg_ori_time_wight);
         }
 
         /* ────────────── 数据通信 ────────────── */
@@ -167,6 +171,9 @@ private:
 
     std::string odom_frame_id, child_frame_id, child_frame_2d_id;
     bool imu_data_enable, leg_pos_enable, leg_ori_enable;
+    bool msg_received[2] = {0,0};
+    double foot_force_threshold, min_stair_height, stair_height_fogotten;
+
     double leg_ori_init_weight, leg_ori_time_wight;
     double position_correct[9];
     double orientation_correct[9];
@@ -205,8 +212,13 @@ private:
 
         double LatestMessage[3][100]={0};
         static double LastMessage[3][100]={0};
+        
+        rclcpp::Time msg_time(msg->header.stamp, CurrentTime.get_clock_type());
 
-        fusion_msg.stamp = this->get_clock()->now();
+        if (CurrentTime > msg_time)
+            fusion_msg.stamp = CurrentTime;
+        else
+            fusion_msg.stamp = msg_time + rclcpp::Duration(0, 1);
 
         tf2::Quaternion q(msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
         double roll, pitch, yaw;
@@ -246,6 +258,7 @@ private:
             fusion_msg.estimated_rpy[i] = StateSpaceModel_Go2_Sensors[1]->EstimatedState[i];
         }
 
+        msg_received[0] = 1;
         Msg_Publish();
     }
 
@@ -257,8 +270,6 @@ private:
 
         double LatestMessage[3][100]={0};
         static double LastMessage[3][100]={0};
-
-        fusion_msg.stamp = this->get_clock()->now();
 
         const auto& arr = msg->data;
         if (arr.size() < 28) return;
@@ -329,11 +340,16 @@ private:
             }
         }
 
-        Msg_Publish();
+        msg_received[1] = 1;
     }
 
     void Msg_Publish()
     {
+        if (!msg_received[0] || !msg_received[1])
+            return;
+        msg_received[0] = 0;
+        msg_received[1] = 0;
+
         FETest_publisher->publish(fusion_msg);
 
         // 构造标准 3D odometry 消息，并发布
@@ -481,7 +497,7 @@ int main(int argc, char ** argv)
     .automatically_declare_parameters_from_overrides(true)
     .arguments({
         "--ros-args",
-        "--params-file", "/home/unitree/ros2_ws/LeggedRobot/src/Ros2Go2Estimator/config.yaml"
+        "--params-file", "/home/smx/WorkSpace/GDS_LeggedRobot/src/Ros2Go2Estimator/config.yaml"
     });
 
   auto node = std::make_shared<FusionEstimatorNode>(options);

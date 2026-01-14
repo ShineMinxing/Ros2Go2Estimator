@@ -18,7 +18,6 @@
 #include "fusion_estimator.h"   // 你的：D:\XJDL_LeggedRobot\Matlab\fusion_estimator.h
 
 static FusionEstimatorCore* g_core = nullptr;
-static bool g_configured = false;
 static bool g_atExitRegistered = false;
 
 static void cleanup()
@@ -27,7 +26,6 @@ static void cleanup()
         delete g_core; 
         g_core = nullptr; 
     }
-    g_configured = false;
 
     while (mexIsLocked()) 
         mexUnlock();
@@ -69,7 +67,7 @@ static void read_vec_float(const mxArray* a, std::vector<float>& out, int n, con
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    require(nrhs >= 1, "Usage: fusion_estimator_mex('config', cfg999) or fusion_estimator_mex('step', ...)");
+    require(nrhs >= 1, "Usage: fusion_estimator_mex('status', status_) or fusion_estimator_mex('step', ...)");
     static unsigned int frame_count = 0;
 
     if (!g_atExitRegistered) {
@@ -86,40 +84,45 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         return;
     }
 
-    // ---------- config(cfg999) ----------
-    if (cmd == "config") {
-        require(nrhs >= 2, "Usage: fusion_estimator_mex('config', cfg999)");
-        require(mxIsDouble(prhs[1]) && !mxIsComplex(prhs[1]), "cfg999 must be real double.");
-        require((int)mxGetNumberOfElements(prhs[1]) == 999, "cfg999 must have 999 elements.");
+    if (cmd == "status") {
+        require(nrhs >= 2, "Usage: st = fusion_estimator_mex('status', status_)");
+        require(mxIsDouble(prhs[1]) && !mxIsComplex(prhs[1]), "status_ must be real double.");
+        require((int)mxGetNumberOfElements(prhs[1]) == 199, "status_ must have 199 elements.");
 
+        // 需要 core 才能读/写内部状态
         if (!g_core) {
             g_core = new FusionEstimatorCore();
             if (!mexIsLocked()) mexLock();
         }
 
-        const double* cfg = (const double*)mxGetData(prhs[1]);
-        double local[999];
-        std::memcpy(local, cfg, sizeof(double)*999);
+        // MATLAB 输入只读 -> 拷贝到 status 做 in/out buffer
+        double status[199];
+        std::memcpy(status, mxGetPr(prhs[1]), sizeof(double) * 199);
 
-        g_core->fusion_estimator_config(local);
-        g_configured = true;
+        g_core->fusion_estimator_status(status);
 
-        if (nlhs > 0) plhs[0] = mxCreateLogicalScalar(true);
+        if (nlhs > 0) {
+            plhs[0] = mxCreateDoubleMatrix(199, 1, mxREAL);
+            std::memcpy(mxGetPr(plhs[0]), status, sizeof(double) * 199);
+        }
         return;
     }
 
     // ---------- step(ts_ms,q12,dq12,tau12,acc3,gyro3,quat4) ----------
     if (cmd == "step") {
-        require(g_core != nullptr, "Not initialized. Call fusion_estimator_mex('config', cfg999) first.");
-        require(g_configured, "Not configured. Call fusion_estimator_mex('config', cfg999) first.");
-        require(nrhs >= 8, "Usage: odom = fusion_estimator_mex('step', ts_ms, q12, dq12, tau12, acc3, gyro3, quat4)");
+        if (!g_core) {
+            g_core = new FusionEstimatorCore();
+            if (!mexIsLocked()) mexLock();
+        }
+        require(nrhs >= 8, "Usage: odom = fusion_estimator_mex('step', ts_ms, q, dq, tau, acc3, gyro3, quat4)");
 
         uint32_t ts_ms = get_u32_scalar(prhs[1]);
+        int nq = 16;
 
         std::vector<float> q, dq, tau, acc, gyro, quat;
-        read_vec_float(prhs[2], q,   12, "q12");
-        read_vec_float(prhs[3], dq,  12, "dq12");
-        read_vec_float(prhs[4], tau, 12, "tau12");
+        read_vec_float(prhs[2], q,   nq, "q");
+        read_vec_float(prhs[3], dq,  nq, "dq");
+        read_vec_float(prhs[4], tau, nq, "tau");
         read_vec_float(prhs[5], acc,  3, "acc3");
         read_vec_float(prhs[6], gyro, 3, "gyro3");
         read_vec_float(prhs[7], quat, 4, "quat4");
@@ -128,40 +131,24 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         st.dataAvailable = true;
         st.imu.timestamp = ts_ms;
 
-        // IMU
         st.imu.accelerometer[0] = acc[0];
         st.imu.accelerometer[1] = acc[1];
         st.imu.accelerometer[2] = acc[2];
         st.imu.gyroscope[0]     = gyro[0];
         st.imu.gyroscope[1]     = gyro[1];
         st.imu.gyroscope[2]     = gyro[2];
-        st.imu.quaternion[0]    = quat[0]; // w
-        st.imu.quaternion[1]    = quat[1]; // x
-        st.imu.quaternion[2]    = quat[2]; // y
-        st.imu.quaternion[3]    = quat[3]; // z
+        st.imu.quaternion[0]    = quat[0];
+        st.imu.quaternion[1]    = quat[1];
+        st.imu.quaternion[2]    = quat[2];
+        st.imu.quaternion[3]    = quat[3];
 
-        // 12 关节映射（必须与 FusionEstimatorCore 内部 desired_joints 完全一致）
-        const int dj[12] = {0,1,2,4,5,6,8,9,10,12,13,14};
-        for (int i = 0; i < 12; ++i) {
-            auto& m = st.motorState[dj[i]];
-            m.q      = q[i];
-            m.dq     = dq[i];
-            m.tauEst = tau[i];
+        for (int i = 0; i < nq; ++i) {
+            st.motorState[i].q      = q[i];
+            st.motorState[i].dq     = dq[i];
+            st.motorState[i].tauEst = tau[i];
         }
 
         const Odometer odom = g_core->fusion_estimator(st);
-        
-        frame_count++;
-        
-        if (frame_count % 1000 == 0) {
-            printf("[FusionEstimator] Frame %5d Odom: ", frame_count);
-            printf("x:%6.3f | ", odom.x);
-            printf("y:%6.3f | ", odom.y);
-            printf("z:%6.3f | ", odom.z);
-            printf("r:%6.3f | ", odom.angularX);
-            printf("p:%6.3f | ", odom.angularY);
-            printf("y:%6.3f\n", odom.angularZ);
-        }
 
         const char* fn[] = {"x","y","z","angularX","angularY","angularZ"};
         plhs[0] = mxCreateStructMatrix(1, 1, 6, fn);
@@ -174,5 +161,5 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         return;
     }
 
-    mexErrMsgIdAndTxt("fusion_estimator_mex:unknown", "Unknown cmd. Use 'config'/'step'/'reset'.");
+    mexErrMsgIdAndTxt("fusion_estimator_mex:unknown", "Unknown cmd. Use 'status'/'step'/'reset'.");
 }

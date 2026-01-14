@@ -3,20 +3,20 @@
 // auto Robot_Estimation = CreateRobot_Estimation();
 
 // // 按需传参
-// double algo_config[999] = {0};
-// algo_config[100] = 1.0;     // enable_imu_update
-// algo_config[200] = 1.0;     // enable_leg_update
-// algo_config[201] = 8.0;     // foot_force_threshold
-// algo_config[202] = 0.10;    // min_stair_height
-// algo_config[203] = 60.0;    // stair_fade_time
-// algo_config[204] = 0.0;     // leg_ori_enable
-// algo_config[205] = 0.001;   // leg_ori_init_weight
-// algo_config[206] = 1000.0;  // leg_ori_time_weight
-// algo_config[300] = 1.0;     // enable_kin_update
-// algo_config[301] = 0.1709;  // kin_hip_length
-// algo_config[302] = 0.26;    // kin_thigh_length
-// algo_config[303] = 0.26;    // kin_calf_length
-// algo_config[304] = 0.03;    // kin_foot_radius
+// double algo_config[199] = {0};
+// algo_config[10] = 1.0;     // enable_imu_update
+// algo_config[30] = 1.0;     // enable_leg_update
+// algo_config[31] = 8.0;     // foot_force_threshold
+// algo_config[32] = 0.10;    // min_stair_height
+// algo_config[33] = 60.0;    // stair_fade_time
+// algo_config[34] = 0.0;     // leg_ori_enable
+// algo_config[35] = 0.001;   // leg_ori_init_weight
+// algo_config[36] = 1000.0;  // leg_ori_time_weight
+// algo_config[40] = 1.0;     // enable_kin_update
+// algo_config[41] = 0.1709;  // kin_hip_length
+// algo_config[42] = 0.26;    // kin_thigh_length
+// algo_config[43] = 0.26;    // kin_calf_length
+// algo_config[44] = 0.03;    // kin_foot_radius
 // // 设置kinematics_matrix的默认值
 // double default_kinematics[52] = {
 //     0.2878,  0.07,  0.000, 0.0,  0.1709, 0.0, 0.0, 0.0, -0.26, 0.0, 0.0, -0.26, 0.03,
@@ -24,10 +24,10 @@
 //     -0.2878,  0.07,  0.000, 0.0,  0.1709, 0.0, 0.0, 0.0, -0.26, 0.0, 0.0, -0.26, 0.03,
 //     -0.2878, -0.07,  0.000, 0.0, -0.1709, 0.0, 0.0, 0.0, -0.26, 0.0, 0.0, -0.26, 0.03
 //     };
-// memcpy(&algo_config[305], default_kinematics, sizeof(default_kinematics));
+// memcpy(&algo_config[45], default_kinematics, sizeof(default_kinematics));
 
 // // 随lowstate的更新触发调用
-// Robot_Estimation.fusion_estimator_config(algo_config);
+// Robot_Estimation.fusion_estimator_status(algo_config);
 
 #ifndef __FUSION_ESTIMATOR_H_
 #define __FUSION_ESTIMATOR_H_
@@ -47,23 +47,26 @@ using namespace DataFusion;
 
 // 配置文件索引协议
 enum ConfigIndex {
+
+    IndexInOrOut = 0,
+    IndexStatusOK = 1,
     // ============ IMU 相关 (100 - 199) ============
     // IMU 参数更新使能位 (1.0 = Enable, 0.0 = Disable)
-    IndexUpdateEnableImu = 100,
+    IndexUpdateEnableImu = 10,
 
-    IndexImuAccPositionX = 101, 
+    IndexImuAccPositionX = 11, 
     IndexImuAccPositionY, IndexImuAccPositionZ,
     IndexImuAccRotationRoll, IndexImuAccRotationPitch, IndexImuAccRotationYaw,
     
-    IndexImuGyroPositionX = 110, 
+    IndexImuGyroPositionX = 20, 
     IndexImuGyroPositionY, IndexImuGyroPositionZ,
     IndexImuGyroRotationRoll, IndexImuGyroRotationPitch, IndexImuGyroRotationYaw,
 
     // ============ Leg 算法相关 (200 - 299) ============
     // Leg 算法参数更新使能位
-    IndexUpdateEnableLeg = 200,
+    IndexUpdateEnableLeg = 30,
 
-    IndexLegFootForceThreshold = 201,  
+    IndexLegFootForceThreshold = 31,  
     IndexLegMinStairHeight,  
     IndexLegStairFadeTime,  
 
@@ -73,7 +76,7 @@ enum ConfigIndex {
 
     // ============ Kinematics 运动学相关 (300 - 399) ============
     // 运动学参数更新使能位 (注意：如果为0，则使用构造函数中的默认值)
-    IndexUpdateEnableKinematics = 300,
+    IndexUpdateEnableKinematics = 40,
 
     // 4个标量参数
     IndexKinematicsHipLength,     // Par_HipLength
@@ -81,9 +84,10 @@ enum ConfigIndex {
     IndexKinematicsCalfLength,    // Par_CalfLength
     IndexKinematicsFootLength,    // Par_FootLength
 
-    // 4x13 矩阵参数起始位置 (占用 52 个位置: 305 ~ 356)
+    // 4x13 矩阵参数起始位置 (占用 52 个位置: 45~96)
     // 顺序：Row 0 (0~12), Row 1 (0~12), Row 2 (0~12), Row 3 (0~12)
-    IndexKinematicsMatrixStart = 305 
+    IndexKinematicsMatrixStart = 45 
+    
 };
 
 // quaternion(w,x,y,z) -> roll/pitch/yaw，等价 tf2::Matrix3x3(q).getRPY
@@ -145,73 +149,85 @@ public:
     FusionEstimatorCore(FusionEstimatorCore&&) noexcept = default;
     FusionEstimatorCore& operator=(FusionEstimatorCore&&) noexcept = default;
 
-    void fusion_estimator_config(const double config[999])
+    void fusion_estimator_status(double status_[199])
     {
-        // 1. IMU 参数更新 (检查使能位)
-        if (config[IndexUpdateEnableImu] == 1) 
+        status_[IndexStatusOK] = -1;
+        if (status_[IndexInOrOut] == 1) 
         {
-            imu_acc->SensorPosition[0] = config[IndexImuAccPositionX];
-            imu_acc->SensorPosition[1] = config[IndexImuAccPositionY];
-            imu_acc->SensorPosition[2] = config[IndexImuAccPositionZ];
-
+            status_[IndexInOrOut] = 0;
+            // 1. IMU 参数更新 (检查使能位)
+            if (status_[IndexUpdateEnableImu] == 1) 
             {
-                double r = config[IndexImuAccRotationRoll]  * M_PI / 180.0;
-                double p = config[IndexImuAccRotationPitch] * M_PI / 180.0;
-                double y = config[IndexImuAccRotationYaw]   * M_PI / 180.0;
-                imu_acc->SensorQuaternion = 
-                    Eigen::AngleAxisd(y, Eigen::Vector3d::UnitZ()) *
-                    Eigen::AngleAxisd(p, Eigen::Vector3d::UnitY()) *
-                    Eigen::AngleAxisd(r, Eigen::Vector3d::UnitX());
-                imu_acc->SensorQuaternionInv = imu_acc->SensorQuaternion.inverse();
-            }
+                imu_acc->SensorPosition[0] = status_[IndexImuAccPositionX];
+                imu_acc->SensorPosition[1] = status_[IndexImuAccPositionY];
+                imu_acc->SensorPosition[2] = status_[IndexImuAccPositionZ];
 
-            imu_gyro->SensorPosition[0] = config[IndexImuGyroPositionX];
-            imu_gyro->SensorPosition[1] = config[IndexImuGyroPositionY];
-            imu_gyro->SensorPosition[2] = config[IndexImuGyroPositionZ];
-
-            {
-                double r = config[IndexImuGyroRotationRoll]  * M_PI / 180.0;
-                double p = config[IndexImuGyroRotationPitch] * M_PI / 180.0;
-                double y = config[IndexImuGyroRotationYaw]   * M_PI / 180.0;
-                imu_gyro->SensorQuaternion = 
-                    Eigen::AngleAxisd(y, Eigen::Vector3d::UnitZ()) *
-                    Eigen::AngleAxisd(p, Eigen::Vector3d::UnitY()) *
-                    Eigen::AngleAxisd(r, Eigen::Vector3d::UnitX());
-                imu_gyro->SensorQuaternionInv = imu_gyro->SensorQuaternion.inverse();
-            }
-            std::cout << "[Config] IMU Parameters Updated.\n";
-        }
-
-        // 2. Leg 算法参数更新 (检查使能位)
-        if (config[IndexUpdateEnableLeg] == 1)
-        {
-            legs_pos->FootEffortThreshold       = config[IndexLegFootForceThreshold];
-            legs_pos->Environement_Height_Scope = config[IndexLegMinStairHeight];
-            legs_pos->Data_Fading_Time          = config[IndexLegStairFadeTime];
-
-            legori_en = (config[IndexLegOrientationEnable] == 1);
-            legs_ori->legori_init_weight = config[IndexLegOrientationInitialWeight];
-            legs_ori->legori_time_weight = config[IndexLegOrientationTimeWeight];
-            std::cout << "[Config] Leg Algo Parameters Updated.\n";
-        }
-
-        // 3. 运动学参数更新 (检查使能位)
-        if (config[IndexUpdateEnableKinematics] == 1)
-        {
-            // 更新 4 个标量
-            legs_pos->Par_HipLength   = config[IndexKinematicsHipLength];
-            legs_pos->Par_ThighLength = config[IndexKinematicsThighLength];
-            legs_pos->Par_CalfLength  = config[IndexKinematicsCalfLength];
-            legs_pos->Par_FootLength  = config[IndexKinematicsFootLength];
-
-            // 更新 4x13 矩阵 (直接搬运)
-            int idx = IndexKinematicsMatrixStart;
-            for(int r = 0; r < 4; ++r) {
-                for(int c = 0; c < 13; ++c) {
-                    legs_pos->KinematicParams(r, c) = config[idx++];
+                {
+                    double r = status_[IndexImuAccRotationRoll]  * M_PI / 180.0;
+                    double p = status_[IndexImuAccRotationPitch] * M_PI / 180.0;
+                    double y = status_[IndexImuAccRotationYaw]   * M_PI / 180.0;
+                    imu_acc->SensorQuaternion = 
+                        Eigen::AngleAxisd(y, Eigen::Vector3d::UnitZ()) *
+                        Eigen::AngleAxisd(p, Eigen::Vector3d::UnitY()) *
+                        Eigen::AngleAxisd(r, Eigen::Vector3d::UnitX());
+                    imu_acc->SensorQuaternionInv = imu_acc->SensorQuaternion.inverse();
                 }
+
+                imu_gyro->SensorPosition[0] = status_[IndexImuGyroPositionX];
+                imu_gyro->SensorPosition[1] = status_[IndexImuGyroPositionY];
+                imu_gyro->SensorPosition[2] = status_[IndexImuGyroPositionZ];
+
+                {
+                    double r = status_[IndexImuGyroRotationRoll]  * M_PI / 180.0;
+                    double p = status_[IndexImuGyroRotationPitch] * M_PI / 180.0;
+                    double y = status_[IndexImuGyroRotationYaw]   * M_PI / 180.0;
+                    imu_gyro->SensorQuaternion = 
+                        Eigen::AngleAxisd(y, Eigen::Vector3d::UnitZ()) *
+                        Eigen::AngleAxisd(p, Eigen::Vector3d::UnitY()) *
+                        Eigen::AngleAxisd(r, Eigen::Vector3d::UnitX());
+                    imu_gyro->SensorQuaternionInv = imu_gyro->SensorQuaternion.inverse();
+                }
+                std::cout << "[Config] IMU Parameters Updated.\n";
             }
-            std::cout << "[Config] Kinematic Parameters Updated (Scalar + Matrix).\n";
+
+            // 2. Leg 算法参数更新 (检查使能位)
+            if (status_[IndexUpdateEnableLeg] == 1)
+            {
+                legs_pos->FootEffortThreshold       = status_[IndexLegFootForceThreshold];
+                legs_pos->Environement_Height_Scope = status_[IndexLegMinStairHeight];
+                legs_pos->Data_Fading_Time          = status_[IndexLegStairFadeTime];
+
+                legori_en = (status_[IndexLegOrientationEnable] == 1);
+                legs_ori->legori_init_weight = status_[IndexLegOrientationInitialWeight];
+                legs_ori->legori_time_weight = status_[IndexLegOrientationTimeWeight];
+                std::cout << "[Config] Leg Algo Parameters Updated.\n";
+            }
+
+            // 3. 运动学参数更新 (检查使能位)
+            if (status_[IndexUpdateEnableKinematics] == 1)
+            {
+                // 更新 4 个标量
+                legs_pos->Par_HipLength   = status_[IndexKinematicsHipLength];
+                legs_pos->Par_ThighLength = status_[IndexKinematicsThighLength];
+                legs_pos->Par_CalfLength  = status_[IndexKinematicsCalfLength];
+                legs_pos->Par_FootLength  = status_[IndexKinematicsFootLength];
+
+                // 更新 4x13 矩阵 (直接搬运)
+                int idx = IndexKinematicsMatrixStart;
+                for(int r = 0; r < 4; ++r) {
+                    for(int c = 0; c < 13; ++c) {
+                        legs_pos->KinematicParams(r, c) = status_[idx++];
+                    }
+                }
+                std::cout << "[Config] Kinematic Parameters Updated (Scalar + Matrix).\n";
+            }
+            status_[IndexStatusOK] = 1;    
+        }
+        else{
+            for(int i = 0; i < 72; i++){
+                status_[100+i] = sensors[0]->Double_Par[i];
+            }
+            status_[IndexStatusOK] = 2;    
         }
     }
 

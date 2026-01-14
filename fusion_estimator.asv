@@ -1,0 +1,140 @@
+clear all;close all;clc;
+cd(fileparts(mfilename('fullpath')));
+
+CSV_PATH = 'D:\project\matlab\output_20250826_233408.csv';
+
+status_ = zeros(200,1,'double');
+
+status_(1) = 1;
+% ================= IMU =================
+status_(10+1) = 1; % enable_imu_update
+
+status_(11+1) = 0.0; status_(12+1) = 0.0; status_(13+1) = 0.0; % imu_acc_pos
+status_(14+1) = 0.0; status_(15+1) = 0.0; status_(16+1) = 0.0; % imu_acc_rpy (deg)
+
+status_(20+1) = 0.0; status_(21+1) = 0.0; status_(22+1) = 0.0; % imu_gyro_pos
+status_(23+1) = 0.0; status_(24+1) = 0.0; status_(25+1) = 0.0; % imu_gyro_rpy (deg)
+
+% ================= Leg =================
+status_(30+1) = 1;      % enable_leg_update
+status_(31+1) = 8.0;    % foot_force_threshold
+status_(32+1) = 0.10;   % min_stair_height
+status_(33+1) = 60.0;   % stair_fade_time
+status_(34+1) = 0;      % leg_ori_enable
+status_(35+1) = 0.001;  % leg_ori_init_weight
+status_(36+1) = 1000.0; % leg_ori_time_weight
+
+% ================= Kinematics =================
+status_(40+1) = 1;       % enable_kin_update
+status_(41+1) = 0.1709;  % kin_hip_length
+status_(42+1) = 0.26;    % kin_thigh_length
+status_(43+1) = 0.26;    % kin_calf_length
+status_(44+1) = 0.03;    % kin_foot_radius
+
+kin_mat = [ ...
+    0.2878,  0.07,  0.000, 0.0,  0.1709, 0.0, 0.0, 0.0, -0.26, 0.0, 0.0, -0.26, 0.03,...
+    0.2878, -0.07,  0.000, 0.0, -0.1709, 0.0, 0.0, 0.0, -0.26, 0.0, 0.0, -0.26, 0.03,...
+   -0.2878,  0.07,  0.000, 0.0,  0.1709, 0.0, 0.0, 0.0, -0.26, 0.0, 0.0, -0.26, 0.03,...
+   -0.2878, -0.07,  0.000, 0.0, -0.1709, 0.0, 0.0, 0.0, -0.26, 0.0, 0.0, -0.26, 0.03 ];
+
+status_(45+1 : 96+1) = kin_mat(:);
+
+fusion_estimator_mex('reset');        % 保证干净
+fusion_estimator_mex('status', status_);  % 这一步会自动 new Core
+status_ = zeros(200,1,'double');
+
+base0     = 2;
+stride    = 13;
+motor_num = 16;
+imu_cols  = 10;
+imu0      = base0 + motor_num * stride;
+
+% 直接加载所有行（第一行是表头）
+lines = readlines(CSV_PATH);
+if numel(lines) < 2
+    error('CSV seems empty.');
+end
+lines = lines(2:end);
+N = min(numel(lines), 30000);
+status_record = zeros(length(status_),N);
+
+% 用第一条数据的时间做 t0
+row0 = strsplit(strtrim(lines(1)), ',');
+t0 = parse_time(row0{1});
+
+odom_log = nan(N, 7);  % [t(s) x y z r p y]
+tic
+for k = 1:N
+    row = strsplit(strtrim(lines(k)), ',');
+
+    % 这一行是唯一的“必要保护”：避免越界
+    if numel(row) < (imu0 + imu_cols + 1)
+        continue;
+    end
+
+    % 时间戳
+    t = parse_time(row{1});
+    ts_ms = uint32(round(milliseconds(t - t0)));
+
+    q16   = zeros(16,1);
+    dq16  = zeros(16,1);
+    tau16 = zeros(16,1);
+
+    for mi = 0:15
+        base = base0 + mi*stride;
+        q16(mi+1)   = str2double(row{base + 1 + 5});
+        dq16(mi+1)  = str2double(row{base + 1 + 6});
+        tau16(mi+1) = str2double(row{base + 1 + 7});
+    end
+
+    acc  = [str2double(row{imu0+1+0});
+            str2double(row{imu0+1+1});
+            str2double(row{imu0+1+2})];
+
+    gyro = [str2double(row{imu0+1+3});
+            str2double(row{imu0+1+4});
+            str2double(row{imu0+1+5})];
+
+    quat = [str2double(row{imu0+1+6});
+            str2double(row{imu0+1+7});
+            str2double(row{imu0+1+8});
+            str2double(row{imu0+1+9})];
+
+    out = fusion_estimator_mex('step', double(ts_ms), q16, dq16, tau16, acc, gyro, quat);
+    status_record(:,k) = fusion_estimator_mex('status',status_);
+
+    odom_log(k,:) = [double(ts_ms)/1000, out.x, out.y, out.z, out.angularX, out.angularY, out.angularZ];
+
+    if mod(k,1000)==0
+        fprintf('[%d] t=%.1f x=%.1f y=%.1f z=%.1f r=%.2f p=%.2f y=%.2f\n', ...
+            k, odom_log(k,1), odom_log(k,2), odom_log(k,3), odom_log(k,4), odom_log(k,5), odom_log(k,6), odom_log(k,7));
+    end
+end
+toc
+odom_log = odom_log(1:k,:);
+fusion_estimator_mex('reset');
+clear fusion_estimator_mex
+fprintf('[DONE] frames=%d\n', k);
+
+figure(1)
+hold on;grid on;
+plot(status_record(101,:),'b')
+plot(status_record(102,:),'r')
+plot(status_record(103,:),'g')
+legend("leg0 X","leg0 Y","leg0 Z")
+figure(1)
+hold on;grid on;
+plot(status_record(173,:),'b')
+plot(status_record(102,:),'r')
+plot(status_record(103,:),'g')
+legend("leg0 X","leg0 Y","leg0 Z")
+
+function t = parse_time(s)
+    % 这里也避免 string：直接用 char 走 datetime
+    s = strrep(s, '"', '');
+    try
+        t = datetime(s, 'InputFormat','yyyy-MM-dd HH:mm:ss.SSS');
+    catch
+        t = datetime(s, 'InputFormat','yyyy-MM-dd HH:mm:ss');
+    end
+end

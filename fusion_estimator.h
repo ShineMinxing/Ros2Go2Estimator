@@ -3,7 +3,7 @@
 // auto Robot_Estimation = CreateRobot_Estimation();
 
 // // 按需传参
-// double algo_config[199] = {0};
+// double algo_config[200] = {0};
 // algo_config[10] = 1.0;     // enable_imu_update
 // algo_config[30] = 1.0;     // enable_leg_update
 // algo_config[31] = 8.0;     // foot_force_threshold
@@ -50,7 +50,7 @@ enum ConfigIndex {
 
     IndexInOrOut = 0,
     IndexStatusOK = 1,
-    // ============ IMU 相关 (100 - 199) ============
+    // ============ IMU 相关 (100 - 200) ============
     // IMU 参数更新使能位 (1.0 = Enable, 0.0 = Disable)
     IndexUpdateEnableImu = 10,
 
@@ -149,7 +149,7 @@ public:
     FusionEstimatorCore(FusionEstimatorCore&&) noexcept = default;
     FusionEstimatorCore& operator=(FusionEstimatorCore&&) noexcept = default;
 
-    void fusion_estimator_status(double status_[199])
+    void fusion_estimator_status(double status_[200])
     {
         status_[IndexStatusOK] = -1;
         if (status_[IndexInOrOut] == 1) 
@@ -224,7 +224,7 @@ public:
             status_[IndexStatusOK] = 1;    
         }
         else{
-            for(int i = 0; i < 72; i++){
+            for(int i = 0; i < 100; i++){
                 status_[100+i] = sensors[0]->Double_Par[i];
             }
             status_[IndexStatusOK] = 2;    

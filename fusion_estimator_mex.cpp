@@ -87,7 +87,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     if (cmd == "status") {
         require(nrhs >= 2, "Usage: st = fusion_estimator_mex('status', status_)");
         require(mxIsDouble(prhs[1]) && !mxIsComplex(prhs[1]), "status_ must be real double.");
-        require((int)mxGetNumberOfElements(prhs[1]) == 199, "status_ must have 199 elements.");
+        require((int)mxGetNumberOfElements(prhs[1]) == 200, "status_ must have 200 elements.");
 
         // 需要 core 才能读/写内部状态
         if (!g_core) {
@@ -96,14 +96,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         }
 
         // MATLAB 输入只读 -> 拷贝到 status 做 in/out buffer
-        double status[199];
-        std::memcpy(status, mxGetPr(prhs[1]), sizeof(double) * 199);
+        double status[200];
+        std::memcpy(status, mxGetPr(prhs[1]), sizeof(double) * 200);
 
         g_core->fusion_estimator_status(status);
 
         if (nlhs > 0) {
-            plhs[0] = mxCreateDoubleMatrix(199, 1, mxREAL);
-            std::memcpy(mxGetPr(plhs[0]), status, sizeof(double) * 199);
+            plhs[0] = mxCreateDoubleMatrix(200, 1, mxREAL);
+            std::memcpy(mxGetPr(plhs[0]), status, sizeof(double) * 200);
         }
         return;
     }

@@ -156,8 +156,8 @@ public:
             {
                 legs_pos->Par_HipLength   = status[IndexKinematicsHipLength];
                 legs_pos->Par_ThighLength = status[IndexKinematicsThighLength];
-                legs_pos->Par_CalfLength  = status[IndexKinematicsCalfLength];
-                legs_pos->Par_FootLength  = status[IndexKinematicsFootLength];
+                legs_pos->Par_CalfLength  = status[IndexKinematicsCalfLength] + status[IndexKinematicsFootLength];
+                legs_pos->Par_FootLength  = 0.0;
 
                 int idx = IndexKinematicsMatrixStart;
                 for(int r = 0; r < 4; ++r) {
@@ -179,6 +179,12 @@ public:
     Odometer fusion_estimator(const LowlevelState& st)
     {
         const double CurrentTimestamp = 1e-3 * static_cast<double>(st.imu.timestamp);
+
+        if (!t0_inited_) {
+            t0_inited_ = true;
+            sensors[0]->StateUpdateTimestamp = CurrentTimestamp;
+            sensors[1]->StateUpdateTimestamp = CurrentTimestamp;
+        }
 
         if (imu_enable) {
             double msg_acc[100] = {0};
@@ -232,12 +238,24 @@ public:
             }
         }
 
-        sensors[0]->Double_Par[84] = sensors[0]->EstimatedState[0];
-        sensors[0]->Double_Par[85] = sensors[0]->EstimatedState[3];
-        sensors[0]->Double_Par[86] = sensors[0]->EstimatedState[6];
-        sensors[0]->Double_Par[87] = sensors[1]->EstimatedState[0];
-        sensors[0]->Double_Par[88] = sensors[1]->EstimatedState[3];
-        sensors[0]->Double_Par[89] = sensors[1]->EstimatedState[6];
+        sensors[0]->Double_Par[0] = sensors[0]->EstimatedState[0];
+        sensors[0]->Double_Par[1] = sensors[0]->EstimatedState[1];
+        sensors[0]->Double_Par[2] = sensors[0]->EstimatedState[2];
+        sensors[0]->Double_Par[3] = sensors[0]->EstimatedState[3];
+        sensors[0]->Double_Par[4] = sensors[0]->EstimatedState[4];
+        sensors[0]->Double_Par[5] = sensors[0]->EstimatedState[5];
+        sensors[0]->Double_Par[6] = sensors[0]->EstimatedState[6];
+        sensors[0]->Double_Par[7] = sensors[0]->EstimatedState[7];
+        sensors[0]->Double_Par[8] = sensors[0]->EstimatedState[8];
+        sensors[0]->Double_Par[10] = sensors[1]->EstimatedState[0];
+        sensors[0]->Double_Par[11] = sensors[1]->EstimatedState[1];
+        sensors[0]->Double_Par[12] = sensors[1]->EstimatedState[2];
+        sensors[0]->Double_Par[13] = sensors[1]->EstimatedState[3];
+        sensors[0]->Double_Par[14] = sensors[1]->EstimatedState[4];
+        sensors[0]->Double_Par[15] = sensors[1]->EstimatedState[5];
+        sensors[0]->Double_Par[16] = sensors[1]->EstimatedState[6];
+        sensors[0]->Double_Par[17] = sensors[1]->EstimatedState[7];
+        sensors[0]->Double_Par[18] = sensors[1]->EstimatedState[8];
 
         Odometer odom;
         odom.x = static_cast<float>(sensors[0]->EstimatedState[0]);
@@ -264,6 +282,8 @@ private:
     double legori_init_weight, legori_time_weight;
 
     double yaw_correct;
+
+    bool     t0_inited_ = false;
 };
 
 inline FusionEstimatorCore CreateRobot_Estimation()

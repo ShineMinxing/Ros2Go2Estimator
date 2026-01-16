@@ -108,14 +108,13 @@ public:
         if (status[IndexInOrOut] == 1) 
         {
             status[IndexInOrOut] = 0;
-            status[IndexStatusOK] = 1;
             
             legs_pos->FootEffortThreshold       = status[IndexLegFootForceThreshold];
             legs_pos->Environement_Height_Scope = status[IndexLegMinStairHeight];
             legs_pos->Data_Fading_Time          = status[IndexLegStairFadeTime];
-            legori_en = (status[IndexLegOrientationEnable] == 1);
-            legs_ori->legori_init_weight = status[IndexLegOrientationInitialWeight];
-            legs_ori->legori_time_weight = status[IndexLegOrientationTimeWeight];
+            legori_en                           = status[IndexLegOrientationEnable];
+            legs_ori->legori_init_weight        = status[IndexLegOrientationInitialWeight];
+            legs_ori->legori_time_weight        = status[IndexLegOrientationTimeWeight];
             
             if (status[IndexUpdateEnableImu] == 1) 
             {
@@ -169,6 +168,18 @@ public:
                 std::cout << "[Config] Kinematic Parameters Updated (Scalar + Matrix).\n";
             }
         }
+        else if (status[IndexInOrOut] == 2){
+            status[IndexInOrOut] = 0;
+            status[IndexStatusOK] = status[IndexStatusOK] + 10;
+            if (status[IndexStatusOK] > 100)
+                status[IndexStatusOK] = 1;
+            status[IndexLegFootForceThreshold]       = legs_pos->FootEffortThreshold;
+            status[IndexLegMinStairHeight]           = legs_pos->Environement_Height_Scope;
+            status[IndexLegStairFadeTime]            = legs_pos->Data_Fading_Time;
+            status[IndexLegOrientationEnable]        = legori_en;
+            status[IndexLegOrientationInitialWeight] = legs_ori->legori_init_weight;
+            status[IndexLegOrientationTimeWeight]    = legs_ori->legori_time_weight;
+        }
         else{
             for(int i = 0; i < 100; i++){
                 status[100+i] = sensors[0]->Double_Par[i];
@@ -179,6 +190,9 @@ public:
     Odometer fusion_estimator(const LowlevelState& st)
     {
         const double CurrentTimestamp = 1e-3 * static_cast<double>(st.imu.timestamp);
+        
+        const double frac_ms = std::fmod(CurrentTimestamp, 1000.0);
+        sensors[0]->Double_Par[9] = frac_ms;
 
         if (!t0_inited_) {
             t0_inited_ = true;
@@ -194,9 +208,18 @@ public:
             msg_acc[3*1 + 2] = st.imu.accelerometer[1];
             msg_acc[3*2 + 2] = st.imu.accelerometer[2];
 
+            sensors[0]->Double_Par[40] = st.imu.accelerometer[0];
+            sensors[0]->Double_Par[41] = st.imu.accelerometer[1];
+            sensors[0]->Double_Par[42] = st.imu.accelerometer[2];
+
             double roll, pitch, yaw;
             const float* q = st.imu.quaternion;
             quat_wxyz_to_rpy(q[0], q[1], q[2], q[3], roll, pitch, yaw);
+            
+            sensors[0]->Double_Par[44] = q[0];
+            sensors[0]->Double_Par[45] = q[1];
+            sensors[0]->Double_Par[46] = q[2];
+            sensors[0]->Double_Par[47] = q[3];
 
             msg_rpy[3*0] = roll;
             msg_rpy[3*1] = pitch;
@@ -205,6 +228,14 @@ public:
             msg_rpy[3*0 + 1] = st.imu.gyroscope[0];
             msg_rpy[3*1 + 1] = st.imu.gyroscope[1];
             msg_rpy[3*2 + 1] = st.imu.gyroscope[2];
+            
+            sensors[0]->Double_Par[50] = roll;
+            sensors[0]->Double_Par[51] = pitch;
+            sensors[0]->Double_Par[52] = yaw + yaw_correct;
+            
+            sensors[0]->Double_Par[54] = st.imu.gyroscope[0];
+            sensors[0]->Double_Par[55] = st.imu.gyroscope[1];
+            sensors[0]->Double_Par[56] = st.imu.gyroscope[2];
 
             imu_acc->SensorDataHandle(msg_acc, CurrentTimestamp);
             imu_gyro->SensorDataHandle(msg_rpy, CurrentTimestamp);
@@ -221,6 +252,22 @@ public:
                 joint[24 + i] = m.tauEst;
             }
 
+            const auto& m1 = st.motorState[0];
+            const auto& m2 = st.motorState[1];
+            const auto& m3 = st.motorState[2];
+
+            sensors[0]->Double_Par[50] = m1.q;
+            sensors[0]->Double_Par[51] = m1.dq;
+            sensors[0]->Double_Par[52] = m1.tauEst;
+            
+            sensors[0]->Double_Par[53] = m2.q;
+            sensors[0]->Double_Par[54] = m2.dq;
+            sensors[0]->Double_Par[55] = m2.tauEst;
+            
+            sensors[0]->Double_Par[56] = m3.q;
+            sensors[0]->Double_Par[57] = m3.dq;
+            sensors[0]->Double_Par[58] = m3.tauEst;
+
             if (legpos_en) {
                 legs_pos->SensorDataHandle(joint, CurrentTimestamp);
             }
@@ -230,31 +277,31 @@ public:
 
                 legs_ori->SensorDataHandle(joint, CurrentTimestamp);
 
-                yaw_correct = sensors[1]->Double_Par[99] - last_yaw;
+                yaw_correct = legs_ori->legori_correct - last_yaw;
 
                 if (!imu_enable) {
-                    sensors[1]->EstimatedState[6] = sensors[1]->Double_Par[99];
+                    sensors[1]->EstimatedState[6] = legs_ori->legori_correct;
                 }
             }
         }
 
         sensors[0]->Double_Par[0] = sensors[0]->EstimatedState[0];
-        sensors[0]->Double_Par[1] = sensors[0]->EstimatedState[1];
-        sensors[0]->Double_Par[2] = sensors[0]->EstimatedState[2];
-        sensors[0]->Double_Par[3] = sensors[0]->EstimatedState[3];
+        sensors[0]->Double_Par[1] = sensors[0]->EstimatedState[3];
+        sensors[0]->Double_Par[2] = sensors[0]->EstimatedState[6];
+        sensors[0]->Double_Par[3] = sensors[0]->EstimatedState[1];
         sensors[0]->Double_Par[4] = sensors[0]->EstimatedState[4];
-        sensors[0]->Double_Par[5] = sensors[0]->EstimatedState[5];
-        sensors[0]->Double_Par[6] = sensors[0]->EstimatedState[6];
-        sensors[0]->Double_Par[7] = sensors[0]->EstimatedState[7];
+        sensors[0]->Double_Par[5] = sensors[0]->EstimatedState[7];
+        sensors[0]->Double_Par[6] = sensors[0]->EstimatedState[2];
+        sensors[0]->Double_Par[7] = sensors[0]->EstimatedState[5];
         sensors[0]->Double_Par[8] = sensors[0]->EstimatedState[8];
         sensors[0]->Double_Par[10] = sensors[1]->EstimatedState[0];
-        sensors[0]->Double_Par[11] = sensors[1]->EstimatedState[1];
-        sensors[0]->Double_Par[12] = sensors[1]->EstimatedState[2];
-        sensors[0]->Double_Par[13] = sensors[1]->EstimatedState[3];
+        sensors[0]->Double_Par[11] = sensors[1]->EstimatedState[3];
+        sensors[0]->Double_Par[12] = sensors[1]->EstimatedState[6];
+        sensors[0]->Double_Par[13] = sensors[1]->EstimatedState[1];
         sensors[0]->Double_Par[14] = sensors[1]->EstimatedState[4];
-        sensors[0]->Double_Par[15] = sensors[1]->EstimatedState[5];
-        sensors[0]->Double_Par[16] = sensors[1]->EstimatedState[6];
-        sensors[0]->Double_Par[17] = sensors[1]->EstimatedState[7];
+        sensors[0]->Double_Par[15] = sensors[1]->EstimatedState[7];
+        sensors[0]->Double_Par[16] = sensors[1]->EstimatedState[2];
+        sensors[0]->Double_Par[17] = sensors[1]->EstimatedState[5];
         sensors[0]->Double_Par[18] = sensors[1]->EstimatedState[8];
 
         Odometer odom;
@@ -283,7 +330,7 @@ private:
 
     double yaw_correct;
 
-    bool     t0_inited_ = false;
+    bool t0_inited_ = false;
 };
 
 inline FusionEstimatorCore CreateRobot_Estimation()

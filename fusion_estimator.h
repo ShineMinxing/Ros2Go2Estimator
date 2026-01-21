@@ -20,6 +20,8 @@ enum ConfigIndex {
     IndexInOrOut = 0,
     IndexStatusOK = 1,
     
+    IndexDebugEnable = 2,
+    IndexCheckedLegNumber = 3,  
     IndexLegFootForceThreshold = 4,  
     IndexLegMinStairHeight = 5,  
     IndexLegStairFadeTime = 6,  
@@ -108,77 +110,54 @@ public:
         if (status[IndexInOrOut] == 1) 
         {
             status[IndexInOrOut] = 0;
-            
+
+            sensors[0]->Int_Par[0]              = status[IndexCheckedLegNumber];
             legs_pos->FootEffortThreshold       = status[IndexLegFootForceThreshold];
             legs_pos->Environement_Height_Scope = status[IndexLegMinStairHeight];
             legs_pos->Data_Fading_Time          = status[IndexLegStairFadeTime];
             legori_en                           = status[IndexLegOrientationEnable];
             legs_ori->legori_init_weight        = status[IndexLegOrientationInitialWeight];
             legs_ori->legori_time_weight        = status[IndexLegOrientationTimeWeight];
-            
-            if (status[IndexUpdateEnableImu] == 1) 
-            {
-                imu_acc->SensorPosition[0] = status[IndexImuAccPositionX];
-                imu_acc->SensorPosition[1] = status[IndexImuAccPositionY];
-                imu_acc->SensorPosition[2] = status[IndexImuAccPositionZ];
-
-                {
-                    double r = status[IndexImuAccRotationRoll]  * M_PI / 180.0;
-                    double p = status[IndexImuAccRotationPitch] * M_PI / 180.0;
-                    double y = status[IndexImuAccRotationYaw]   * M_PI / 180.0;
-                    imu_acc->SensorQuaternion = 
-                        Eigen::AngleAxisd(y, Eigen::Vector3d::UnitZ()) *
-                        Eigen::AngleAxisd(p, Eigen::Vector3d::UnitY()) *
-                        Eigen::AngleAxisd(r, Eigen::Vector3d::UnitX());
-                    imu_acc->SensorQuaternionInv = imu_acc->SensorQuaternion.inverse();
-                }
-
-                imu_gyro->SensorPosition[0] = status[IndexImuGyroPositionX];
-                imu_gyro->SensorPosition[1] = status[IndexImuGyroPositionY];
-                imu_gyro->SensorPosition[2] = status[IndexImuGyroPositionZ];
-
-                {
-                    double r = status[IndexImuGyroRotationRoll]  * M_PI / 180.0;
-                    double p = status[IndexImuGyroRotationPitch] * M_PI / 180.0;
-                    double y = status[IndexImuGyroRotationYaw]   * M_PI / 180.0;
-                    imu_gyro->SensorQuaternion = 
-                        Eigen::AngleAxisd(y, Eigen::Vector3d::UnitZ()) *
-                        Eigen::AngleAxisd(p, Eigen::Vector3d::UnitY()) *
-                        Eigen::AngleAxisd(r, Eigen::Vector3d::UnitX());
-                    imu_gyro->SensorQuaternionInv = imu_gyro->SensorQuaternion.inverse();
-                }
-                status[IndexStatusOK] = status[IndexStatusOK] + 2;
-                std::cout << "[Config] IMU Parameters Updated.\n";
-            }
-
-            if (status[IndexUpdateEnableKinematics] == 1)
-            {
-                legs_pos->Par_HipLength   = status[IndexKinematicsHipLength];
-                legs_pos->Par_ThighLength = status[IndexKinematicsThighLength];
-                legs_pos->Par_CalfLength  = status[IndexKinematicsCalfLength] + status[IndexKinematicsFootLength];
-                legs_pos->Par_FootLength  = 0.0;
-
-                int idx = IndexKinematicsMatrixStart;
-                for(int r = 0; r < 4; ++r) {
-                    for(int c = 0; c < 13; ++c) {
-                        legs_pos->KinematicParams(r, c) = status[idx++];
-                    }
-                }
-                status[IndexStatusOK] = status[IndexStatusOK] + 4;
-                std::cout << "[Config] Kinematic Parameters Updated (Scalar + Matrix).\n";
-            }
         }
         else if (status[IndexInOrOut] == 2){
             status[IndexInOrOut] = 0;
             status[IndexStatusOK] = status[IndexStatusOK] + 10;
-            if (status[IndexStatusOK] > 100)
+            if (status[IndexStatusOK] > 999)
                 status[IndexStatusOK] = 1;
+                
+            status[IndexDebugEnable]                 = debug_en;
+            status[IndexCheckedLegNumber]            = sensors[0]->Int_Par[0] ;
             status[IndexLegFootForceThreshold]       = legs_pos->FootEffortThreshold;
             status[IndexLegMinStairHeight]           = legs_pos->Environement_Height_Scope;
             status[IndexLegStairFadeTime]            = legs_pos->Data_Fading_Time;
             status[IndexLegOrientationEnable]        = legori_en;
             status[IndexLegOrientationInitialWeight] = legs_ori->legori_init_weight;
             status[IndexLegOrientationTimeWeight]    = legs_ori->legori_time_weight;
+        }
+        else if (status[IndexInOrOut] == 3){
+            status[IndexInOrOut] = 0;
+            status[IndexStatusOK] = status[IndexStatusOK] + 20;
+            if (status[IndexStatusOK] > 999)
+                status[IndexStatusOK] = 1;
+            sensors[0]->EstimatedState[0] = 0;
+            sensors[0]->EstimatedState[3] = 0;
+            sensors[0]->EstimatedState[6] = 0;
+            legs_pos->FootfallPositionRecordIsInitiated[0] = false;
+            legs_pos->FootfallPositionRecordIsInitiated[1] = false;
+            legs_pos->FootfallPositionRecordIsInitiated[2] = false;
+            legs_pos->FootfallPositionRecordIsInitiated[3] = false;
+            debug_en = false;
+        }
+        else if (status[IndexInOrOut] == 4){
+            status[IndexInOrOut] = 0;
+            if(debug_en)
+                debug_en = false;
+            else
+                debug_en = true;
+        }
+        else if (status[IndexInOrOut] == 5){
+            status[IndexInOrOut] = 0;
+            status[IndexDebugEnable] = 2;
         }
         else{
             for(int i = 0; i < 100; i++){
@@ -190,61 +169,44 @@ public:
     Odometer fusion_estimator(const LowlevelState& st)
     {
         const double CurrentTimestamp = 1e-3 * static_cast<double>(st.imu.timestamp);
-        
-        const double frac_ms = std::fmod(CurrentTimestamp, 1000.0);
-        sensors[0]->Double_Par[9] = frac_ms;
+        static double LastUsedTimestamp = 0, StartTimeStamp = 0;
 
-        if (!t0_inited_) {
-            t0_inited_ = true;
-            sensors[0]->StateUpdateTimestamp = CurrentTimestamp;
-            sensors[1]->StateUpdateTimestamp = CurrentTimestamp;
-        }
+        if (!(CurrentTimestamp - StartTimeStamp - LastUsedTimestamp < 1) || !(CurrentTimestamp - StartTimeStamp - LastUsedTimestamp >0))
+            StartTimeStamp = CurrentTimestamp - LastUsedTimestamp;
 
+        double UsedTimestamp = CurrentTimestamp - StartTimeStamp;
+        LastUsedTimestamp = UsedTimestamp;
+
+        const float* q = st.imu.quaternion;
+        double roll, pitch, yaw;
         if (imu_enable) {
-            double msg_acc[100] = {0};
-            double msg_rpy[100] = {0};
+            // double msg_acc[9] = {0};
+            double msg_rpy[9] = {0};
 
-            msg_acc[3*0 + 2] = st.imu.accelerometer[0];
-            msg_acc[3*1 + 2] = st.imu.accelerometer[1];
-            msg_acc[3*2 + 2] = st.imu.accelerometer[2];
+            // msg_acc[3*0 + 2] = st.imu.accelerometer[0];
+            // msg_acc[3*1 + 2] = st.imu.accelerometer[1];
+            // msg_acc[3*2 + 2] = st.imu.accelerometer[2];
 
-            sensors[0]->Double_Par[40] = st.imu.accelerometer[0];
-            sensors[0]->Double_Par[41] = st.imu.accelerometer[1];
-            sensors[0]->Double_Par[42] = st.imu.accelerometer[2];
-
-            double roll, pitch, yaw;
-            const float* q = st.imu.quaternion;
             quat_wxyz_to_rpy(q[0], q[1], q[2], q[3], roll, pitch, yaw);
             
-            sensors[0]->Double_Par[44] = q[0];
-            sensors[0]->Double_Par[45] = q[1];
-            sensors[0]->Double_Par[46] = q[2];
-            sensors[0]->Double_Par[47] = q[3];
-
             msg_rpy[3*0] = roll;
             msg_rpy[3*1] = pitch;
             msg_rpy[3*2] = yaw + yaw_correct;
 
-            msg_rpy[3*0 + 1] = st.imu.gyroscope[0];
-            msg_rpy[3*1 + 1] = st.imu.gyroscope[1];
-            msg_rpy[3*2 + 1] = st.imu.gyroscope[2];
-            
-            sensors[0]->Double_Par[50] = roll;
-            sensors[0]->Double_Par[51] = pitch;
-            sensors[0]->Double_Par[52] = yaw + yaw_correct;
-            
-            sensors[0]->Double_Par[54] = st.imu.gyroscope[0];
-            sensors[0]->Double_Par[55] = st.imu.gyroscope[1];
-            sensors[0]->Double_Par[56] = st.imu.gyroscope[2];
+            // msg_rpy[3*0 + 1] = st.imu.gyroscope[0];
+            // msg_rpy[3*1 + 1] = st.imu.gyroscope[1];
+            // msg_rpy[3*2 + 1] = st.imu.gyroscope[2];
 
-            imu_acc->SensorDataHandle(msg_acc, CurrentTimestamp);
-            imu_gyro->SensorDataHandle(msg_rpy, CurrentTimestamp);
+            // if(Signal_Available_Check(msg_acc,0))
+            //     imu_acc->SensorDataHandle(msg_acc, UsedTimestamp);
+            if(Signal_Available_Check(msg_rpy,1))
+                imu_gyro->SensorDataHandle(msg_rpy, UsedTimestamp);
         }
         
         if (legpos_en || legori_en) {
-            double joint[100] = {0};
+            double joint[36];
 
-            int desired_joints[] = {0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14};
+            static const int desired_joints[] = {0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14};
             for (int i = 0; i < 12; ++i) {
                 const auto& m = st.motorState[desired_joints[i]];
                 joint[0 + i] = m.q;
@@ -252,57 +214,65 @@ public:
                 joint[24 + i] = m.tauEst;
             }
 
-            const auto& m1 = st.motorState[0];
-            const auto& m2 = st.motorState[1];
-            const auto& m3 = st.motorState[2];
+            if (legpos_en && Signal_Available_Check(joint,2)) {
+                legs_pos->SensorDataHandle(joint, UsedTimestamp);
+                
+                if (legori_en) {
+                    const double last_yaw = sensors[1]->EstimatedState[6] - yaw_correct;
 
-            sensors[0]->Double_Par[50] = m1.q;
-            sensors[0]->Double_Par[51] = m1.dq;
-            sensors[0]->Double_Par[52] = m1.tauEst;
-            
-            sensors[0]->Double_Par[53] = m2.q;
-            sensors[0]->Double_Par[54] = m2.dq;
-            sensors[0]->Double_Par[55] = m2.tauEst;
-            
-            sensors[0]->Double_Par[56] = m3.q;
-            sensors[0]->Double_Par[57] = m3.dq;
-            sensors[0]->Double_Par[58] = m3.tauEst;
+                    legs_ori->SensorDataHandle(joint, UsedTimestamp);
 
-            if (legpos_en) {
-                legs_pos->SensorDataHandle(joint, CurrentTimestamp);
-            }
+                    yaw_correct = legs_ori->legori_correct - last_yaw;
 
-            if (legori_en) {
-                const double last_yaw = sensors[1]->EstimatedState[6] - yaw_correct;
-
-                legs_ori->SensorDataHandle(joint, CurrentTimestamp);
-
-                yaw_correct = legs_ori->legori_correct - last_yaw;
-
-                if (!imu_enable) {
-                    sensors[1]->EstimatedState[6] = legs_ori->legori_correct;
+                    if (!imu_enable) {
+                        sensors[1]->EstimatedState[6] = legs_ori->legori_correct;
+                    }
                 }
             }
+
         }
 
-        sensors[0]->Double_Par[0] = sensors[0]->EstimatedState[0];
-        sensors[0]->Double_Par[1] = sensors[0]->EstimatedState[3];
-        sensors[0]->Double_Par[2] = sensors[0]->EstimatedState[6];
-        sensors[0]->Double_Par[3] = sensors[0]->EstimatedState[1];
-        sensors[0]->Double_Par[4] = sensors[0]->EstimatedState[4];
-        sensors[0]->Double_Par[5] = sensors[0]->EstimatedState[7];
-        sensors[0]->Double_Par[6] = sensors[0]->EstimatedState[2];
-        sensors[0]->Double_Par[7] = sensors[0]->EstimatedState[5];
-        sensors[0]->Double_Par[8] = sensors[0]->EstimatedState[8];
-        sensors[0]->Double_Par[10] = sensors[1]->EstimatedState[0];
-        sensors[0]->Double_Par[11] = sensors[1]->EstimatedState[3];
-        sensors[0]->Double_Par[12] = sensors[1]->EstimatedState[6];
-        sensors[0]->Double_Par[13] = sensors[1]->EstimatedState[1];
-        sensors[0]->Double_Par[14] = sensors[1]->EstimatedState[4];
-        sensors[0]->Double_Par[15] = sensors[1]->EstimatedState[7];
-        sensors[0]->Double_Par[16] = sensors[1]->EstimatedState[2];
-        sensors[0]->Double_Par[17] = sensors[1]->EstimatedState[5];
-        sensors[0]->Double_Par[18] = sensors[1]->EstimatedState[8];
+        if(debug_en)
+        {
+            sensors[0]->Double_Par[0] = sensors[0]->EstimatedState[0];
+            sensors[0]->Double_Par[1] = sensors[0]->EstimatedState[3];
+            sensors[0]->Double_Par[2] = sensors[0]->EstimatedState[6];
+            sensors[0]->Double_Par[3] = sensors[0]->EstimatedState[1];
+            sensors[0]->Double_Par[4] = sensors[0]->EstimatedState[4];
+            sensors[0]->Double_Par[5] = sensors[0]->EstimatedState[7];
+            sensors[0]->Double_Par[6] = sensors[0]->EstimatedState[2];
+            sensors[0]->Double_Par[7] = sensors[0]->EstimatedState[5];
+            sensors[0]->Double_Par[8] = sensors[0]->EstimatedState[8];
+            sensors[0]->Double_Par[9] = UsedTimestamp;
+
+            sensors[0]->Double_Par[10] = sensors[1]->EstimatedState[0];
+            sensors[0]->Double_Par[11] = sensors[1]->EstimatedState[3];
+            sensors[0]->Double_Par[12] = sensors[1]->EstimatedState[6];
+            sensors[0]->Double_Par[13] = sensors[1]->EstimatedState[1];
+            sensors[0]->Double_Par[14] = sensors[1]->EstimatedState[4];
+            sensors[0]->Double_Par[15] = sensors[1]->EstimatedState[7];
+            
+            sensors[0]->Double_Par[20] = st.imu.accelerometer[0];
+            sensors[0]->Double_Par[21] = st.imu.accelerometer[1];
+            sensors[0]->Double_Par[22] = st.imu.accelerometer[2];
+            sensors[0]->Double_Par[23] = roll;
+            sensors[0]->Double_Par[24] = pitch;
+            sensors[0]->Double_Par[25] = yaw + yaw_correct;
+            sensors[0]->Double_Par[26] = st.imu.gyroscope[0];
+            sensors[0]->Double_Par[27] = st.imu.gyroscope[1];
+            sensors[0]->Double_Par[28] = st.imu.gyroscope[2];
+
+            sensors[0]->Double_Par[30] = st.motorState[4*sensors[0]->Int_Par[0] + 0].q;
+            sensors[0]->Double_Par[31] = st.motorState[4*sensors[0]->Int_Par[0] + 0].dq;
+            sensors[0]->Double_Par[32] = st.motorState[4*sensors[0]->Int_Par[0] + 0].tauEst;
+            sensors[0]->Double_Par[33] = st.motorState[4*sensors[0]->Int_Par[0] + 1].q;
+            sensors[0]->Double_Par[34] = st.motorState[4*sensors[0]->Int_Par[0] + 1].dq;
+            sensors[0]->Double_Par[35] = st.motorState[4*sensors[0]->Int_Par[0] + 1].tauEst;
+            sensors[0]->Double_Par[36] = st.motorState[4*sensors[0]->Int_Par[0] + 2].q;
+            sensors[0]->Double_Par[37] = st.motorState[4*sensors[0]->Int_Par[0] + 2].dq;
+            sensors[0]->Double_Par[38] = st.motorState[4*sensors[0]->Int_Par[0] + 2].tauEst;
+            sensors[0]->Double_Par[39] = st.motorState[4*sensors[0]->Int_Par[0] + 3].q;
+        }
 
         Odometer odom;
         odom.x = static_cast<float>(sensors[0]->EstimatedState[0]);
@@ -324,13 +294,30 @@ private:
     std::shared_ptr<SensorLegsPos>    legs_pos;
     std::shared_ptr<SensorLegsOri>    legs_ori;
 
-    bool imu_enable, legpos_en, legori_en;
-
+    bool imu_enable, legpos_en, legori_en, debug_en = false;
     double legori_init_weight, legori_time_weight;
-
     double yaw_correct;
 
-    bool t0_inited_ = false;
+    bool Signal_Available_Check(double Signal[], int type)
+    {
+        static double last[3][36] = {0};
+        static int Number[3] = {9,9,36};
+        bool diff = false;
+
+        for (int i = 0; i < Number[type]; ++i) {
+            if (!(Signal[i] < 9999.0 && Signal[i] > -9999.0))
+                return false;
+            if (Signal[i] != last[type][i])
+                diff = true;
+        }
+        if(!diff)
+            return false;
+        else
+            for (int i = 0; i < Number[type]; ++i)
+                last[type][i] = Signal[i];
+
+        return true;
+    }
 };
 
 inline FusionEstimatorCore CreateRobot_Estimation()

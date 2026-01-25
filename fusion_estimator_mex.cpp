@@ -1,6 +1,4 @@
 #include "mex.h"
-#include <string>
-#include <vector>
 #include <cstdint>
 #include <cstring>
 #include <cmath>
@@ -18,134 +16,64 @@
 #include "fusion_estimator.h"
 
 static FusionEstimatorCore* g_core = nullptr;
-static bool g_atExitRegistered = false;
-
-static void cleanup()
-{
-    if (g_core) { 
-        delete g_core; 
-        g_core = nullptr; 
-    }
-
-    while (mexIsLocked()) 
-        mexUnlock();
-}
-
-static void require(bool cond, const char* msg)
-{
-    if (!cond) mexErrMsgIdAndTxt("fusion_estimator_mex:invalid", "%s", msg);
-}
-
-static std::string get_cmd(const mxArray* a)
-{
-    require(mxIsChar(a), "First input must be command string.");
-    char* s = mxArrayToString(a);
-    require(s, "Failed to read command string.");
-    std::string out(s);
-    mxFree(s);
-    return out;
-}
-
-static long long get_i64_scalar(const mxArray* a, const char* name)
-{
-    require(mxIsNumeric(a) && mxGetNumberOfElements(a) == 1,
-            (std::string(name) + " must be scalar numeric.").c_str());
-
-    if (mxIsInt64(a)) {
-        const int64_t v = *reinterpret_cast<const int64_t*>(mxGetData(a));
-        return (long long)v;
-    }
-}
-
-static void read_vec_float(const mxArray* a, std::vector<float>& out, int n, const char* name)
-{
-    require(mxIsDouble(a) && !mxIsComplex(a), "All vectors must be real double.");
-    require((int)mxGetNumberOfElements(a) == n, "Vector length mismatch.");
-    const double* p = (const double*)mxGetData(a);
-    out.resize(n);
-    for (int i = 0; i < n; ++i) out[i] = (float)p[i];
-    (void)name;
-}
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-    require(nrhs >= 1, "Usage: fusion_estimator_mex('status', status_) or fusion_estimator_mex('step', ...)");
-    static unsigned int frame_count = 0;
+    char cmd[32] = {0};
+    mxGetString(prhs[0], cmd, sizeof(cmd));   // 假设 prhs[0] 一定是 char
 
-    if (!g_atExitRegistered) {
-        mexAtExit(cleanup);
-        g_atExitRegistered = true;
-    }
-
-    const std::string cmd = get_cmd(prhs[0]);
-
-    if (cmd == "reset") {
-        cleanup();
-        frame_count = 0;
+    if (std::strcmp(cmd, "reset") == 0) {
+        delete g_core;
+        g_core = nullptr;
         if (nlhs > 0) plhs[0] = mxCreateLogicalScalar(true);
         return;
     }
 
-    if (cmd == "status") {
-        require(nrhs >= 2, "Usage: st = fusion_estimator_mex('status', status_)");
-        require(mxIsDouble(prhs[1]) && !mxIsComplex(prhs[1]), "status_ must be real double.");
-        require((int)mxGetNumberOfElements(prhs[1]) == 200, "status_ must have 200 elements.");
+    if (!g_core) g_core = new FusionEstimatorCore();
 
-        if (!g_core) {
-            g_core = new FusionEstimatorCore();
-            if (!mexIsLocked()) mexLock();
-        }
-
+    if (std::strcmp(cmd, "status") == 0) {
         double status[200];
-        std::memcpy(status, mxGetPr(prhs[1]), sizeof(double) * 200);
+        std::memcpy(status, mxGetPr(prhs[1]), sizeof(status));  // 不检查长度/类型
 
         g_core->fusion_estimator_status(status);
 
         if (nlhs > 0) {
             plhs[0] = mxCreateDoubleMatrix(200, 1, mxREAL);
-            std::memcpy(mxGetPr(plhs[0]), status, sizeof(double) * 200);
+            std::memcpy(mxGetPr(plhs[0]), status, sizeof(status));
         }
         return;
     }
 
-    if (cmd == "step") {
+    if (std::strcmp(cmd, "step") == 0) {
+        long long ts_ms = (long long)llround(mxGetScalar(prhs[1]));
 
-        if (!g_core) {
-            g_core = new FusionEstimatorCore();
-            if (!mexIsLocked()) mexLock();
-        }
-        require(nrhs >= 8, "Usage: odom = fusion_estimator_mex('step', ts_ms, q, dq, tau, acc3, gyro3, quat4)");
-
-        long long ts_ms = get_i64_scalar(prhs[1], "ts_ms");
-        int nq = 16;
-
-        std::vector<float> q, dq, tau, acc, gyro, quat;
-        read_vec_float(prhs[2], q,   nq, "q");
-        read_vec_float(prhs[3], dq,  nq, "dq");
-        read_vec_float(prhs[4], tau, nq, "tau");
-        read_vec_float(prhs[5], acc,  3, "acc3");
-        read_vec_float(prhs[6], gyro, 3, "gyro3");
-        read_vec_float(prhs[7], quat, 4, "quat4");
+        const double* qd    = mxGetPr(prhs[2]);
+        const double* dqd   = mxGetPr(prhs[3]);
+        const double* taud  = mxGetPr(prhs[4]);
+        const double* accd  = mxGetPr(prhs[5]);
+        const double* gyrod = mxGetPr(prhs[6]);
+        const double* quatd = mxGetPr(prhs[7]);
 
         LowlevelState st{};
-        st.dataAvailable = true;
         st.imu.timestamp = ts_ms;
 
-        st.imu.accelerometer[0] = acc[0];
-        st.imu.accelerometer[1] = acc[1];
-        st.imu.accelerometer[2] = acc[2];
-        st.imu.gyroscope[0]     = gyro[0];
-        st.imu.gyroscope[1]     = gyro[1];
-        st.imu.gyroscope[2]     = gyro[2];
-        st.imu.quaternion[0]    = quat[0];
-        st.imu.quaternion[1]    = quat[1];
-        st.imu.quaternion[2]    = quat[2];
-        st.imu.quaternion[3]    = quat[3];
+        st.imu.accelerometer[0] = (float)accd[0];
+        st.imu.accelerometer[1] = (float)accd[1];
+        st.imu.accelerometer[2] = (float)accd[2];
 
-        for (int i = 0; i < nq; ++i) {
-            st.motorState[i].q      = q[i];
-            st.motorState[i].dq     = dq[i];
-            st.motorState[i].tauEst = tau[i];
+        st.imu.gyroscope[0] = (float)gyrod[0];
+        st.imu.gyroscope[1] = (float)gyrod[1];
+        st.imu.gyroscope[2] = (float)gyrod[2];
+
+        st.imu.quaternion[0] = (float)quatd[0];
+        st.imu.quaternion[1] = (float)quatd[1];
+        st.imu.quaternion[2] = (float)quatd[2];
+        st.imu.quaternion[3] = (float)quatd[3];
+
+        for (int i = 0; i < 16; ++i) {
+            st.motorState[i].q      = (float)qd[i];
+            st.motorState[i].dq     = (float)dqd[i];
+            st.motorState[i].tauEst = (float)taud[i];
         }
 
         const Odometer odom = g_core->fusion_estimator(st);
@@ -161,5 +89,5 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         return;
     }
 
-    mexErrMsgIdAndTxt("fusion_estimator_mex:unknown", "Unknown cmd. Use 'status'/'step'/'reset'.");
+    if (nlhs > 0) plhs[0] = mxCreateDoubleMatrix(0, 0, mxREAL);
 }

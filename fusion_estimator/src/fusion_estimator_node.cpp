@@ -7,35 +7,20 @@
 
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/LinearMath/Quaternion.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h> //#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp> doesn't work on Ubuntu20.04
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h> 
+//#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp> doesn't work on Ubuntu20.04
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include <sensor_msgs/msg/imu.hpp>
 
 #include "fusion_estimator/msg/fusion_estimator_test.hpp"
-#include "GO2FusionEstimator/SensorBase.h"
-#include "GO2FusionEstimator/Sensor_Legs.h"
-#include "GO2FusionEstimator/Sensor_IMU.h"
-
-using namespace DataFusion;
+#include "GO2FusionEstimator/fusion_estimator.h"
 
 class FusionEstimatorNode : public rclcpp::Node
 {
 public:
     FusionEstimatorNode(const rclcpp::NodeOptions &options)
     : Node("fusion_estimator_node", options)
-    {
-        /* ────────────── 创建融合器对象 ────────────── */
-        for (int i = 0; i < 2; ++i) {
-        auto * ptr = new EstimatorPortN;
-        StateSpaceModel_Go2_Initialization(ptr);
-        StateSpaceModel_Go2_Sensors.emplace_back(ptr);
-        }
-        Sensor_IMUAcc      = std::make_shared<SensorIMUAcc>     (StateSpaceModel_Go2_Sensors[0]);
-        Sensor_IMUMagGyro  = std::make_shared<SensorIMUMagGyro> (StateSpaceModel_Go2_Sensors[1]);
-        Sensor_LegsPos     = std::make_shared<SensorLegsPos>    (StateSpaceModel_Go2_Sensors[0]);
-        Sensor_LegsOri     = std::make_shared<SensorLegsOri>    (StateSpaceModel_Go2_Sensors[1]);
-        Sensor_LegsOri->SetLegsPosRef(Sensor_LegsPos.get());
-        
+    {        
         for (int i = 0; i < 9; ++i) {
             position_correct[i] = 0;
             orientation_correct[i] = 0;
@@ -59,67 +44,11 @@ public:
         this->get_parameter_or("base_frame_2d", child_frame_2d_id, std::string("base_link_2D"));
 
         this->get_parameter_or("imu_data_enable", imu_data_enable, true);
-        rclcpp::Parameter imu_acc_params;
-        if (this->get_parameter("imu_acc_params", imu_acc_params)) {
-            auto v = imu_acc_params.as_double_array();
-            if (v.size() == 6u) {
-                Sensor_IMUAcc->SensorPosition[0]     = v[0];
-                Sensor_IMUAcc->SensorPosition[1]     = v[1];
-                Sensor_IMUAcc->SensorPosition[2]     = v[2];
-                double r = v[3] * M_PI / 180.0;
-                double p = v[4] * M_PI / 180.0;
-                double y = v[5] * M_PI / 180.0;
-                Eigen::AngleAxisd rollAngle (r, Eigen::Vector3d::UnitX());
-                Eigen::AngleAxisd pitchAngle(p, Eigen::Vector3d::UnitY());
-                Eigen::AngleAxisd yawAngle  (y, Eigen::Vector3d::UnitZ());
-                Sensor_IMUAcc->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
-                Sensor_IMUAcc->SensorQuaternionInv = Sensor_IMUAcc->SensorQuaternion.inverse();
-                RCLCPP_INFO(this->get_logger(), "IMU Acc Params Sucessfully Read: [%.6f, %.6f, %.6f, %.6f, %.6f, %.6f] (m/deg)", v[0], v[1], v[2], v[3], v[4], v[5]);
-            }
-        }
-        rclcpp::Parameter imu_gyro_params;
-        if (this->get_parameter("imu_gyro_params", imu_gyro_params)) {
-            auto v = imu_gyro_params.as_double_array();
-            if (v.size() == 6u) {
-                Sensor_IMUMagGyro->SensorPosition[0] = v[0];
-                Sensor_IMUMagGyro->SensorPosition[1] = v[1];
-                Sensor_IMUMagGyro->SensorPosition[2] = v[2];
-                double r = v[3] * M_PI / 180.0;
-                double p = v[4] * M_PI / 180.0;
-                double y = v[5] * M_PI / 180.0;
-                Eigen::AngleAxisd rollAngle (r, Eigen::Vector3d::UnitX());
-                Eigen::AngleAxisd pitchAngle(p, Eigen::Vector3d::UnitY());
-                Eigen::AngleAxisd yawAngle  (y, Eigen::Vector3d::UnitZ());
-                Sensor_IMUMagGyro->SensorQuaternion = yawAngle * pitchAngle * rollAngle;
-                Sensor_IMUMagGyro->SensorQuaternionInv = Sensor_IMUMagGyro->SensorQuaternion.inverse();
-                RCLCPP_INFO(this->get_logger(), "IMU Gyro Params Sucessfully Read: [%.6f, %.6f, %.6f, %.6f, %.6f, %.6f] (m/deg)", v[0], v[1], v[2], v[3], v[4], v[5]);
-            }
-        }
-
-        rclcpp::Parameter kin_param;
-        if (this->get_parameter("kinematic_params", kin_param)) 
-        {
-            auto v = kin_param.as_double_array();  // std::vector<double>
-            if (v.size() == 4u * 13u) {
-                // 用 Eigen::Map 把一维数组映射成 4×13 矩阵（行优先）
-                Eigen::Map<const Eigen::Matrix<double, 4, 13, Eigen::RowMajor>> kin_map(v.data());
-                Sensor_LegsPos->KinematicParams = kin_map;
-
-                // 用新的 KinematicParams 更新几何长度（若你想保持默认值可以直接删掉下面4行）
-                Sensor_LegsPos->Par_HipLength   = Sensor_LegsPos->KinematicParams.block<1,3>(0,3).norm();
-                Sensor_LegsPos->Par_ThighLength = Sensor_LegsPos->KinematicParams.block<1,3>(0,6).norm();
-                Sensor_LegsPos->Par_CalfLength  = Sensor_LegsPos->KinematicParams.block<1,3>(0,9).norm();
-                Sensor_LegsPos->Par_FootLength  = std::abs(Sensor_LegsPos->KinematicParams(0,12));
-                RCLCPP_INFO(this->get_logger(), "Kinematic Params Sucessfully Read: Hip=%.6f Thigh=%.6f Calf=%.6f Foot=%.6f", Sensor_LegsPos->Par_HipLength, Sensor_LegsPos->Par_ThighLength, Sensor_LegsPos->Par_CalfLength, Sensor_LegsPos->Par_FootLength);
-            }
-        }
         this->get_parameter_or("leg_pos_enable", leg_pos_enable, true);
+        this->get_parameter_or("leg_vel_enable", leg_vel_enable, true);
         this->get_parameter_or("foot_force_threshold", foot_force_threshold, 20.0);
-        Sensor_LegsPos->FootEffortThreshold = foot_force_threshold;
         this->get_parameter_or("min_stair_height", min_stair_height, 0.08);
-        Sensor_LegsPos->Environement_Height_Scope = min_stair_height;
         this->get_parameter_or("stair_height_fogotten", stair_height_fogotten, 60.0);
-        Sensor_LegsPos->Data_Fading_Time = stair_height_fogotten;
 
         this->get_parameter_or("leg_ori_enable", leg_ori_enable, true);
         this->get_parameter_or("leg_ori_init_weight", leg_ori_init_weight, 0.001);
@@ -135,11 +64,28 @@ public:
             RCLCPP_INFO(get_logger(), "leg_ori_time_wight to %lf", leg_ori_time_wight);
         }
 
+
+        /* ────────────── 设置参数 ────────────── */
+        double status[200] = {0};
+        status[IndexInOrOut] = 1;
+        // enable 开关
+        status[IndexIMUAccEnable]         = imu_data_enable ? 1.0 : 0.0;
+        status[IndexIMUQuaternionEnable]  = imu_data_enable ? 1.0 : 0.0;
+        status[IndexIMUGyroEnable]        = imu_data_enable ? 1.0 : 0.0;
+        status[IndexJointsXYZEnable]          = leg_pos_enable ? 1.0 : 0.0;
+        status[IndexJointsVelocityXYZEnable]  = leg_vel_enable ? 1.0 : 0.0;
+        status[IndexJointsRPYEnable]          = leg_ori_enable ? 1.0 : 0.0;
+        // 阈值/权重
+        status[IndexLegFootForceThreshold]       = -1.0;
+        status[IndexLegMinStairHeight]           = min_stair_height;
+        status[IndexLegOrientationInitialWeight] = leg_ori_init_weight;
+        status[IndexLegOrientationTimeWeight]    = leg_ori_time_wight;
+
+        fe_.fusion_estimator_status(status);
+
         /* ────────────── 数据通信 ────────────── */
-        if(imu_data_enable)
-            go2_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(sub_imu_topic, 10, std::bind(&FusionEstimatorNode::imu_callback, this, std::placeholders::_1));
-        if(leg_pos_enable || leg_ori_enable)
-            go2_joint_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(sub_joint_topic, 10, std::bind(&FusionEstimatorNode::joint_callback, this, std::placeholders::_1));
+        go2_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(sub_imu_topic, 10, std::bind(&FusionEstimatorNode::imu_callback, this, std::placeholders::_1));
+        go2_joint_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(sub_joint_topic, 10, std::bind(&FusionEstimatorNode::joint_callback, this, std::placeholders::_1));
         joystick_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             sub_mode_topic, 10,
             std::bind(&FusionEstimatorNode::joystick_cmd_callback, this, std::placeholders::_1));
@@ -152,8 +98,9 @@ public:
     }
 
 private:
-
-    std::vector<EstimatorPortN*> StateSpaceModel_Go2_Sensors;
+    FusionEstimatorCore fe_;     // 核心融合器（已封装好）
+    FE_LowlevelState st_;        // “静态”输入缓存（节点生命周期内一直保留）
+    FE_Odometer odom_;           // “静态”输出缓存（仅 joint 回调更新）
 
     rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr FETest_publisher;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher, SMXFE_2D_publisher;
@@ -162,15 +109,10 @@ private:
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr joystick_cmd_sub;
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_sub;
 
-    std::shared_ptr<SensorIMUAcc>     Sensor_IMUAcc;
-    std::shared_ptr<SensorIMUMagGyro> Sensor_IMUMagGyro;
-    std::shared_ptr<SensorLegsPos>    Sensor_LegsPos;
-    std::shared_ptr<SensorLegsOri>    Sensor_LegsOri;
-
     fusion_estimator::msg::FusionEstimatorTest fusion_msg;
 
     std::string odom_frame_id, child_frame_id, child_frame_2d_id;
-    bool imu_data_enable, leg_pos_enable, leg_ori_enable;
+    bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable;
     bool msg_received[2] = {0,0};
     double foot_force_threshold, min_stair_height, stair_height_fogotten;
 
@@ -183,7 +125,6 @@ private:
     {
         rcl_interfaces::msg::SetParametersResult result;
         result.successful = true;
-        result.reason = "Sensor_IMUMagGyro->SensorQuaternion is corrected.";
 
         for (const auto & param : parameters)
         {
@@ -207,141 +148,91 @@ private:
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
         rclcpp::Clock ros_clock(RCL_SYSTEM_TIME);
-        rclcpp::Time CurrentTime = ros_clock.now();
-        double CurrentTimestamp =  CurrentTime.seconds();
+        rclcpp::Time now = ros_clock.now();
+        rclcpp::Time msg_time(msg->header.stamp, now.get_clock_type());
 
-        double LatestMessage[3][100]={0};
-        static double LastMessage[3][100]={0};
-        
-        rclcpp::Time msg_time(msg->header.stamp, CurrentTime.get_clock_type());
+        if (now > msg_time) fusion_msg.stamp = now;
+        else                fusion_msg.stamp = msg_time + rclcpp::Duration(0, 1);
 
-        if (CurrentTime > msg_time)
-            fusion_msg.stamp = CurrentTime;
-        else
-            fusion_msg.stamp = msg_time + rclcpp::Duration(0, 1);
+        st_.timestamp = msg->header.stamp.sec + 1e-9 * msg->header.stamp.nanosec;
 
-        tf2::Quaternion q(msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
-        double roll, pitch, yaw;
-        tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+        st_.imu_acc[0] = msg->linear_acceleration.x;
+        st_.imu_acc[1] = msg->linear_acceleration.y;
+        st_.imu_acc[2] = msg->linear_acceleration.z;
 
-        LatestMessage[0][3*0+2] = msg->linear_acceleration.x;
-        LatestMessage[0][3*1+2] = msg->linear_acceleration.y;
-        LatestMessage[0][3*2+2] = msg->linear_acceleration.z;
+        st_.imu_gyro[0] = msg->angular_velocity.x;
+        st_.imu_gyro[1] = msg->angular_velocity.y;
+        st_.imu_gyro[2] = msg->angular_velocity.z;
 
-        LatestMessage[1][3*0] = roll + orientation_correct[0];
-        LatestMessage[1][3*1] = pitch + orientation_correct[3];
-        LatestMessage[1][3*2] = yaw  + orientation_correct[6];
-        LatestMessage[1][3*0+1] = msg->angular_velocity.x;
-        LatestMessage[1][3*1+1] = msg->angular_velocity.y;
-        LatestMessage[1][3*2+1] = msg->angular_velocity.z;
-        
-        for(int i = 0; i < 9; i++)
-        {
-            if(LastMessage[0][i] != LatestMessage[0][i])
-                break;
-            if(LastMessage[1][i] != LatestMessage[1][i])
-                break;
-            if(i==8)
-                return;  //数据未变则视为重复发送，舍弃数据
-        }
-        for(int j = 0; j < 9; j++)
-        {
-            LastMessage[0][j] = LatestMessage[0][j];
-            LastMessage[1][j] = LatestMessage[1][j];
-        }
-
-        Sensor_IMUAcc->SensorDataHandle(LatestMessage[0], CurrentTimestamp);
-        Sensor_IMUMagGyro->SensorDataHandle(LatestMessage[1], CurrentTimestamp);
-
-        for(int i=0; i<9; i++){
-            fusion_msg.estimated_xyz[i] = StateSpaceModel_Go2_Sensors[0]->EstimatedState[i] + position_correct[i];
-            fusion_msg.estimated_rpy[i] = StateSpaceModel_Go2_Sensors[1]->EstimatedState[i];
-        }
+        st_.imu_quat[0] = msg->orientation.w;
+        st_.imu_quat[1] = msg->orientation.x;
+        st_.imu_quat[2] = msg->orientation.y;
+        st_.imu_quat[3] = msg->orientation.z;
 
         msg_received[0] = 1;
-        Msg_Publish();
     }
 
     void joint_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
     {
-        rclcpp::Clock ros_clock(RCL_SYSTEM_TIME);
-        rclcpp::Time CurrentTime = ros_clock.now();
-        double CurrentTimestamp =  CurrentTime.seconds();
-
-        double LatestMessage[3][100]={0};
-        static double LastMessage[3][100]={0};
-
+        if (st_.timestamp <= 0.0) return; 
         const auto& arr = msg->data;
         if (arr.size() < 28) return;
-        /* 数据布置：
-        data[ 0..11] : 12× 关节位置  (q)
-        data[12..23] : 12× 关节速度  (dq)
-        data[24..27] : 4 × 足端力    (foot_force)
-        */
 
-        for(int LegNumber = 0; LegNumber<4; LegNumber++)
-        {
-            for(int i = 0; i < 3; i++)
-            {
-                LatestMessage[2][LegNumber*3+i] = arr[LegNumber*3+i];
-                LatestMessage[2][12+LegNumber*3+i] = arr[12+LegNumber*3+i];
-            }
-            LatestMessage[2][24 + LegNumber] = arr[24 + LegNumber];
+        // joint topic layout
+        // data[ 0..11] : 12×q
+        // data[12..23] : 12×dq
+        // data[24..27] : 4×foot_force
+
+        // 12 个关节对应的电机编号（你原始代码里用的那套）
+        static const int desired_joints[] = {0,1,2, 4,5,6, 8,9,10, 12,13,14};
+
+        // 写入 st_
+        for (int i = 0; i < 12; ++i) {
+            const int mid = desired_joints[i];
+            st_.motor_q[mid]  = arr[i];
+            st_.motor_dq[mid] = arr[12 + i];
+            st_.motor_tau[mid] = 0.0;
         }
 
-        for(int i = 0; i < 28; i++)
-        {
-            if(LastMessage[2][i] != LatestMessage[2][i])
-                break;
-            if(i==27)
-                return;  //数据未变则视为重复发送，舍弃数据
-        }
-        for(int j = 0; j < 28; j++)
-        {
-            LastMessage[2][j] = LatestMessage[2][j];
+        // 将足段触地1/0等效为小腿关节大力矩
+        static const int tau_idx[4] = {2, 6, 10, 14};
+        for (int leg = 0; leg < 4; ++leg) {
+            const bool on = (arr[24 + leg] >= foot_force_threshold);
+            st_.motor_tau[tau_idx[leg]] = on ? 100.0 : 0.0;
         }
 
-        if(leg_pos_enable)
-        {
-            Sensor_LegsPos->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
-            
-            for(int i=0; i<9; i++){
-                fusion_msg.estimated_xyz[i] = StateSpaceModel_Go2_Sensors[0]->EstimatedState[i] + position_correct[i];
-            }
+        // 只有 joint_callback 调用融合更新
+        odom_ = fe_.fusion_estimator(st_);
 
-            for(int i=0; i<4; i++){
-                for(int j=0; j<3; j++){
-                    fusion_msg.feet_based_position[3 * i + j] = StateSpaceModel_Go2_Sensors[0]->Double_Par[48 + 6 * i + j];
-                    fusion_msg.feet_based_velocity[3 * i + j] = StateSpaceModel_Go2_Sensors[0]->Double_Par[48 + 6 * i + j + 3];
-                }
-            }
-            
-            for(int LegNumber=0; LegNumber<4; LegNumber++){
-                for(int i=0; i<3; i++){
-                    fusion_msg.data_check_a[3 * LegNumber + i] = StateSpaceModel_Go2_Sensors[0]->Double_Par[6 * LegNumber + i];      //身体坐标系的足身相对位置
-                    fusion_msg.data_check_b[3 * LegNumber + i] = StateSpaceModel_Go2_Sensors[0]->Double_Par[24 + 6 * LegNumber + i]; //世界坐标系的足身相对位置
-                }
-            }
-        }
-        if(leg_ori_enable)
-        {
-            double Last_Yaw = StateSpaceModel_Go2_Sensors[1]->EstimatedState[6] - orientation_correct[6];
+        // 回填 fusion_msg（沿用你原来的 9 维布局：x,v,a / y,v,a / z,v,a）
+        fusion_msg.estimated_xyz[0] = odom_.pos[0] + position_correct[0];
+        fusion_msg.estimated_xyz[1] = odom_.vel[0] + position_correct[1];
+        fusion_msg.estimated_xyz[2] = odom_.acc[0] + position_correct[2];
 
-            StateSpaceModel_Go2_Sensors[1]->Double_Par[97] = leg_ori_init_weight;
-            StateSpaceModel_Go2_Sensors[1]->Double_Par[98] = leg_ori_time_wight;
-            Sensor_LegsOri->SensorDataHandle(LatestMessage[2], CurrentTimestamp);
+        fusion_msg.estimated_xyz[3] = odom_.pos[1] + position_correct[3];
+        fusion_msg.estimated_xyz[4] = odom_.vel[1] + position_correct[4];
+        fusion_msg.estimated_xyz[5] = odom_.acc[1] + position_correct[5];
 
-            orientation_correct[6] = StateSpaceModel_Go2_Sensors[1]->Double_Par[99] - Last_Yaw;
-            if(!imu_data_enable)
-                StateSpaceModel_Go2_Sensors[1]->EstimatedState[6] = StateSpaceModel_Go2_Sensors[1]->Double_Par[99];
+        fusion_msg.estimated_xyz[6] = odom_.pos[2] + position_correct[6];
+        fusion_msg.estimated_xyz[7] = odom_.vel[2] + position_correct[7];
+        fusion_msg.estimated_xyz[8] = odom_.acc[2] + position_correct[8];
 
-            for(int i=0; i<9; i++){
-                fusion_msg.estimated_rpy[i] = StateSpaceModel_Go2_Sensors[1]->EstimatedState[i];
-            }
-        }
+        fusion_msg.estimated_rpy[0] = odom_.rpy[0] + orientation_correct[0];
+        fusion_msg.estimated_rpy[1] = odom_.rpy_rate[0] + orientation_correct[1];
+        fusion_msg.estimated_rpy[2] = odom_.rpy_acc[0] + orientation_correct[2];
+
+        fusion_msg.estimated_rpy[3] = odom_.rpy[1] + orientation_correct[3];
+        fusion_msg.estimated_rpy[4] = odom_.rpy_rate[1] + orientation_correct[4];
+        fusion_msg.estimated_rpy[5] = odom_.rpy_acc[1] + orientation_correct[5];
+
+        fusion_msg.estimated_rpy[6] = odom_.rpy[2] + orientation_correct[6];
+        fusion_msg.estimated_rpy[7] = odom_.rpy_rate[2] + orientation_correct[7];
+        fusion_msg.estimated_rpy[8] = odom_.rpy_acc[2] + orientation_correct[8];
 
         msg_received[1] = 1;
+        Msg_Publish();   // 只在 joint 回调里 publish
     }
+
 
     void Msg_Publish()
     {
@@ -468,22 +359,9 @@ private:
     {
         if (msg->data[0] == 25140000)
         {
-            for(int i=0; i<4; i++)
-            {
-                Sensor_LegsPos->FootfallPositionRecordIsInitiated[i] = 0;
-                Sensor_LegsPos->FootWasOnGround[i] = 0;
-                Sensor_LegsPos->FootIsOnGround[i] = 0;
-                Sensor_LegsPos->FootLanding[i] = 0;
-            }
-
-            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Former Px:%.3lf,Py:%.3lf,Pz:%.3lf,Yaw:%.3lf,Cx:%.3lf,Cy:%.3lf,Cz:%.3lf,Cyaw:%.3lf",StateSpaceModel_Go2_Sensors[0]->EstimatedState[0],StateSpaceModel_Go2_Sensors[0]->EstimatedState[3],StateSpaceModel_Go2_Sensors[0]->EstimatedState[6],StateSpaceModel_Go2_Sensors[1]->EstimatedState[6],position_correct[0],position_correct[3],position_correct[6],orientation_correct[6]);
-
-            position_correct[0] = -StateSpaceModel_Go2_Sensors[0]->EstimatedState[0];
-            position_correct[3] = -StateSpaceModel_Go2_Sensors[0]->EstimatedState[3];
-            position_correct[6] = 0.34 -StateSpaceModel_Go2_Sensors[0]->EstimatedState[6];
-            orientation_correct[6] = -StateSpaceModel_Go2_Sensors[1]->EstimatedState[6] + orientation_correct[6];
-
-            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received Estimator Position and Yaw Reset Command");
+            double status[200] = {0};
+            status[IndexInOrOut] = 3;
+            fe_.fusion_estimator_status(status);
         }
     }
 };
@@ -497,7 +375,7 @@ int main(int argc, char ** argv)
     .automatically_declare_parameters_from_overrides(true)
     .arguments({
         "--ros-args",
-        "--params-file", "/home/smx/WorkSpace/GDS_LeggedRobot/src/Ros2Go2Estimator/config.yaml"
+        "--params-file", "/home/shine/SMX/ros2_ioe/src/Ros2Go2Estimator/config.yaml"
     });
 
   auto node = std::make_shared<FusionEstimatorNode>(options);

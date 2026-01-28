@@ -7,11 +7,11 @@
 #include <cstdio>
 #include <iostream>
 
-#include "Controller/ControlFrame/LowlevelCmd.h"
-#include "Controller/ControlFrame/LowlevelState.h"
-#include "GO2FusionEstimator/SensorBase.h"
-#include "GO2FusionEstimator/Sensor_Legs.h"
-#include "GO2FusionEstimator/Sensor_IMU.h"
+#include "../Controller/ControlFrame/LowlevelCmd.h"
+#include "../Controller/ControlFrame/LowlevelState.h"
+#include "SensorBase.h"
+#include "Sensor_Legs.h"
+#include "Sensor_IMU.h"
 
 enum ConfigIndex {
 
@@ -107,6 +107,17 @@ public:
             status[IndexLegMinStairHeight]        = legs_pos->Environement_Height_Scope;
             status[IndexLegOrientationInitialWeight] = legs_ori->legori_init_weight;
             status[IndexLegOrientationTimeWeight]    = legs_ori->legori_time_weight;
+
+            for(int i = 0; i < 9; i++){
+                status[50 + i] = sensors[0]->EstimatedState[i];
+            }
+            for(int i = 0; i < 9; i++){
+                status[60 + i] = sensors[1]->EstimatedState[i];
+            }
+            
+            for(int i = 0; i < 100; i++){
+                status[100 + i] = sensors[0]->Double_Par[i];
+            }
         }
         else if (status[IndexInOrOut] == 3){
             status[IndexInOrOut] = 0;
@@ -136,8 +147,6 @@ public:
             if (status[IndexStatusOK] > 999)
                 status[IndexStatusOK] = 1;
             legs_pos->UseLW();
-        }
-        else{
         }
     }
 
@@ -199,18 +208,18 @@ public:
             imu_gyro->SensorDataHandle(msg_rpy, UsedTimestamp);
         
         if (legs_pos->JointsXYZEnable||legs_pos->JointsXYZVelocityEnable){
-            double joint[36];
+            double joint[48];
 
-            static const int desired_joints[] = {0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14};
-            for (int i = 0; i < 12; ++i) {
-                const auto& m = st.motorState[desired_joints[i]];
+            for (int i = 0; i < 16; ++i) {
+                const auto& m = st.motorState[i];
                 joint[0 + i]  = static_cast<double>(m.q);
-                joint[12 + i] = static_cast<double>(m.dq);
-                joint[24 + i] = static_cast<double>(m.tauEst);
+                joint[16 + i] = static_cast<double>(m.dq);
+                joint[32 + i] = static_cast<double>(m.tauEst);
             }
 
             if (Signal_Available_Check(joint,2)||legs_pos->CalculateWeightEnable) {
                 legs_pos->SensorDataHandle(joint, UsedTimestamp);
+                legs_pos->LoadedWeightCheck(joint);
                 
                 if (legs_ori->JointsRPYEnable) {
                     const double last_yaw = sensors[1]->EstimatedState[6] - yaw_correct;
@@ -251,8 +260,8 @@ private:
 
     bool Signal_Available_Check(double Signal[], int type)
     {
-        static double last[3][36] = {0};
-        static int Number[3] = {9,9,36};
+        static double last[3][48] = {0};
+        static int Number[3] = {9,9,48};
         bool diff = false;
 
         for (int i = 0; i < Number[type]; ++i) {

@@ -13,7 +13,7 @@
 #  define _USE_MATH_DEFINES
 #endif
 
-#include "fusion_estimator.h"
+#include "FusionEstimator/fusion_estimator.h"
 
 static FusionEstimatorCore* g_core = nullptr;
 

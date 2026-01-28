@@ -1,0 +1,9 @@
+# 忽略三目录里的所有文件
+/Output/**
+!/Output/.gitkeep
+
+/Temp/**
+!/Temp/.gitkeep
+
+/EstimationResult/**
+!/EstimationResult/.gitkeep

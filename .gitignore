@@ -1,0 +1,3 @@
+﻿# Ignore large/vendor source trees
+/Controller/
+/FusionEstimator/

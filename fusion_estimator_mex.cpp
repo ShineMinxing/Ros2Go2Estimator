@@ -78,14 +78,29 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
         const Odometer odom = g_core->fusion_estimator(st);
 
-        const char* fn[] = {"x","y","z","angularX","angularY","angularZ"};
-        plhs[0] = mxCreateStructMatrix(1, 1, 6, fn);
-        mxSetField(plhs[0], 0, "x",        mxCreateDoubleScalar((double)odom.x));
-        mxSetField(plhs[0], 0, "y",        mxCreateDoubleScalar((double)odom.y));
-        mxSetField(plhs[0], 0, "z",        mxCreateDoubleScalar((double)odom.z));
-        mxSetField(plhs[0], 0, "angularX", mxCreateDoubleScalar((double)odom.angularX));
-        mxSetField(plhs[0], 0, "angularY", mxCreateDoubleScalar((double)odom.angularY));
-        mxSetField(plhs[0], 0, "angularZ", mxCreateDoubleScalar((double)odom.angularZ));
+        const char* fn[] = {"XPos","YPos","ZPos","XVel","YVel","ZVel","XAcc","YAcc","ZAcc","RollRad","PitchRad","YawRad","RollVel","PitchVel","YawVel","RollAcc","PitchAcc","YawAcc"};
+        plhs[0] = mxCreateStructMatrix(1, 1, 18, fn);
+
+        mxSetField(plhs[0], 0, "XPos",     mxCreateDoubleScalar((double)odom.XPos));
+        mxSetField(plhs[0], 0, "YPos",     mxCreateDoubleScalar((double)odom.YPos));
+        mxSetField(plhs[0], 0, "ZPos",     mxCreateDoubleScalar((double)odom.ZPos));
+        mxSetField(plhs[0], 0, "XVel",     mxCreateDoubleScalar((double)odom.XVel));
+        mxSetField(plhs[0], 0, "YVel",     mxCreateDoubleScalar((double)odom.YVel));
+        mxSetField(plhs[0], 0, "ZVel",     mxCreateDoubleScalar((double)odom.ZVel));
+        mxSetField(plhs[0], 0, "XAcc",     mxCreateDoubleScalar((double)odom.XAcc));
+        mxSetField(plhs[0], 0, "YAcc",     mxCreateDoubleScalar((double)odom.YAcc));
+        mxSetField(plhs[0], 0, "ZAcc",     mxCreateDoubleScalar((double)odom.ZAcc));
+
+        mxSetField(plhs[0], 0, "RollRad",  mxCreateDoubleScalar((double)odom.RollRad));
+        mxSetField(plhs[0], 0, "PitchRad", mxCreateDoubleScalar((double)odom.PitchRad));
+        mxSetField(plhs[0], 0, "YawRad",   mxCreateDoubleScalar((double)odom.YawRad));
+        mxSetField(plhs[0], 0, "RollVel",  mxCreateDoubleScalar((double)odom.RollVel));
+        mxSetField(plhs[0], 0, "PitchVel", mxCreateDoubleScalar((double)odom.PitchVel));
+        mxSetField(plhs[0], 0, "YawVel",   mxCreateDoubleScalar((double)odom.YawVel));
+        mxSetField(plhs[0], 0, "RollAcc",  mxCreateDoubleScalar((double)odom.RollAcc));
+        mxSetField(plhs[0], 0, "PitchAcc", mxCreateDoubleScalar((double)odom.PitchAcc));
+        mxSetField(plhs[0], 0, "YawAcc",   mxCreateDoubleScalar((double)odom.YawAcc));
+
         return;
     }
 

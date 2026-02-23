@@ -53,6 +53,7 @@ public:
         this->get_parameter_or("leg_ori_enable", leg_ori_enable, true);
         this->get_parameter_or("leg_ori_init_weight", leg_ori_init_weight, 0.001);
         this->get_parameter_or("leg_ori_time_wight", leg_ori_time_wight, 100.0);
+        this->get_parameter_or("leg_velcke_enable", leg_velcke_enable, false);
         if(!(leg_ori_init_weight>-1.0 && leg_ori_init_weight<=1.0))
         {
             leg_ori_init_weight = 0.001;
@@ -80,6 +81,8 @@ public:
         status[IndexLegMinStairHeight]           = min_stair_height;
         status[IndexLegOrientationInitialWeight] = leg_ori_init_weight;
         status[IndexLegOrientationTimeWeight]    = leg_ori_time_wight;
+
+        status[IndexLegVelCKEEnable]       = leg_velcke_enable ? 1.0 : 0.0;
 
         fe_.fusion_estimator_status(status);
 
@@ -112,7 +115,7 @@ private:
     fusion_estimator::msg::FusionEstimatorTest fusion_msg;
 
     std::string odom_frame_id, child_frame_id, child_frame_2d_id;
-    bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable;
+    bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable, leg_velcke_enable;
     bool msg_received[2] = {0,0};
     double foot_force_threshold, min_stair_height, stair_height_fogotten;
 
@@ -185,6 +188,7 @@ private:
 
         // 12 个关节对应的电机编号（你原始代码里用的那套）
         static const int desired_joints[] = {0,1,2, 4,5,6, 8,9,10, 12,13,14};
+        static double status[200] = {0};
 
         // 写入 st_
         for (int i = 0; i < 12; ++i) {
@@ -228,6 +232,23 @@ private:
         fusion_msg.estimated_rpy[6] = odom_.rpy[2] + orientation_correct[6];
         fusion_msg.estimated_rpy[7] = odom_.rpy_rate[2] + orientation_correct[7];
         fusion_msg.estimated_rpy[8] = odom_.rpy_acc[2] + orientation_correct[8];
+
+
+        status[0] = 2;
+        fe_.fusion_estimator_status(status);
+        for (int i = 0; i < 9; ++i) {
+            fusion_msg.leg0_bf_estimated_xyz[i] = status[100 + 0*9 + i];
+            fusion_msg.leg1_bf_estimated_xyz[i] = status[100 + 1*9 + i];
+            fusion_msg.leg2_bf_estimated_xyz[i] = status[100 + 2*9 + i];
+            fusion_msg.leg3_bf_estimated_xyz[i] = status[100 + 3*9 + i];
+            fusion_msg.leg0_wf_estimated_xyz[i] = status[100 + 36 + 0*9 + i];
+            fusion_msg.leg1_wf_estimated_xyz[i] = status[100 + 36 + 1*9 + i];
+            fusion_msg.leg2_wf_estimated_xyz[i] = status[100 + 36 + 2*9 + i];
+            fusion_msg.leg3_wf_estimated_xyz[i] = status[100 + 36 + 3*9 + i];
+        }
+        for (int i = 0; i < 12; ++i) {
+            fusion_msg.others[i] = status[100 + 72 + i];
+        }
 
         msg_received[1] = 1;
         Msg_Publish();   // 只在 joint 回调里 publish
@@ -375,7 +396,7 @@ int main(int argc, char ** argv)
     .automatically_declare_parameters_from_overrides(true)
     .arguments({
         "--ros-args",
-        "--params-file", "/home/shine/SMX/ros2_ioe/src/Ros2Go2Estimator/config.yaml"
+        "--params-file", "/home/smx/WorkSpace/GDS_LeggedRobot/src/Ros2Go2Estimator/config.yaml"
     });
 
   auto node = std::make_shared<FusionEstimatorNode>(options);

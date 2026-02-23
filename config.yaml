@@ -31,10 +31,11 @@ fusion_estimator_node:
     foot_force_threshold: 20.0
     min_stair_height: 0.08
     stair_height_fogotten: 60.0
-    leg_ori_enable: true
+    leg_ori_enable: false
     # 运动学对角度的修正量初始系数（可负数），和多久增大到1.0，如果不使用leg_ori_enable，leg_ori_init_weight设为1.0
     leg_ori_init_weight: 0.001
     leg_ori_time_wight: 1000.0
+    leg_velcke_enable: false
 
     # 可在线调整的三轴补偿，单位：米 or 度， ros2 run rqt_reconfigure rqt_reconfigure， 如果leg_ori_enable则无法调整rpy
     Modify_Par_X:     0.0

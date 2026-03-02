@@ -7,7 +7,7 @@
 **Ros2Go2Estimator** is a ROS 2 (**Humble**) state-estimation repository for **biped / quadruped / wheel-legged** robots on **Ubuntu 22.04**.  
 It provides high-accuracy odometry using only **IMU + joint encoders + foot contact/force signals**, without requiring cameras or LiDAR. 
 
-In 3D closed-loop trials (a 200 m horizontal loop and a 15 m vertical loop), Astrall point-foot robot A achieves **0.1638 m** horizontal error and **0.219 m** vertical error; for wheel-legged robot B, the corresponding errors are **0.2264 m** and **0.199 m**.  
+In 3D closed-loop trials (a 200m horizontal and 15m vertical loop), Astrall point-foot robot A achieves **0.1638 m** horizontal error and **0.219 m** vertical error; for wheel-legged robot B, the corresponding errors are **0.2264 m** and **0.199 m**.  
 
 The core algorithm lives in **`GO2FusionEstimator`** as a **portable, pure C++** implementation that depends only on common libraries, making it easy to port to **ROS1** or **non-ROS embedded platforms**.
 

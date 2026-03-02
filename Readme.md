@@ -4,7 +4,8 @@
 
 **Language / 语言：** **English** | [中文](#ros2go2estimator--中文)
 
-**Ros2Go2Estimator** is a ROS 2 (**Humble**) state-estimation repository for **biped / quadruped / wheel-legged** robots on **Ubuntu 22.04**.  
+**Ros2Go2Estimator** is a ROS 2 (**Humble**) state-estimation repository for **biped / quadruped / wheel-legged** robots on **Ubuntu 22.04**. 
+
 It provides high-accuracy odometry using only **IMU + joint encoders + foot contact/force signals**, without requiring cameras or LiDAR. 
 
 In 3D closed-loop trials (a 200m horizontal and 15m vertical loop), Astrall point-foot robot A achieves **0.1638 m** horizontal error and **0.219 m** vertical error; for wheel-legged robot B, the corresponding errors are **0.2264 m** and **0.199 m**.  
@@ -189,6 +190,7 @@ For full derivations, see the paper.
 **语言 / Language：** [English](#ros2go2estimator-) | **中文**
 
 **Ros2Go2Estimator** 是面向 **双足 / 四足 / 轮足** 机器人的 **ROS 2（Humble）** 状态估计算法仓库，可在 **Ubuntu 22.04** 上运行。  
+
 本仓库仅依赖 **IMU + 关节编码器 + 足端接触/力信号** 即可输出高精度里程计（不依赖相机或激光雷达）。
 
 在3D闭环运动实验（水平200米竖直15米）中：Astrall 点足机器人~A 的水平与竖直误差分别为 **0.1638\,m** 和 **0.219\,m**；轮足机器人~B 的对应误差分别为 **0.2264\,m** 和 **0.199\,m**。

@@ -4,8 +4,12 @@
 
 **Language / 语言：** **English** | [中文](#ros2go2estimator--中文)
 
-**Ros2Go2Estimator** is a ROS 2 (**Humble**) state-estimation repository for quadruped / biped robots on **Ubuntu 22.04**.
-It provides high-accuracy odometry using **IMU + joint encoders + foot contact/force signals**, without requiring cameras or LiDAR.
+**Ros2Go2Estimator** is a ROS 2 (**Humble**) state-estimation repository for **biped / quadruped / wheel-legged** robots on **Ubuntu 22.04**.  
+It provides high-accuracy odometry using only **IMU + joint encoders + foot contact/force signals**, without requiring cameras or LiDAR. 
+
+In 3D closed-loop trials (a ~200 m horizontal loop and a ~15 m vertical loop), Astrall point-foot robot~A achieves **0.1638 m** horizontal error and **0.219 m** vertical error; for wheel-legged robot~B, the corresponding errors are **0.2264 m** and **0.199 m**.  
+
+The core algorithm lives in **`GO2FusionEstimator`** as a **portable, pure C++** implementation that depends only on common libraries, making it easy to port to **ROS1** or **non-ROS embedded platforms**.
 
 ---
 
@@ -16,6 +20,16 @@ It provides high-accuracy odometry using **IMU + joint encoders + foot contact/f
 * Paper: [https://arxiv.org/abs/2602.17393](https://arxiv.org/abs/2602.17393)
 
 If you use this repository in research, please consider citing the paper.
+
+---
+
+## 📦 Data Sharing (Go2-EDU ROS bags)
+
+To help readers quickly validate the pipeline, we provide **two Go2-EDU trial datasets**, including **real-world videos** and the corresponding **ROS bag topics/messages** required by this node, enabling fast reproduction and sanity checks.
+
+* Download (Google Drive): https://drive.google.com/drive/folders/1FfVO69rfmUu6B9crPhZCfKf9wFnV4L7n?usp=sharing
+
+> Note: the IMU on this Go2-EDU platform exhibits **noticeable yaw drift**, so the odometry accuracy is generally **worse than** the results reported for Astrall robots A and B in the paper.
 
 ---
 
@@ -137,16 +151,16 @@ For full derivations, see the paper.
 
 | Topic                                        | Link                                                                                         |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Odometry-only mapping (morphology switching) | [https://www.bilibili.com/video/BV1UtQfYJExu](https://www.bilibili.com/video/BV1UtQfYJExu)   |
-| Indoor walking (0.5%–1% error)               | [https://www.bilibili.com/video/BV18Q9JYEEdn/](https://www.bilibili.com/video/BV18Q9JYEEdn/) |
-| Stair climbing (height error < 5 cm)         | [https://www.bilibili.com/video/BV1VV9ZYZEcH/](https://www.bilibili.com/video/BV1VV9ZYZEcH/) |
-| Outdoor walking (380 m, 3.3% error)          | [https://www.bilibili.com/video/BV1BhRAYDEsV/](https://www.bilibili.com/video/BV1BhRAYDEsV/) |
-| Voice interaction + navigation               | [https://www.bilibili.com/video/BV1HCQBYUEvk/](https://www.bilibili.com/video/BV1HCQBYUEvk/) |
-| Face tracking + laser spot tracking          | [https://www.bilibili.com/video/BV1faG1z3EFF/](https://www.bilibili.com/video/BV1faG1z3EFF/) |
-| AR glasses head-following                    | [https://www.bilibili.com/video/BV1pXEdzFECW](https://www.bilibili.com/video/BV1pXEdzFECW)   |
-| YOLO drone tracking                          | [https://www.bilibili.com/video/BV18v8xzJE4G](https://www.bilibili.com/video/BV18v8xzJE4G)   |
-| Gimbal + fixed camera collaboration          | [https://www.bilibili.com/video/BV1fTY7z7E5T](https://www.bilibili.com/video/BV1fTY7z7E5T)   |
-| Multiple SLAM integrations                   | [https://www.bilibili.com/video/BV1kjCqBEEK8](https://i0.hdslb.com/bfs/archive/f299bafc7486f71e061eb31f9f00347063e1e621.jpg)   |
+| Odometry-only mapping (morphology switching) | [![img](https://i1.hdslb.com/bfs/archive/4f60453cb37ce5e4f593f03084dbecd0fdddc27e.jpg)](https://www.bilibili.com/video/BV1UtQfYJExu)    |
+| Indoor walking (0.5%–1% error)               | [![img](https://i1.hdslb.com/bfs/archive/10e501bc7a93c77c1c3f41f163526b630b0afa3f.jpg)](https://www.bilibili.com/video/BV18Q9JYEEdn/)  |
+| Stair climbing (height error < 5 cm)         | [![img](https://i0.hdslb.com/bfs/archive/c469a3dd37522f6b7dcdbdbb2c135be599eefa7b.jpg)](https://www.bilibili.com/video/BV1VV9ZYZEcH/)  |
+| Outdoor walking (380 m, 3.3% error)          | [![img](https://i0.hdslb.com/bfs/archive/481731d2db755bbe087f44aeb3f48db29c159ada.jpg)](https://www.bilibili.com/video/BV1BhRAYDEsV/) |
+| Voice interaction + navigation               | [![img](https://i2.hdslb.com/bfs/archive/5b95c6eda3b6c9c8e0ba4124c1af9f3da10f39d2.jpg)](https://www.bilibili.com/video/BV1HCQBYUEvk/) |
+| Face tracking + laser spot tracking          | [![img](https://i0.hdslb.com/bfs/archive/5496e9d0b40915c62b69701fd1e23af7d6ffe7de.jpg)](https://www.bilibili.com/video/BV1faG1z3EFF/) |
+| AR glasses head-following                    | [![img](https://i1.hdslb.com/bfs/archive/9e0462e12bf77dd9bbe8085d0d809f233256fdbd.jpg)](https://www.bilibili.com/video/BV1pXEdzFECW)   |
+| YOLO drone tracking                          | [![img](https://i1.hdslb.com/bfs/archive/a5ac45ec76ccb7c3fb18de9c6b8df48e8abe2b54.jpg)](https://www.bilibili.com/video/BV18v8xzJE4G)   |
+| Gimbal + fixed camera collaboration          | [![img](https://i2.hdslb.com/bfs/archive/07ac6082b7efdc2e2d200e18fc8074eec1d9cfba.jpg)](https://www.bilibili.com/video/BV1fTY7z7E5T)   |
+| Multiple SLAM integrations                   | [![img](https://i1.hdslb.com/bfs/archive/f299bafc7486f71e061eb31f9f00347063e1e621.jpg)](https://www.bilibili.com/video/BV1ytMizEEdG)   |
 
 ---
 
@@ -174,7 +188,12 @@ For full derivations, see the paper.
 
 **语言 / Language：** [English](#ros2go2estimator-) | **中文**
 
-**Ros2Go2Estimator** 是四足/双足机器人在 **ROS 2 Humble / Ubuntu 22.04** 上的**估计算法仓库**，主要使用 **IMU + 关节编码器 + 足端接触/力信号** 输出高精度里程计（不依赖相机或激光雷达）。
+**Ros2Go2Estimator** 是面向 **双足 / 四足 / 轮足** 机器人的 **ROS 2（Humble）** 状态估计算法仓库，可在 **Ubuntu 22.04** 上运行。  
+本仓库仅依赖 **IMU + 关节编码器 + 足端接触/力信号** 即可输出高精度里程计（不依赖相机或激光雷达）。
+
+在3D闭环运动实验（水平200米竖直15米）中：Astrall 点足机器人~A 的)水平与竖直误差分别为 **0.1638\,m** 和 **0.219\,m**；轮足机器人~B 的对应误差分别为 **0.2264\,m** 和 **0.199\,m**。
+
+核心算法位于 **`GO2FusionEstimator`**，采用**纯 C++、仅依赖常见库**的可移植实现，便于迁移到 **ROS1** 或**非 ROS 的嵌入式平台**。
 
 ---
 
@@ -183,6 +202,16 @@ For full derivations, see the paper.
 **Contact-Anchored Proprioceptive Odometry for Quadruped Robots** (arXiv:2602.17393)
 
 * 论文链接：[https://arxiv.org/abs/2602.17393](https://arxiv.org/abs/2602.17393)
+
+---
+
+## 📦 数据共享
+
+为便于大家快速验证本仓库的有效性，我们提供了 **Go2-EDU** 的两段示例数据，包含**实拍录像**以及可直接用于本节点的 **topic/message**（ROS bag），用于快速复现与对比。
+
+* 数据下载（Google Drive）：https://drive.google.com/drive/folders/1FfVO69rfmUu6B9crPhZCfKf9wFnV4L7n?usp=sharing
+
+> 说明：该 Go2-EDU 平台的 IMU **yaw 漂移较严重**，因此里程计精度会**劣于**论文中 Astrall 机器人 A 与 B 的实验结果。
 
 ---
 
@@ -275,17 +304,16 @@ ros2 run fusion_estimator fusion_estimator_node
 
 | 主题                 | 链接                                                                                           |
 | ------------------ | -------------------------------------------------------------------------------------------- |
-| 纯里程计建图（形态切换）       | [https://www.bilibili.com/video/BV1UtQfYJExu](https://www.bilibili.com/video/BV1UtQfYJExu)   |
-| 室内行走误差 0.5%–1%     | [https://www.bilibili.com/video/BV18Q9JYEEdn/](https://www.bilibili.com/video/BV18Q9JYEEdn/) |
-| 爬楼梯高度误差 < 5 cm     | [https://www.bilibili.com/video/BV1VV9ZYZEcH/](https://www.bilibili.com/video/BV1VV9ZYZEcH/) |
-| 户外行走 380 m 误差 3.3% | [https://www.bilibili.com/video/BV1BhRAYDEsV/](https://www.bilibili.com/video/BV1BhRAYDEsV/) |
-| 语音交互+导航              | [https://www.bilibili.com/video/BV1HCQBYUEvk/](https://www.bilibili.com/video/BV1HCQBYUEvk/) |
-| 跟踪人脸/光点          | [https://www.bilibili.com/video/BV1faG1z3EFF/](https://www.bilibili.com/video/BV1faG1z3EFF/) |
-| AR眼镜引导                    | [https://www.bilibili.com/video/BV1pXEdzFECW](https://www.bilibili.com/video/BV1pXEdzFECW)   |
-| YOLO无人机跟踪                         | [https://www.bilibili.com/video/BV18v8xzJE4G](https://www.bilibili.com/video/BV18v8xzJE4G)   |
-| 多相机信号融合         | [https://www.bilibili.com/video/BV1fTY7z7E5T](https://www.bilibili.com/video/BV1fTY7z7E5T)   |
-| 多种SLAM对比                   | [https://www.bilibili.com/video/BV1kjCqBEEK8](https://i0.hdslb.com/bfs/archive/f299bafc7486f71e061eb31f9f00347063e1e621.jpg)   |
-
+| 纯里程计建图 (站立/四足切换) | [![img](https://i1.hdslb.com/bfs/archive/4f60453cb37ce5e4f593f03084dbecd0fdddc27e.jpg)](https://www.bilibili.com/video/BV1UtQfYJExu)  |
+| 室内行走误差 0.5 %‑1 %     | [![img](https://i1.hdslb.com/bfs/archive/10e501bc7a93c77c1c3f41f163526b630b0afa3f.jpg)](https://www.bilibili.com/video/BV18Q9JYEEdn/) |
+| 爬楼梯高度误差 < 5 cm      | [![img](https://i0.hdslb.com/bfs/archive/c469a3dd37522f6b7dcdbdbb2c135be599eefa7b.jpg)](https://www.bilibili.com/video/BV1VV9ZYZEcH/) |
+| 户外行走380m误差 3.3 %     | [![img](https://i0.hdslb.com/bfs/archive/481731d2db755bbe087f44aeb3f48db29c159ada.jpg)](https://www.bilibili.com/video/BV1BhRAYDEsV/) |
+| 语音交互 + 地图导航        | [![img](https://i2.hdslb.com/bfs/archive/5b95c6eda3b6c9c8e0ba4124c1af9f3da10f39d2.jpg)](https://www.bilibili.com/video/BV1HCQBYUEvk/) |
+| 人脸识别跟踪 + 光点跟踪     | [![img](https://i0.hdslb.com/bfs/archive/5496e9d0b40915c62b69701fd1e23af7d6ffe7de.jpg)](https://www.bilibili.com/video/BV1faG1z3EFF/) |
+| AR眼镜头部运动跟随         | [![img](https://i1.hdslb.com/bfs/archive/9e0462e12bf77dd9bbe8085d0d809f233256fdbd.jpg)](https://www.bilibili.com/video/BV1pXEdzFECW) |
+| YOLO无人机识别与跟随       | [![img](https://i1.hdslb.com/bfs/archive/a5ac45ec76ccb7c3fb18de9c6b8df48e8abe2b54.jpg)](https://www.bilibili.com/video/BV18v8xzJE4G) |
+| 机器狗光电吊舱与固定相机协同 | [![img](https://i2.hdslb.com/bfs/archive/07ac6082b7efdc2e2d200e18fc8074eec1d9cfba.jpg)](https://www.bilibili.com/video/BV1fTY7z7E5T) |
+| 多种SLAM方法集成        | [![img](https://i1.hdslb.com/bfs/archive/f299bafc7486f71e061eb31f9f00347063e1e621.jpg)](https://www.bilibili.com/video/BV1ytMizEEdG) |
 ---
 
 ## 📨 联系我们

@@ -78,8 +78,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
         const Odometer odom = g_core->fusion_estimator(st);
 
-        const char* fn[] = {"XPos","YPos","ZPos","XVel","YVel","ZVel","XAcc","YAcc","ZAcc","RollRad","PitchRad","YawRad","RollVel","PitchVel","YawVel","RollAcc","PitchAcc","YawAcc"};
-        plhs[0] = mxCreateStructMatrix(1, 1, 18, fn);
+        const char* fn[] = {"XPos","YPos","ZPos","XVel","YVel","ZVel","XAcc","YAcc","ZAcc","RollRad","PitchRad","YawRad","RollVel","PitchVel","YawVel","RollAcc","PitchAcc","YawAcc","FootfallAverageX","FootfallAverageY","FootfallAverageZ","FLFootLanded","FRFootLanded","RLFootLanded","RRFootLanded","LoadedWeight"};
+        plhs[0] = mxCreateStructMatrix(1, 1, 26, fn);
 
         mxSetField(plhs[0], 0, "XPos",     mxCreateDoubleScalar((double)odom.XPos));
         mxSetField(plhs[0], 0, "YPos",     mxCreateDoubleScalar((double)odom.YPos));
@@ -100,6 +100,15 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         mxSetField(plhs[0], 0, "RollAcc",  mxCreateDoubleScalar((double)odom.RollAcc));
         mxSetField(plhs[0], 0, "PitchAcc", mxCreateDoubleScalar((double)odom.PitchAcc));
         mxSetField(plhs[0], 0, "YawAcc",   mxCreateDoubleScalar((double)odom.YawAcc));
+        
+        mxSetField(plhs[0], 0, "FootfallAverageX",  mxCreateDoubleScalar((double)odom.FootfallAverageX));
+        mxSetField(plhs[0], 0, "FootfallAverageY",  mxCreateDoubleScalar((double)odom.FootfallAverageY));
+        mxSetField(plhs[0], 0, "FootfallAverageZ",  mxCreateDoubleScalar((double)odom.FootfallAverageZ));
+        mxSetField(plhs[0], 0, "FLFootLanded",      mxCreateDoubleScalar((double)odom.FLFootLanded));
+        mxSetField(plhs[0], 0, "FRFootLanded",      mxCreateDoubleScalar((double)odom.FRFootLanded));
+        mxSetField(plhs[0], 0, "RLFootLanded",      mxCreateDoubleScalar((double)odom.RLFootLanded));
+        mxSetField(plhs[0], 0, "RRFootLanded",      mxCreateDoubleScalar((double)odom.RRFootLanded));
+        mxSetField(plhs[0], 0, "LoadedWeight",      mxCreateDoubleScalar((double)odom.LoadedWeight));
 
         return;
     }

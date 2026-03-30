@@ -13,7 +13,7 @@
 #include <sensor_msgs/msg/imu.hpp>
 
 #include "fusion_estimator/msg/fusion_estimator_test.hpp"
-#include "GO2FusionEstimator/fusion_estimator.h"
+#include "FusionEstimator/fusion_estimator.h"
 
 class FusionEstimatorNode : public rclcpp::Node
 {
@@ -101,9 +101,9 @@ public:
     }
 
 private:
-    FusionEstimatorCore fe_;     // 核心融合器（已封装好）
-    FE_LowlevelState st_;        // “静态”输入缓存（节点生命周期内一直保留）
-    FE_Odometer odom_;           // “静态”输出缓存（仅 joint 回调更新）
+    FusionEstimatorCore fe_;  // 核心融合器（已封装好）
+    LowlevelState st_;        // “静态”输入缓存（节点生命周期内一直保留）
+    Odometer odom_;           // “静态”输出缓存（仅 joint 回调更新）
 
     rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr FETest_publisher;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher, SMXFE_2D_publisher;
@@ -157,103 +157,87 @@ private:
         if (now > msg_time) fusion_msg.stamp = now;
         else                fusion_msg.stamp = msg_time + rclcpp::Duration(0, 1);
 
-        st_.timestamp = msg->header.stamp.sec + 1e-9 * msg->header.stamp.nanosec;
+        st_.imu.timestamp = static_cast<int64_t>(1e3 * msg->header.stamp.sec + 1e-6 * msg->header.stamp.nanosec);
 
-        st_.imu_acc[0] = msg->linear_acceleration.x;
-        st_.imu_acc[1] = msg->linear_acceleration.y;
-        st_.imu_acc[2] = msg->linear_acceleration.z;
+        st_.imu.accelerometer[0] = msg->linear_acceleration.x;
+        st_.imu.accelerometer[1] = msg->linear_acceleration.y;
+        st_.imu.accelerometer[2] = msg->linear_acceleration.z;
 
-        st_.imu_gyro[0] = msg->angular_velocity.x;
-        st_.imu_gyro[1] = msg->angular_velocity.y;
-        st_.imu_gyro[2] = msg->angular_velocity.z;
+        st_.imu.gyroscope[0] = msg->angular_velocity.x;
+        st_.imu.gyroscope[1] = msg->angular_velocity.y;
+        st_.imu.gyroscope[2] = msg->angular_velocity.z;
 
-        st_.imu_quat[0] = msg->orientation.w;
-        st_.imu_quat[1] = msg->orientation.x;
-        st_.imu_quat[2] = msg->orientation.y;
-        st_.imu_quat[3] = msg->orientation.z;
+        st_.imu.quaternion[0] = msg->orientation.w;
+        st_.imu.quaternion[1] = msg->orientation.x;
+        st_.imu.quaternion[2] = msg->orientation.y;
+        st_.imu.quaternion[3] = msg->orientation.z;
 
         msg_received[0] = 1;
     }
 
     void joint_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
     {
-        if (st_.timestamp <= 0.0) return; 
+        if (st_.imu.timestamp <= 0.0) return; 
         const auto& arr = msg->data;
         if (arr.size() < 28) return;
+
+        // 12 个关节对应的电机编号
+        static const int desired_joints[] = {0,1,2, 4,5,6, 8,9,10, 12,13,14};
+        static double status[200] = {0};
 
         // joint topic layout
         // data[ 0..11] : 12×q
         // data[12..23] : 12×dq
         // data[24..27] : 4×foot_force
-
-        // 12 个关节对应的电机编号（你原始代码里用的那套）
-        static const int desired_joints[] = {0,1,2, 4,5,6, 8,9,10, 12,13,14};
-        static double status[200] = {0};
+        // 如果有轮电机，就是编号3 7 11 15，把数值放进去，把下面的两个12改成16
 
         // 写入 st_
         for (int i = 0; i < 12; ++i) {
             const int mid = desired_joints[i];
-            st_.motor_q[mid]  = arr[i];
-            st_.motor_dq[mid] = arr[12 + i];
-            st_.motor_tau[mid] = 0.0;
+            st_.motorState[mid].q = arr[i];
+            st_.motorState[mid].dq = arr[12 + i];
+            st_.motorState[mid].tauEst = 0.0;
         }
 
+        // 如果有力矩就在上面正常填力矩，此段注释掉
         // 将足段触地1/0等效为小腿关节大力矩
         static const int tau_idx[4] = {2, 6, 10, 14};
         for (int leg = 0; leg < 4; ++leg) {
             const bool on = (arr[24 + leg] >= foot_force_threshold);
-            st_.motor_tau[tau_idx[leg]] = on ? 100.0 : 0.0;
+            st_.motorState[tau_idx[leg]].tauEst = on ? 100.0 : 0.0;
         }
 
         // 只有 joint_callback 调用融合更新
         odom_ = fe_.fusion_estimator(st_);
 
-        // 回填 fusion_msg（沿用你原来的 9 维布局：x,v,a / y,v,a / z,v,a）
-        fusion_msg.estimated_xyz[0] = odom_.pos[0] + position_correct[0];
-        fusion_msg.estimated_xyz[1] = odom_.vel[0] + position_correct[1];
-        fusion_msg.estimated_xyz[2] = odom_.acc[0] + position_correct[2];
+        // 回填 fusion_msg
+        fusion_msg.estimated_xyz[0] = odom_.XPos + position_correct[0];
+        fusion_msg.estimated_xyz[1] = odom_.XVel + position_correct[1];
+        fusion_msg.estimated_xyz[2] = odom_.XAcc + position_correct[2];
 
-        fusion_msg.estimated_xyz[3] = odom_.pos[1] + position_correct[3];
-        fusion_msg.estimated_xyz[4] = odom_.vel[1] + position_correct[4];
-        fusion_msg.estimated_xyz[5] = odom_.acc[1] + position_correct[5];
+        fusion_msg.estimated_xyz[3] = odom_.YPos + position_correct[3];
+        fusion_msg.estimated_xyz[4] = odom_.YVel + position_correct[4];
+        fusion_msg.estimated_xyz[5] = odom_.YAcc + position_correct[5];
 
-        fusion_msg.estimated_xyz[6] = odom_.pos[2] + position_correct[6];
-        fusion_msg.estimated_xyz[7] = odom_.vel[2] + position_correct[7];
-        fusion_msg.estimated_xyz[8] = odom_.acc[2] + position_correct[8];
+        fusion_msg.estimated_xyz[6] = odom_.ZPos + position_correct[6];
+        fusion_msg.estimated_xyz[7] = odom_.ZVel + position_correct[7];
+        fusion_msg.estimated_xyz[8] = odom_.ZAcc + position_correct[8];
 
-        fusion_msg.estimated_rpy[0] = odom_.rpy[0] + orientation_correct[0];
-        fusion_msg.estimated_rpy[1] = odom_.rpy_rate[0] + orientation_correct[1];
-        fusion_msg.estimated_rpy[2] = odom_.rpy_acc[0] + orientation_correct[2];
+        fusion_msg.estimated_rpy[0] = odom_.RollRad + orientation_correct[0];
+        fusion_msg.estimated_rpy[1] = odom_.RollVel + orientation_correct[1];
+        fusion_msg.estimated_rpy[2] = odom_.RollAcc + orientation_correct[2];
 
-        fusion_msg.estimated_rpy[3] = odom_.rpy[1] + orientation_correct[3];
-        fusion_msg.estimated_rpy[4] = odom_.rpy_rate[1] + orientation_correct[4];
-        fusion_msg.estimated_rpy[5] = odom_.rpy_acc[1] + orientation_correct[5];
+        fusion_msg.estimated_rpy[3] = odom_.PitchRad + orientation_correct[3];
+        fusion_msg.estimated_rpy[4] = odom_.PitchVel + orientation_correct[4];
+        fusion_msg.estimated_rpy[5] = odom_.PitchAcc + orientation_correct[5];
 
-        fusion_msg.estimated_rpy[6] = odom_.rpy[2] + orientation_correct[6];
-        fusion_msg.estimated_rpy[7] = odom_.rpy_rate[2] + orientation_correct[7];
-        fusion_msg.estimated_rpy[8] = odom_.rpy_acc[2] + orientation_correct[8];
-
-
-        status[0] = 2;
-        fe_.fusion_estimator_status(status);
-        for (int i = 0; i < 9; ++i) {
-            fusion_msg.leg0_bf_estimated_xyz[i] = status[100 + 0*9 + i];
-            fusion_msg.leg1_bf_estimated_xyz[i] = status[100 + 1*9 + i];
-            fusion_msg.leg2_bf_estimated_xyz[i] = status[100 + 2*9 + i];
-            fusion_msg.leg3_bf_estimated_xyz[i] = status[100 + 3*9 + i];
-            fusion_msg.leg0_wf_estimated_xyz[i] = status[100 + 36 + 0*9 + i];
-            fusion_msg.leg1_wf_estimated_xyz[i] = status[100 + 36 + 1*9 + i];
-            fusion_msg.leg2_wf_estimated_xyz[i] = status[100 + 36 + 2*9 + i];
-            fusion_msg.leg3_wf_estimated_xyz[i] = status[100 + 36 + 3*9 + i];
-        }
-        for (int i = 0; i < 12; ++i) {
-            fusion_msg.others[i] = status[100 + 72 + i];
-        }
+        fusion_msg.estimated_rpy[6] = odom_.YawRad + orientation_correct[6];
+        fusion_msg.estimated_rpy[7] = odom_.YawVel + orientation_correct[7];
+        fusion_msg.estimated_rpy[8] = odom_.YawAcc + orientation_correct[8];
 
         msg_received[1] = 1;
         Msg_Publish();   // 只在 joint 回调里 publish
     }
-
 
     void Msg_Publish()
     {
@@ -396,7 +380,7 @@ int main(int argc, char ** argv)
     .automatically_declare_parameters_from_overrides(true)
     .arguments({
         "--ros-args",
-        "--params-file", "/home/smx/WorkSpace/GDS_LeggedRobot/src/Ros2Go2Estimator/config.yaml"
+        "--params-file", "/home/shine/Project/Shine_WS/src/Ros2Go2Estimator/config.yaml"
     });
 
   auto node = std::make_shared<FusionEstimatorNode>(options);

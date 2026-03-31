@@ -103,16 +103,24 @@ Ros2Go2Estimator/
 ## ⚙️ Build & Run
 
 ```bash
-# 1) Clone into your workspace
+### If you want to use the sample CSV data, uncomment the following lines:
+# sudo apt update
+# sudo apt install git-lfs
+# git lfs install
+
 cd ~/ros2_ws/LeggedRobot/src
 git clone https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry.git
+cd CAPO-LeggedRobotOdometry
+# git lfs pull
 
-# 2) Build
-cd .. && colcon build --packages-select fusion_estimator
+cd ~/ros2_ws/LeggedRobot
+colcon build
+### If error, I guess "--params-file", the yaml path in fusion_estimator_node.cpp is wrong
 source install/setup.bash
-
-# 3) Run
 ros2 run fusion_estimator fusion_estimator_node
+
+### If you needn't matlab to test, these files can be deleted:
+### build_mex.m fusion_estimator_mex.cpp fusion_estimator.m MPXY150Z10.csv MWXY150Z10.csv
 ```
 
 ---
@@ -261,12 +269,26 @@ Ros2Go2Estimator/
 
 ## ⚙️ 安装与编译
 
+
 ```bash
+### If you want to use the sample CSV data, uncomment the following lines:
+# sudo apt update
+# sudo apt install git-lfs
+# git lfs install
+
 cd ~/ros2_ws/LeggedRobot/src
 git clone https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry.git
-cd .. && colcon build --packages-select fusion_estimator
+cd CAPO-LeggedRobotOdometry
+# git lfs pull
+
+cd ~/ros2_ws/LeggedRobot
+colcon build
+### If error, I guess "--params-file", the yaml path in fusion_estimator_node.cpp is wrong
 source install/setup.bash
 ros2 run fusion_estimator fusion_estimator_node
+
+### If you needn't matlab to test, these files can be deleted:
+### build_mex.m fusion_estimator_mex.cpp fusion_estimator.m MPXY150Z10.csv MWXY150Z10.csv
 ```
 
 ---

@@ -1,8 +1,8 @@
 clear all;close all;clc;
 cd(fileparts(mfilename('fullpath')));
 
-CSV_PATH = 'MPXY150Z10.csv';  DogMode = 4;
-% CSV_PATH = 'MWXY150Z10.csv';  DogMode = 6;
+% CSV_PATH = 'MPXY150Z10.csv';  DogMode = 4;
+CSV_PATH = 'MWXY150Z10.csv';  DogMode = 6;
 
 used_lines = 390000;
 
@@ -43,9 +43,9 @@ status_ = fusion_estimator_mex('status',status_);
 status_(1) = 2;
 status_ = fusion_estimator_mex('status',status_);
 status_(1:7) = 1;
-% Here to correct "status[ConfigIndex]" in fusion_estimator.h
-% status_(11) = -80;   % this is set FootEffortThreshold to be -80
-% status_(12) = 0.01;  % this is set recogniced MinimumStairHeight to be 0.01m
+% Here
+% status_(11) = -80;
+% status_(12) = 0.01;
 status_ = fusion_estimator_mex('status',status_);
 
 odom_log = nan(N, 18);

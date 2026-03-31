@@ -9,7 +9,7 @@ end
 fprintf('[INFO] Compiling...\n');
 
 root = pwd;
-fusion  = fullfile(root, 'fusion_estimator/FusionEstimator');
+fusion  = fullfile(root, 'fusion_estimator/src/FusionEstimator');
 assert(exist(fusion,'dir')==7, 'Missing folder: %s', fusion);
 
 src = [ ...

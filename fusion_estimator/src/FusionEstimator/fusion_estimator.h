@@ -77,6 +77,8 @@ enum ConfigIndex {
     IndexJointsVelocityXYZEnable = 6,
     IndexJointsRPYEnable = 7,
 
+    IndexGroundPitchTimeThreshold   = 8,
+    IndexGroundPitchAngleThreshold  = 9,
     IndexLegFootForceThreshold = 10,  
     IndexLegMinStairHeight = 11,
     IndexLegOrientationInitialWeight = 12, 
@@ -134,6 +136,8 @@ public:
             legs_pos->JointsXYZVelocityEnable   = status[IndexJointsVelocityXYZEnable];
             legs_ori->JointsRPYEnable           = status[IndexJointsRPYEnable];
 
+            legs_pos->GroundPitchTimeThreshold  = status[IndexGroundPitchTimeThreshold];
+            legs_pos->GroundPitchAngleThreshold = status[IndexGroundPitchAngleThreshold];
             legs_pos->FootEffortThreshold       = status[IndexLegFootForceThreshold];
             legs_pos->Environement_Height_Scope = status[IndexLegMinStairHeight];
             legs_ori->legori_init_weight        = status[IndexLegOrientationInitialWeight];
@@ -154,6 +158,8 @@ public:
             status[IndexJointsVelocityXYZEnable]     = legs_pos->JointsXYZVelocityEnable;
             status[IndexJointsRPYEnable]             = legs_ori->JointsRPYEnable;
 
+            status[IndexGroundPitchTimeThreshold]    = legs_pos->GroundPitchTimeThreshold ;
+            status[IndexGroundPitchAngleThreshold]   = legs_pos->GroundPitchAngleThreshold;
             status[IndexLegFootForceThreshold]       = legs_pos->FootEffortThreshold;
             status[IndexLegMinStairHeight]           = legs_pos->Environement_Height_Scope;
             status[IndexLegOrientationInitialWeight] = legs_ori->legori_init_weight;

@@ -380,7 +380,7 @@ int main(int argc, char ** argv)
     .automatically_declare_parameters_from_overrides(true)
     .arguments({
         "--ros-args",
-        "--params-file", "/home/shine/Project/Shine_WS/src/Ros2Go2Estimator/config.yaml"
+        "--params-file", "/home/smx/WorkSpace/GDS_LeggedRobot/src/CAPO-LeggedRobotOdometry/config.yaml"
     });
 
   auto node = std::make_shared<FusionEstimatorNode>(options);

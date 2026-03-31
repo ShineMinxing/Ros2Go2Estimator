@@ -105,7 +105,7 @@ Ros2Go2Estimator/
 ```bash
 # 1) Clone into your workspace
 cd ~/ros2_ws/LeggedRobot/src
-git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
+git clone https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry.git
 
 # 2) Build
 cd .. && colcon build --packages-select fusion_estimator
@@ -263,7 +263,7 @@ Ros2Go2Estimator/
 
 ```bash
 cd ~/ros2_ws/LeggedRobot/src
-git clone --recursive https://github.com/ShineMinxing/Ros2Go2Estimator.git
+git clone https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry.git
 cd .. && colcon build --packages-select fusion_estimator
 source install/setup.bash
 ros2 run fusion_estimator fusion_estimator_node

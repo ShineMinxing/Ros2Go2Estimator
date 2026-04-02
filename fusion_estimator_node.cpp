@@ -1,9 +1,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
-#include <iostream>
-#include <filesystem>
-#include <fstream>
-#include <iomanip>
+#include <functional>
 
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/LinearMath/Quaternion.h>
@@ -12,7 +9,6 @@
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include <sensor_msgs/msg/imu.hpp>
 
-#include "fusion_estimator/msg/fusion_estimator_test.hpp"
 #include "FusionEstimator/fusion_estimator.h"
 
 class FusionEstimatorNode : public rclcpp::Node
@@ -21,11 +17,6 @@ public:
     FusionEstimatorNode(const rclcpp::NodeOptions &options)
     : Node("fusion_estimator_node", options)
     {        
-        for (int i = 0; i < 9; ++i) {
-            position_correct[i] = 0;
-            orientation_correct[i] = 0;
-        }
-
         /* ────────────── 读取参数 ────────────── */
         std::string sub_imu_topic;
         this->get_parameter_or("sub_imu_topic", sub_imu_topic, std::string("NoYamlRead/Go2IMU"));
@@ -33,8 +24,6 @@ public:
         this->get_parameter_or("sub_joint_topic", sub_joint_topic, std::string("NoYamlRead/Go2Joint"));
         std::string sub_mode_topic;
         this->get_parameter_or("sub_mode_topic", sub_mode_topic, std::string("NoYamlRead/SportCmd"));
-        std::string pub_estimation_topic;
-        this->get_parameter_or("pub_estimation_topic", pub_estimation_topic, std::string("NoYamlRead/Estimation"));
         std::string pub_odom_topic;
         this->get_parameter_or("pub_odom_topic", pub_odom_topic, std::string("NoYamlRead/Odom"));
         std::string pub_odom_2d_topic;
@@ -79,6 +68,7 @@ public:
         // 阈值/权重
         status[IndexLegFootForceThreshold]       = -1.0;
         status[IndexLegMinStairHeight]           = min_stair_height;
+        status[IndexStairHeightFogotten]         = stair_height_fogotten;
         status[IndexLegOrientationInitialWeight] = leg_ori_init_weight;
         status[IndexLegOrientationTimeWeight]    = leg_ori_time_wight;
 
@@ -92,187 +82,12 @@ public:
         joystick_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
             sub_mode_topic, 10,
             std::bind(&FusionEstimatorNode::joystick_cmd_callback, this, std::placeholders::_1));
-        parameter_sub = this->add_on_set_parameters_callback(std::bind(&FusionEstimatorNode::Modify_Par_Fun, this, std::placeholders::_1));
 
-        FETest_publisher = this->create_publisher<fusion_estimator::msg::FusionEstimatorTest>(
-        pub_estimation_topic, 10);
         SMXFE_publisher   = this->create_publisher<nav_msgs::msg::Odometry>(pub_odom_topic, 10);
         SMXFE_2D_publisher= this->create_publisher<nav_msgs::msg::Odometry>(pub_odom_2d_topic, 10);
-    }
 
-private:
-    FusionEstimatorCore fe_;  // 核心融合器（已封装好）
-    LowlevelState st_;        // “静态”输入缓存（节点生命周期内一直保留）
-    Odometer odom_;           // “静态”输出缓存（仅 joint 回调更新）
-
-    rclcpp::Publisher<fusion_estimator::msg::FusionEstimatorTest>::SharedPtr FETest_publisher;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher, SMXFE_2D_publisher;
-    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr go2_imu_sub;
-    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr go2_joint_sub;
-    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr joystick_cmd_sub;
-    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_sub;
-
-    fusion_estimator::msg::FusionEstimatorTest fusion_msg;
-
-    std::string odom_frame_id, child_frame_id, child_frame_2d_id;
-    bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable, leg_velcke_enable;
-    bool msg_received[2] = {0,0};
-    double foot_force_threshold, min_stair_height, stair_height_fogotten;
-
-    double leg_ori_init_weight, leg_ori_time_wight;
-    double position_correct[9];
-    double orientation_correct[9];
-
-    rcl_interfaces::msg::SetParametersResult Modify_Par_Fun(
-    const std::vector<rclcpp::Parameter> & parameters)
-    {
-        rcl_interfaces::msg::SetParametersResult result;
-        result.successful = true;
-
-        for (const auto & param : parameters)
-        {
-            if (param.get_name() == "Modify_Par_X")
-                position_correct[0] = param.as_double();
-            if (param.get_name() == "Modify_Par_Y")
-                position_correct[3] = param.as_double();
-            if (param.get_name() == "Modify_Par_Z")
-                position_correct[6] = param.as_double();
-            if (param.get_name() == "Modify_Par_roll")
-                orientation_correct[0] = param.as_double() * M_PI / 180.0;
-            if (param.get_name() == "Modify_Par_pitch")
-                orientation_correct[3] = param.as_double() * M_PI / 180.0;
-            if (param.get_name() == "Modify_Par_yaw")
-                orientation_correct[6] = param.as_double() * M_PI / 180.0;
-        }
-
-        return result;
-    }
-
-    void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
-    {
-        rclcpp::Clock ros_clock(RCL_SYSTEM_TIME);
-        rclcpp::Time now = ros_clock.now();
-        rclcpp::Time msg_time(msg->header.stamp, now.get_clock_type());
-
-        if (now > msg_time) fusion_msg.stamp = now;
-        else                fusion_msg.stamp = msg_time + rclcpp::Duration(0, 1);
-
-        st_.imu.timestamp = static_cast<int64_t>(1e3 * msg->header.stamp.sec + 1e-6 * msg->header.stamp.nanosec);
-
-        st_.imu.accelerometer[0] = msg->linear_acceleration.x;
-        st_.imu.accelerometer[1] = msg->linear_acceleration.y;
-        st_.imu.accelerometer[2] = msg->linear_acceleration.z;
-
-        st_.imu.gyroscope[0] = msg->angular_velocity.x;
-        st_.imu.gyroscope[1] = msg->angular_velocity.y;
-        st_.imu.gyroscope[2] = msg->angular_velocity.z;
-
-        st_.imu.quaternion[0] = msg->orientation.w;
-        st_.imu.quaternion[1] = msg->orientation.x;
-        st_.imu.quaternion[2] = msg->orientation.y;
-        st_.imu.quaternion[3] = msg->orientation.z;
-
-        msg_received[0] = 1;
-    }
-
-    void joint_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
-    {
-        if (st_.imu.timestamp <= 0.0) return; 
-        const auto& arr = msg->data;
-        if (arr.size() < 28) return;
-
-        // 12 个关节对应的电机编号
-        static const int desired_joints[] = {0,1,2, 4,5,6, 8,9,10, 12,13,14};
-        static double status[200] = {0};
-
-        // joint topic layout
-        // data[ 0..11] : 12×q
-        // data[12..23] : 12×dq
-        // data[24..27] : 4×foot_force
-        // 如果有轮电机，就是编号3 7 11 15，把数值放进去，把下面的两个12改成16
-
-        // 写入 st_
-        for (int i = 0; i < 12; ++i) {
-            const int mid = desired_joints[i];
-            st_.motorState[mid].q = arr[i];
-            st_.motorState[mid].dq = arr[12 + i];
-            st_.motorState[mid].tauEst = 0.0;
-        }
-
-        // 如果有力矩就在上面正常填力矩，此段注释掉
-        // 将足段触地1/0等效为小腿关节大力矩
-        static const int tau_idx[4] = {2, 6, 10, 14};
-        for (int leg = 0; leg < 4; ++leg) {
-            const bool on = (arr[24 + leg] >= foot_force_threshold);
-            st_.motorState[tau_idx[leg]].tauEst = on ? 100.0 : 0.0;
-        }
-
-        // 只有 joint_callback 调用融合更新
-        odom_ = fe_.fusion_estimator(st_);
-
-        // 回填 fusion_msg
-        fusion_msg.estimated_xyz[0] = odom_.XPos + position_correct[0];
-        fusion_msg.estimated_xyz[1] = odom_.XVel + position_correct[1];
-        fusion_msg.estimated_xyz[2] = odom_.XAcc + position_correct[2];
-
-        fusion_msg.estimated_xyz[3] = odom_.YPos + position_correct[3];
-        fusion_msg.estimated_xyz[4] = odom_.YVel + position_correct[4];
-        fusion_msg.estimated_xyz[5] = odom_.YAcc + position_correct[5];
-
-        fusion_msg.estimated_xyz[6] = odom_.ZPos + position_correct[6];
-        fusion_msg.estimated_xyz[7] = odom_.ZVel + position_correct[7];
-        fusion_msg.estimated_xyz[8] = odom_.ZAcc + position_correct[8];
-
-        fusion_msg.estimated_rpy[0] = odom_.RollRad + orientation_correct[0];
-        fusion_msg.estimated_rpy[1] = odom_.RollVel + orientation_correct[1];
-        fusion_msg.estimated_rpy[2] = odom_.RollAcc + orientation_correct[2];
-
-        fusion_msg.estimated_rpy[3] = odom_.PitchRad + orientation_correct[3];
-        fusion_msg.estimated_rpy[4] = odom_.PitchVel + orientation_correct[4];
-        fusion_msg.estimated_rpy[5] = odom_.PitchAcc + orientation_correct[5];
-
-        fusion_msg.estimated_rpy[6] = odom_.YawRad + orientation_correct[6];
-        fusion_msg.estimated_rpy[7] = odom_.YawVel + orientation_correct[7];
-        fusion_msg.estimated_rpy[8] = odom_.YawAcc + orientation_correct[8];
-
-        msg_received[1] = 1;
-        Msg_Publish();   // 只在 joint 回调里 publish
-    }
-
-    void Msg_Publish()
-    {
-        if (!msg_received[0] || !msg_received[1])
-            return;
-        msg_received[0] = 0;
-        msg_received[1] = 0;
-
-        FETest_publisher->publish(fusion_msg);
-
-        // 构造标准 3D odometry 消息，并发布
-        nav_msgs::msg::Odometry SMXFE_odom;
-        SMXFE_odom.header.stamp = fusion_msg.stamp;
-        SMXFE_odom.header.frame_id = odom_frame_id;
-        SMXFE_odom.child_frame_id = child_frame_id;
-
-        // 使用 fusion_msg.estimated_xyz 的前 3 个元素作为位置
-        SMXFE_odom.pose.pose.position.x = fusion_msg.estimated_xyz[0];
-        SMXFE_odom.pose.pose.position.y = fusion_msg.estimated_xyz[3];
-        SMXFE_odom.pose.pose.position.z = fusion_msg.estimated_xyz[6];
-
-        // 使用 fusion_msg.estimated_rpy 的前 3 个元素（roll, pitch, yaw）转换为四元数
-        tf2::Quaternion q;
-        q.setRPY(fusion_msg.estimated_rpy[0], fusion_msg.estimated_rpy[3], fusion_msg.estimated_rpy[6]);
-        SMXFE_odom.pose.pose.orientation = tf2::toMsg(q);
-
-        // 线速度：使用 fusion_msg.estimated_xyz 的索引 1, 4, 7
-        SMXFE_odom.twist.twist.linear.x = fusion_msg.estimated_xyz[1];
-        SMXFE_odom.twist.twist.linear.y = fusion_msg.estimated_xyz[4];
-        SMXFE_odom.twist.twist.linear.z = fusion_msg.estimated_xyz[7];
-
-        // 角速度：使用 fusion_msg.estimated_rpy 的索引 1, 4, 7
-        SMXFE_odom.twist.twist.angular.x = fusion_msg.estimated_rpy[1];
-        SMXFE_odom.twist.twist.angular.y = fusion_msg.estimated_rpy[4];
-        SMXFE_odom.twist.twist.angular.z = fusion_msg.estimated_rpy[7];
+        SMXFE_odom.header.frame_id    = odom_frame_id;
+        SMXFE_odom.child_frame_id     = child_frame_id;
 
         // 设置位姿（pose）协方差：6x6 矩阵（行优先排列）
         // 初始化全部置零
@@ -301,34 +116,9 @@ private:
         SMXFE_odom.twist.covariance[28] = 0.1;  // angular y
         SMXFE_odom.twist.covariance[35] = 0.1;  // angular z
 
-        // 发布 odometry 消息
-        SMXFE_publisher->publish(SMXFE_odom);
 
-        // 构造标准 2D odometry 消息，并发布
-        nav_msgs::msg::Odometry SMXFE_odom_2D;
-        SMXFE_odom_2D.header.stamp = fusion_msg.stamp;
         SMXFE_odom_2D.header.frame_id = odom_frame_id;
-        SMXFE_odom_2D.child_frame_id = child_frame_2d_id;
-
-        // 使用 fusion_msg.estimated_xyz 的前 3 个元素作为位置
-        SMXFE_odom_2D.pose.pose.position.x = fusion_msg.estimated_xyz[0];
-        SMXFE_odom_2D.pose.pose.position.y = fusion_msg.estimated_xyz[3];
-        SMXFE_odom_2D.pose.pose.position.z = 0;
-
-        // 使用 fusion_msg.estimated_rpy 的前 3 个元素（roll, pitch, yaw）转换为四元数
-        q.setRPY(0, 0, fusion_msg.estimated_rpy[6]);
-        SMXFE_odom_2D.pose.pose.orientation = tf2::toMsg(q);
-
-        // 线速度：使用 fusion_msg.estimated_xyz 的索引 1, 4, 7
-        SMXFE_odom_2D.twist.twist.linear.x = fusion_msg.estimated_xyz[1];
-        SMXFE_odom_2D.twist.twist.linear.y = fusion_msg.estimated_xyz[4];
-        SMXFE_odom_2D.twist.twist.linear.z = fusion_msg.estimated_xyz[7];
-
-        // 角速度：使用 fusion_msg.estimated_rpy 的索引 1, 4, 7
-        SMXFE_odom_2D.twist.twist.angular.x = fusion_msg.estimated_rpy[1];
-        SMXFE_odom_2D.twist.twist.angular.y = fusion_msg.estimated_rpy[4];
-        SMXFE_odom_2D.twist.twist.angular.z = fusion_msg.estimated_rpy[7];
-
+        SMXFE_odom_2D.child_frame_id  = child_frame_2d_id;
         // 设置位姿（pose）协方差：6x6 矩阵（行优先排列）
         // 初始化全部置零
         for (int i = 0; i < 36; ++i) {
@@ -355,7 +145,139 @@ private:
         SMXFE_odom_2D.twist.covariance[21] = 0.1;  // angular x
         SMXFE_odom_2D.twist.covariance[28] = 0.1;  // angular y
         SMXFE_odom_2D.twist.covariance[35] = 0.1;  // angular z
+    }
 
+private:
+    FusionEstimatorCore fe_;  // 核心融合器（已封装好）
+    LowlevelState st_;        // “静态”输入缓存（节点生命周期内一直保留）
+    Odometer odom_;           // “静态”输出缓存（仅 joint 回调更新）
+
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher, SMXFE_2D_publisher;
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr go2_imu_sub;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr go2_joint_sub;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr joystick_cmd_sub;
+
+    nav_msgs::msg::Odometry SMXFE_odom;
+    nav_msgs::msg::Odometry SMXFE_odom_2D;
+
+    std::string odom_frame_id, child_frame_id, child_frame_2d_id;
+    bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable, leg_velcke_enable;
+    bool msg_received[2] = {0,0};
+    double foot_force_threshold, min_stair_height, stair_height_fogotten;
+
+    double leg_ori_init_weight, leg_ori_time_wight;
+
+    void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
+    {
+        rclcpp::Clock ros_clock(RCL_SYSTEM_TIME);
+        rclcpp::Time now = ros_clock.now();
+        rclcpp::Time msg_time(msg->header.stamp, now.get_clock_type());
+
+        if (now > msg_time) SMXFE_odom.header.stamp = now;
+        else                SMXFE_odom.header.stamp = msg_time + rclcpp::Duration(0, 1);
+
+        SMXFE_odom_2D.header.stamp = SMXFE_odom.header.stamp;
+
+        st_.imu.timestamp = static_cast<int64_t>(1e3 * msg->header.stamp.sec + 1e-6 * msg->header.stamp.nanosec);
+
+        st_.imu.accelerometer[0] = msg->linear_acceleration.x;
+        st_.imu.accelerometer[1] = msg->linear_acceleration.y;
+        st_.imu.accelerometer[2] = msg->linear_acceleration.z;
+
+        st_.imu.gyroscope[0] = msg->angular_velocity.x;
+        st_.imu.gyroscope[1] = msg->angular_velocity.y;
+        st_.imu.gyroscope[2] = msg->angular_velocity.z;
+
+        st_.imu.quaternion[0] = msg->orientation.w;
+        st_.imu.quaternion[1] = msg->orientation.x;
+        st_.imu.quaternion[2] = msg->orientation.y;
+        st_.imu.quaternion[3] = msg->orientation.z;
+
+        msg_received[0] = 1;
+    }
+
+    void joint_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
+    {
+        if (st_.imu.timestamp <= 0.0) return; 
+        const auto& arr = msg->data;
+        if (arr.size() < 28) return;
+
+        // 12 个关节对应的电机编号
+        static const int desired_joints[] = {0,1,2, 4,5,6, 8,9,10, 12,13,14};
+
+        // joint topic layout
+        // data[ 0..11] : 12×q
+        // data[12..23] : 12×dq
+        // data[24..27] : 4×foot_force
+        // 如果有轮电机，就是编号3 7 11 15，把数值放进去，把下面的两个12改成16
+
+        // 写入 st_
+        for (int i = 0; i < 12; ++i) {
+            const int mid = desired_joints[i];
+            st_.motorState[mid].q = arr[i];
+            st_.motorState[mid].dq = arr[12 + i];
+            st_.motorState[mid].tauEst = 0.0;
+        }
+
+        // 如果有力矩就在上面正常填力矩，此段注释掉
+        // 将足段触地1/0等效为小腿关节大力矩
+        static const int tau_idx[4] = {2, 6, 10, 14};
+        for (int leg = 0; leg < 4; ++leg) {
+            const bool on = (arr[24 + leg] >= foot_force_threshold);
+            st_.motorState[tau_idx[leg]].tauEst = on ? 100.0 : 0.0;
+        }
+
+        // 只有 joint_callback 调用融合更新
+        odom_ = fe_.fusion_estimator(st_);
+
+        // 回填 SMXFE_odom
+        SMXFE_odom.pose.pose.position.x = odom_.XPos;
+        SMXFE_odom.pose.pose.position.y = odom_.YPos;
+        SMXFE_odom.pose.pose.position.z = odom_.ZPos;
+
+        SMXFE_odom.twist.twist.linear.x = odom_.XVel;
+        SMXFE_odom.twist.twist.linear.y = odom_.YVel;
+        SMXFE_odom.twist.twist.linear.z = odom_.ZVel;
+
+        // 使用 odom roll, pitch, yaw 转换为四元数
+        tf2::Quaternion q;
+        q.setRPY(odom_.RollRad, odom_.PitchRad, odom_.YawRad);
+        SMXFE_odom.pose.pose.orientation = tf2::toMsg(q);
+
+        SMXFE_odom.twist.twist.angular.x = odom_.RollVel;
+        SMXFE_odom.twist.twist.angular.y = odom_.PitchVel;
+        SMXFE_odom.twist.twist.angular.z = odom_.YawVel;
+
+        // 回填 SMXFE_odom_2D
+        SMXFE_odom_2D.pose.pose.position.x = odom_.XPos;
+        SMXFE_odom_2D.pose.pose.position.y = odom_.YPos;
+        SMXFE_odom_2D.pose.pose.position.z = 0;
+
+        SMXFE_odom_2D.twist.twist.linear.x = odom_.XVel;
+        SMXFE_odom_2D.twist.twist.linear.y = odom_.YVel;
+        SMXFE_odom_2D.twist.twist.linear.z = 0;
+
+        // 使用 odom 的前 3 个元素 Yaw 转换为四元数
+        q.setRPY(0, 0, odom_.YawRad);
+        SMXFE_odom_2D.pose.pose.orientation = tf2::toMsg(q);
+
+        SMXFE_odom_2D.twist.twist.angular.x = odom_.RollVel;
+        SMXFE_odom_2D.twist.twist.angular.y = odom_.PitchVel;
+        SMXFE_odom_2D.twist.twist.angular.z = odom_.YawVel;
+
+        msg_received[1] = 1;
+        Msg_Publish();   // 只在 joint 回调里 publish
+    }
+
+    void Msg_Publish()
+    {
+        if (!msg_received[0] || !msg_received[1])
+            return;
+        msg_received[0] = 0;
+        msg_received[1] = 0;
+
+        // 发布 odometry 消息
+        SMXFE_publisher->publish(SMXFE_odom);
         SMXFE_2D_publisher->publish(SMXFE_odom_2D);
     }
 

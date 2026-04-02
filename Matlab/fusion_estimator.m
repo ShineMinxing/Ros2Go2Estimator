@@ -1,8 +1,8 @@
 clear all;close all;clc;
 cd(fileparts(mfilename('fullpath')));
 
-% CSV_PATH = 'MPXY150Z10.csv';  DogMode = 4;
-CSV_PATH = 'MWXY150Z10.csv';  DogMode = 6;
+CSV_PATH = 'MPXY150Z10.csv';  DogMode = 4;    % Middle Point Foot Dog
+% CSV_PATH = 'MWXY150Z10.csv';  DogMode = 6;    % Middle Wheel Foot Dog
 
 used_lines = 390000;
 

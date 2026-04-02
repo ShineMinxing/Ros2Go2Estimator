@@ -81,8 +81,10 @@ enum ConfigIndex {
     IndexGroundPitchAngleThreshold  = 9,
     IndexLegFootForceThreshold = 10,  
     IndexLegMinStairHeight = 11,
-    IndexLegOrientationInitialWeight = 12, 
-    IndexLegOrientationTimeWeight = 13,
+    IndexStairHeightFogotten = 12,
+
+    IndexLegOrientationInitialWeight = 13, 
+    IndexLegOrientationTimeWeight = 14,
 
     IndexLegVelCKEEnable = 15,
 };
@@ -140,6 +142,8 @@ public:
             legs_pos->GroundPitchAngleThreshold = status[IndexGroundPitchAngleThreshold];
             legs_pos->FootEffortThreshold       = status[IndexLegFootForceThreshold];
             legs_pos->Environement_Height_Scope = status[IndexLegMinStairHeight];
+            legs_pos->Data_Fading_Time          = status[IndexStairHeightFogotten];
+            
             legs_ori->legori_init_weight        = status[IndexLegOrientationInitialWeight];
             legs_ori->legori_time_weight        = status[IndexLegOrientationTimeWeight];
 
@@ -162,6 +166,8 @@ public:
             status[IndexGroundPitchAngleThreshold]   = legs_pos->GroundPitchAngleThreshold;
             status[IndexLegFootForceThreshold]       = legs_pos->FootEffortThreshold;
             status[IndexLegMinStairHeight]           = legs_pos->Environement_Height_Scope;
+            status[IndexStairHeightFogotten]         = legs_pos->Data_Fading_Time ;
+
             status[IndexLegOrientationInitialWeight] = legs_ori->legori_init_weight;
             status[IndexLegOrientationTimeWeight]    = legs_ori->legori_time_weight;
 

@@ -166,42 +166,19 @@ The table below lists the main parameters used by the ROS2 node. See `config.yam
 
 ## ⚙️ Build & Run
 
-### 1. Clone the repository
+### Clone the repository
 
 ```bash
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
-git clone https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry.git
-```
-
-### 2. Install ROS2 dependencies
-
-```bash
-cd ~/ros2_ws
-rosdep install --from-paths src --ignore-src -r -y
-```
-
-### 3. Build
-
-```bash
+git clone --depth 1 https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry.git
 cd ~/ros2_ws
 colcon build --packages-select fusion_estimator
-```
-
-### 4. Source the workspace
-
-```bash
-cd ~/ros2_ws
 source install/setup.bash
-```
-
-### 5. Run the node
-
-```bash
 ros2 run fusion_estimator fusion_estimator_node
 ```
 
-### 6. Optional: pull large files / sample data
+### Optional: pull large files / sample data
 
 If you want to use optional sample CSV files or large assets, you may need Git LFS:
 
@@ -537,42 +514,19 @@ CAPO-LeggedRobotOdometry/
 
 ## ⚙️ 编译与运行
 
-### 1）克隆仓库
+### 克隆仓库
 
 ```bash
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
-git clone https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry.git
-```
-
-### 2）安装依赖
-
-```bash
-cd ~/ros2_ws
-rosdep install --from-paths src --ignore-src -r -y
-```
-
-### 3）编译
-
-```bash
+git clone --depth 1 https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry.git
 cd ~/ros2_ws
 colcon build --packages-select fusion_estimator
-```
-
-### 4）加载环境
-
-```bash
-cd ~/ros2_ws
 source install/setup.bash
-```
-
-### 5）运行节点
-
-```bash
 ros2 run fusion_estimator fusion_estimator_node
 ```
 
-### 6）可选：拉取大文件 / 示例数据
+### 可选：拉取大文件 / 示例数据
 
 如果你需要示例 CSV 或大文件资源，可以安装 Git LFS：
 

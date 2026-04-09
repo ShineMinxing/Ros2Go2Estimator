@@ -100,6 +100,8 @@ EXPORT void StateSpaceModel_Go2_EstimatorPortTermination(struct EstimatorPortN *
     estimator->Matrix_Q = NULL;
     free(estimator->Matrix_R);
     estimator->Matrix_R = NULL;
+    free(estimator->Int_Par);
+    estimator->Int_Par = NULL;
     free(estimator->Double_Par);
     estimator->Double_Par = NULL;
     printf("EstimatorPort terminated.\n");

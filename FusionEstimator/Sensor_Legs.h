@@ -31,7 +31,7 @@ namespace DataFusion
 
     double KinematicParams[4][13];
     double Par_HipLength = 0, Par_ThighLength = 0, Par_CalfLength = 0, Par_WheelRadius = 0;
-    double FootEffortThreshold = -80.0, Environement_Height_Scope = 0.08, Data_Fading_Time = 600.0;
+    double FootEffortThreshold = -80.0, Environement_Height_Scope = 0.08, Data_Fading_Time = 1200.0;
 
     // ========= 预设：Go2点足 =========
     static constexpr double Go2P_PARAM[4][13] = {
@@ -58,14 +58,14 @@ namespace DataFusion
         StateSpaceModel_IKVel_Initialization(&IKVelCKF_);
         IKVelCKF_Inited_ = true;
       }
-      IKVelCKF_.Double_Par[1] = Par_HipLength;
-      IKVelCKF_.Double_Par[2] = Par_ThighLength;
-      IKVelCKF_.Double_Par[3] = Par_CalfLength;
-      IKVelCKF_.Double_Par[4] = Par_WheelRadius;
       for (int i = 0; i < 4; ++i) {
         IKVelLegInited_[i] = false;
         IKVelLastT_[i] = 0.0;
       }
+      IKVelCKF_.Double_Par[1] = Par_HipLength;
+      IKVelCKF_.Double_Par[2] = Par_ThighLength;
+      IKVelCKF_.Double_Par[3] = Par_CalfLength;
+      IKVelCKF_.Double_Par[4] = Par_WheelRadius;
     }
     
     // ========= 预设：中狗点足MP / 大狗轮足LW / 中狗轮足MW =========
@@ -93,7 +93,7 @@ namespace DataFusion
     static constexpr double LW_CALF  = 0.351;
     static constexpr double LW_WHEEL = 0.195/2;
     static constexpr double LW_Height= 0.12;
-    static constexpr double LW_FORCE = -80;
+    static constexpr double LW_FORCE = -120;
 
     static constexpr double MW_PARAM[4][13] = {
       {  0.2878,  0.07,  0.000,   0.0,  0.1709,  0.0,   0.0,  0.0, -0.26,  0.0,  0.0, -0.26,  0.195/2 },
@@ -106,7 +106,7 @@ namespace DataFusion
     static constexpr double MW_CALF  = 0.26;
     static constexpr double MW_WHEEL = 0.195/2;
     static constexpr double MW_Height= 0.03;
-    static constexpr double MW_FORCE = -110;
+    static constexpr double MW_FORCE = -85;
 
     void UseMP()
     {
@@ -114,6 +114,19 @@ namespace DataFusion
       Par_HipLength = MP_HIP; Par_ThighLength = MP_THIGH; Par_CalfLength = MP_CALF; Par_WheelRadius = MP_WHEEL;
       Environement_Height_Scope = MP_Height;
       FootEffortThreshold = MP_FORCE;
+      
+      if (!IKVelCKF_Inited_) {
+        StateSpaceModel_IKVel_Initialization(&IKVelCKF_);
+        IKVelCKF_Inited_ = true;
+      }
+      for (int i = 0; i < 4; ++i) {
+        IKVelLegInited_[i] = false;
+        IKVelLastT_[i] = 0.0;
+      }
+      IKVelCKF_.Double_Par[1] = Par_HipLength;
+      IKVelCKF_.Double_Par[2] = Par_ThighLength;
+      IKVelCKF_.Double_Par[3] = Par_CalfLength;
+      IKVelCKF_.Double_Par[4] = Par_WheelRadius;
     }
 
     void UseLW()
@@ -122,6 +135,8 @@ namespace DataFusion
       Par_HipLength = LW_HIP; Par_ThighLength = LW_THIGH; Par_CalfLength = LW_CALF; Par_WheelRadius = LW_WHEEL;
       Environement_Height_Scope = LW_Height;
       FootEffortThreshold = LW_FORCE;
+      
+      IKVelCKF_Inited_ = false;
     }
     
     void UseMW()
@@ -130,6 +145,8 @@ namespace DataFusion
       Par_HipLength = MW_HIP; Par_ThighLength = MW_THIGH; Par_CalfLength = MW_CALF; Par_WheelRadius = MW_WHEEL;
       Environement_Height_Scope = MW_Height;
       FootEffortThreshold = MW_FORCE;
+      
+      IKVelCKF_Inited_ = false;
     }
 
     bool JointsXYZEnable = true;

@@ -64,6 +64,7 @@
 #include "SensorBase.h"
 #include "Sensor_Legs.h"
 #include "Sensor_IMU.h"
+// #include "../Controller/ControlFrame/LowlevelState.h"
 #include "LowlevelState.h"
 
 enum ConfigIndex {
@@ -111,7 +112,11 @@ public:
 
     ~FusionEstimatorCore()
     {
-        for (auto* p : sensors) delete p;
+        for (auto* p : sensors) 
+        {
+            StateSpaceModel_Go2_EstimatorPortTermination(p);
+            delete p;
+        }
         sensors.clear();
     }
 

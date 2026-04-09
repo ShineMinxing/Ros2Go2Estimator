@@ -671,7 +671,7 @@ ERROR_ID matrix_columnmatching(_IN MATRIX* A, _IN MATRIX* B, _OUT MATRIX* C)
     {
         for (j = 0; j < B->columns; j++)
         {
-            C->p[(i + A->columns) * C->columns + j] = B->p[i * B->columns + j];
+            C->p[(i + A->rows) * C->columns + j] = B->p[i * B->columns + j];
         }
     }
     return errorID;
@@ -730,7 +730,7 @@ ERROR_ID matrix_valuation(_IN MATRIX* A,  _IN MATRIX* C, _IN INDEX Rs, _IN INDEX
     {
         for (j = Cs; j < Cs + A->columns; j++)
         {
-            C->p[i * C->columns + j] = A->p[(i - Rs)* A->columns + j -+ Cs];
+            C->p[i * C->columns + j] = A->p[(i - Rs)* A->columns + j - Cs];
         }
     }
     return errorID;
@@ -738,32 +738,42 @@ ERROR_ID matrix_valuation(_IN MATRIX* A,  _IN MATRIX* C, _IN INDEX Rs, _IN INDEX
 // 矩阵求行列式
 ERROR_ID matrix_det(_IN MATRIX* A, _OUT MATRIX* detA)
 {
-	int i,j;
-	double array[5][5];
+    int i, j;
+    double array[5][5];
     ERROR_ID errorID = _ERROR_NO_ERROR;
-	
-    if (A == NULL)
+
+    if (A == NULL || detA == NULL || A->p == NULL || detA->p == NULL)
     {
         errorID = _ERROR_INPUT_PARAMETERS_ERROR;
         printf("矩阵运算错误代码：%u\n", errorID);
         return errorID;
     }
-    
-    if (A->rows != A->columns || detA->rows != 1 || detA->columns != 1 )
+
+    if (A->rows != A->columns || detA->rows != 1 || detA->columns != 1)
     {
         errorID = _ERROR_MATRIX_ROWS_OR_COLUMNS_NOT_EQUAL;
         printf("矩阵运算错误代码：%u\n", errorID);
         return errorID;
     }
-	for(i=0;i<A->rows;i++)
-	{
-		for(j=0;j<A->rows;j++)
-		{
-			array[i][j] = A->p[j+i*A->columns];
-		}
-	}
-	detA->p[0]=matrix_detsubF1(array,A->rows);
-	return errorID;
+
+    /* 最小改动：原实现只支持 5 阶及以下，直接加保护，避免栈越界 */
+    if (A->rows > 5)
+    {
+        errorID = _ERROR_INPUT_PARAMETERS_ERROR;
+        printf("矩阵运算错误代码：%u\n", errorID);
+        return errorID;
+    }
+
+    for (i = 0; i < A->rows; i++)
+    {
+        for (j = 0; j < A->rows; j++)
+        {
+            array[i][j] = A->p[j + i * A->columns];
+        }
+    }
+
+    detA->p[0] = matrix_detsubF1(array, A->rows);
+    return errorID;
 }
 double matrix_detsubF1(double array[5][5], int n)
 {
@@ -809,7 +819,7 @@ ERROR_ID matrix_inverse(_IN MATRIX* A, _OUT MATRIX* invA)
     ERROR_ID errorID = _ERROR_NO_ERROR;
     STACKS S;
 
-    if (A == NULL || invA == NULL)
+    if (A == NULL || invA == NULL || A->p == NULL || invA->p == NULL)
     {
         errorID = _ERROR_INPUT_PARAMETERS_ERROR;
         printf("矩阵运算错误代码：%u\n", errorID);
@@ -823,9 +833,16 @@ ERROR_ID matrix_inverse(_IN MATRIX* A, _OUT MATRIX* invA)
         return errorID;
     }
 
+    n = A->rows;
+    if (invA->rows != n || invA->columns != n)
+    {
+        errorID = _ERROR_MATRIX_ROWS_OR_COLUMNS_NOT_EQUAL;
+        printf("矩阵运算错误代码：%u\n", errorID);
+        return errorID;
+    }
+
     init_stack(&S);
 
-    n = A->rows;
     Atemp = creat_matrix(n, n, &errorID, &S);
     if (errorID != _ERROR_NO_ERROR)
     {
@@ -836,7 +853,7 @@ ERROR_ID matrix_inverse(_IN MATRIX* A, _OUT MATRIX* invA)
     memset(invA->p, 0, n * n * sizeof(REAL));
     for (i = 0; i < n; i++)
     {
-        invA->p[i * n + i] = 1.0; //这一步使得invA为单位阵
+        invA->p[i * n + i] = 1.0;
     }
 
     errorID = solve_matrix_equation_by_lup_decomposition(Atemp, invA);
@@ -845,7 +862,6 @@ EXIT:
     free_stack(&S);
     return errorID;
 }
-
 // 矩阵转置
 ERROR_ID matrix_transpose(_IN MATRIX* A, _OUT MATRIX* transposeA)
 {
@@ -1044,14 +1060,14 @@ ERROR_ID solve_matrix_equation_by_lup_decomposition(_IN MATRIX* A, _IN_OUT MATRI
     ERROR_ID errorID = _ERROR_NO_ERROR;
     STACKS S;
 
-    if (A == NULL || B == NULL)
+    if (A == NULL || B == NULL || A->p == NULL || B->p == NULL)
     {
         errorID = _ERROR_INPUT_PARAMETERS_ERROR;
         printf("矩阵运算错误代码：%u\n", errorID);
         return errorID;
     }
 
-    if (A->rows != A->columns)
+    if (A->rows != A->columns || B->rows != A->rows)
     {
         errorID = _ERROR_MATRIX_MUST_BE_SQUARE;
         printf("矩阵运算错误代码：%u\n", errorID);
@@ -1069,7 +1085,8 @@ ERROR_ID solve_matrix_equation_by_lup_decomposition(_IN MATRIX* A, _IN_OUT MATRI
     U = creat_matrix(n, n, &errorID, &S);
     if (errorID != _ERROR_NO_ERROR) goto EXIT;
 
-    y = creat_matrix(n, n, &errorID, &S);
+    /* 关键修复：这里必须是 n*m，而不是 n*n */
+    y = creat_matrix(n, m, &errorID, &S);
     if (errorID != _ERROR_NO_ERROR) goto EXIT;
 
     memcpy(U->p, A->p, n * n * sizeof(REAL));
@@ -1081,7 +1098,6 @@ ERROR_ID solve_matrix_equation_by_lup_decomposition(_IN MATRIX* A, _IN_OUT MATRI
 
     for (j = 0; j < n - 1; j++)
     {
-        // Select i(>=j) that maxmizes |U(i,j)|
         index = -1;
         maxvalue = 0.0;
         for (i = j; i < n; i++)
@@ -1145,7 +1161,6 @@ ERROR_ID solve_matrix_equation_by_lup_decomposition(_IN MATRIX* A, _IN_OUT MATRI
         }
     }
 
-    // L*y=C
     for (j = 0; j < m; j++)
     {
         for (i = 0; i < n; i++)
@@ -1159,7 +1174,6 @@ ERROR_ID solve_matrix_equation_by_lup_decomposition(_IN MATRIX* A, _IN_OUT MATRI
         }
     }
 
-    // U*x=y
     for (j = 0; j < m; j++)
     {
         for (i = n - 1; i >= 0; i--)
@@ -1172,21 +1186,27 @@ ERROR_ID solve_matrix_equation_by_lup_decomposition(_IN MATRIX* A, _IN_OUT MATRI
             B->p[i * m + j] = (y->p[i * m + j] - sum) / U->p[i * n + i];
         }
     }
+
 EXIT:
     free_stack(&S);
     return errorID;
 }
-
 ERROR_ID EigenValueVecter(_IN MATRIX* A, _OUT MATRIX* B, _OUT MATRIX* C)
 {
-	INDEX i,j,n;
+    INDEX i, j, n;
     ERROR_ID errorID = _ERROR_NO_ERROR;
-	double **array = (double **)malloc(A->rows * sizeof(double *));
-	double *eig = (double *)malloc(A->rows * sizeof(double));
-	double **Result = Matrix_Jac_Eig(array, A->rows, eig);
-    
-	n = A->rows;
-	    if (A->rows != B->rows || B->rows != C->rows || C->columns != 1)
+    double **array = NULL;
+    double *eig = NULL;
+    double **Result = NULL;
+
+    if (A == NULL || B == NULL || C == NULL || A->p == NULL || B->p == NULL || C->p == NULL)
+    {
+        errorID = _ERROR_INPUT_PARAMETERS_ERROR;
+        printf("矩阵运算错误代码：%u\n", errorID);
+        return errorID;
+    }
+
+    if (A->rows != B->rows || B->rows != C->rows || C->columns != 1)
     {
         errorID = _ERROR_INPUT_PARAMETERS_ERROR;
         printf("矩阵运算错误代码：%u\n", errorID);
@@ -1199,318 +1219,359 @@ ERROR_ID EigenValueVecter(_IN MATRIX* A, _OUT MATRIX* B, _OUT MATRIX* C)
         printf("矩阵运算错误代码：%u\n", errorID);
         return errorID;
     }
-	if (array == NULL)
-	{
-		printf("error :申请数组内存空间失败\n");
-		return _ERROR_FAILED_TO_ALLOCATE_HEAP_MEMORY;
-	}
-	for (i = 0; i < n; i++)
-	{
-		array[i] = (double *)malloc(n * sizeof(double));
-		if (array[i] == NULL)
-		{
-			printf("error :申请数组子内存空间失败\n");
-			return _ERROR_FAILED_TO_ALLOCATE_HEAP_MEMORY;
-		}
-	}
-	for (i = 0; i < n; i++)
-	{
-		for (j = 0; j < n; j++)
-		{
-			array[i][j] = A->p[i * n + j];
-		}
-	}
-	printf("特征矩阵:\n");
-	for (i = 0; i < n; i++)
-	{
-		for (j = 0; j < n; j++)
-		{
-			B->p[i * n + j] = Result[i][j];
-			printf("%f ", Result[i][j]);
-		}
-		printf("\n");
-	}
-	printf("特征值向量:\n");
-	for (i = 0; i < n; i++)
-	{
-		C->p[i] = eig[i];
-		printf("%f \n", eig[i]);
-	}
-	Matrix_Free(Result, n, n);
-	free(eig);
-	eig = NULL;
-	
-    return errorID;;
-}
 
+    n = A->rows;
+
+    array = (double **)calloc((size_t)n, sizeof(double *));
+    eig = (double *)malloc((size_t)n * sizeof(double));
+    if (array == NULL || eig == NULL)
+    {
+        Matrix_Free(array, n, n);
+        free(eig);
+        printf("error :申请数组内存空间失败\n");
+        return _ERROR_FAILED_TO_ALLOCATE_HEAP_MEMORY;
+    }
+
+    for (i = 0; i < n; i++)
+    {
+        array[i] = (double *)malloc((size_t)n * sizeof(double));
+        if (array[i] == NULL)
+        {
+            Matrix_Free(array, n, n);
+            free(eig);
+            printf("error :申请数组子内存空间失败\n");
+            return _ERROR_FAILED_TO_ALLOCATE_HEAP_MEMORY;
+        }
+    }
+
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < n; j++)
+        {
+            array[i][j] = A->p[i * n + j];
+        }
+    }
+
+    Result = Matrix_Jac_Eig(array, n, eig);
+    if (Result == NULL)
+    {
+        Matrix_Free(array, n, n);
+        free(eig);
+        return _ERROR_CREATE_MATRIX_FAILED;
+    }
+
+    printf("特征矩阵:\n");
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < n; j++)
+        {
+            B->p[i * n + j] = Result[i][j];
+            printf("%f ", Result[i][j]);
+        }
+        printf("\n");
+    }
+
+    printf("特征值向量:\n");
+    for (i = 0; i < n; i++)
+    {
+        C->p[i] = eig[i];
+        printf("%f \n", eig[i]);
+    }
+
+    Matrix_Free(Result, n, n);
+    Matrix_Free(array, n, n);
+    free(eig);
+    eig = NULL;
+
+    return errorID;
+}
 double** Matrix_Jac_Eig(double **array, int n, double *eig)
 {
-	//先copy一份array在temp_mat中，因为我实在堆区申请的空间,在对其进行处理
-	//的过程中会修改原矩阵的值,因此要存储起来,到最后函数返回的
-	//时候再重新赋值
-	int i, j, flag, k;
-	double sum = 0;
-	double **temp_mat = (double **)malloc(n * sizeof(double *));
-	double **result_temp = (double **)malloc(n * sizeof(double *));
-	flag = 0;
-	k = 0;
-	for (i = 0; i < n; i++)
-	{
-		temp_mat[i] = (double *)malloc(n * sizeof(double));
-	}
-	for (i = 0; i < n; i++)
-	{
-		for (j = 0; j < n; j++)
-		{
-			temp_mat[i][j] = array[i][j];
-		}
-	}
-	//判断是否为对称矩阵
-	for (i = 0; i < n; i++)
-	{
-		for (j = i; j < n; j++)
-		{
-			if (array[i][j] != array[j][i])
-			{
-				flag = 1;
-				break;
-			}
-		}
-	}
-	if (flag == 1)
-	{
-		printf("error in Matrix_Eig: 输入并非是对称矩阵:\n");
-		return NULL;
-	}
-	else
-	{
-		//开始执行算法
-		int p, q;
-		double thresh = 0.0000000001;
-		double max = array[0][1];
-		double tan_angle, sin_angle, cos_angle;
-		double **result = (double **)malloc(n * sizeof(double *));
-		double **rot = (double **)malloc(n * sizeof(double *));
-		double **mat = (double **)malloc(n * sizeof(double *));
-		if (result == NULL)
-		{
-			printf("error in Matrix_Eig:申请空间失败\n");
-			return NULL;
-		}
-		if (result_temp == NULL)
-		{
-			printf("error in Matrix_Eig:申请空间失败\n");
-			return NULL;
-		}
-		if (rot == NULL)
-		{
-			printf("error in Matrix_Eig:申请空间失败\n");
-			return NULL;
-		}
-		if (mat == NULL)
-		{
-			printf("error in Matrix_Eig:申请空间失败\n");
-			return NULL;
-		}
-		for (i = 0; i < n; i++)
-		{
-			result[i] = (double *)malloc(n * sizeof(double));
-			if (result[i] == NULL)
-			{
-				printf("error in Matrix_Eig:申请子空间失败\n");
-				return NULL;
-			}
-			result_temp[i] = (double *)malloc(n * sizeof(double));
-			if (result_temp[i] == NULL)
-			{
-				printf("error in Matrix_Eig:申请子空间失败\n");
-				return NULL;
-			}
-			rot[i] = (double *)malloc(n * sizeof(double));
-			if (rot[i] == NULL)
-			{
-				printf("error in Matrix_Eig:申请子空间失败\n");
-				return NULL;
-			}
-			mat[i] = (double *)malloc(n * sizeof(double));
-			if (mat[i] == NULL)
-			{
-				printf("error in Matrix_Eig:申请子空间失败\n");
-				return NULL;
-			}
-		}
-		for (i = 0; i < n; i++)
-		{
-			for (j = 0; j < n; j++)
-			{
-				if (i == j)
-				{
-					result[i][j] = 1;
-				}
-				else
-				{
-					result[i][j] = 0;
-				}
-			}
-		}
-		for (i = 0; i < n; i++)
-		{
-			for (j = 0; j < n; j++)
-			{
-				if (i == j)
-				{
-					mat[i][j] = 1;
-				}
-				else
-				{
-					mat[i][j] = 0;
-				}
-			}
-		}
-		max = array[0][1];
-		for (i = 0; i < n; i++)
-		{
-			for (j = 0; j < n; j++)
-			{
-				if (i == j)
-				{
-					continue;
-				}
-				else
-				{
-					if (fabs(array[i][j]) >= fabs(max))
-					{
-						max = array[i][j];
-						p = i;
-						q = j;
-					}
-					else
-					{
-						continue;
-					}
-				}
-			}
-		}
-		while (fabs(max) > thresh)
-		{
-			if (fabs(max) < thresh)
-			{
-				break;
-			}
-			tan_angle = -2 * array[p][q] / (array[q][q] - array[p][p]);
-			sin_angle = sin(0.5*atan(tan_angle));
-			cos_angle = cos(0.5*atan(tan_angle));
-			for (i = 0; i < n; i++)
-			{
-				for (j = 0; j < n; j++)
-				{
+    int i, j, flag, k;
+    double sum = 0.0;
+    double **temp_mat = NULL;
+    double **result_temp = NULL;
+    double **result = NULL;
+    double **rot = NULL;
+    double **mat = NULL;
+    int p = 0, q = 1;
+    double thresh = 0.0000000001;
+    double max = 0.0;
+    double tan_angle, sin_angle, cos_angle;
 
-					if (i == j)
-					{
-						mat[i][j] = 1;
-					}
-					else
-					{
-						mat[i][j] = 0;
-					}
-				}
-			}
-			mat[p][p] = cos_angle;
-			mat[q][q] = cos_angle;
-			mat[q][p] = sin_angle;
-			mat[p][q] = -sin_angle;
-			for (i = 0; i < n; i++)
-			{
-				for (j = 0; j < n; j++)
-				{
-					rot[i][j] = array[i][j];
-				}
-			}
-			for (j = 0; j < n; j++)
-			{
-				rot[p][j] = cos_angle*array[p][j] + sin_angle*array[q][j];
-				rot[q][j] = -sin_angle*array[p][j] + cos_angle*array[q][j];
-				rot[j][p] = cos_angle*array[j][p] + sin_angle*array[j][q];
-				rot[j][q] = -sin_angle*array[j][p] + cos_angle*array[j][q];
-			}
-			rot[p][p] = array[p][p] * cos_angle*cos_angle +
-				array[q][q] * sin_angle*sin_angle +
-				2 * array[p][q] * cos_angle*sin_angle;
-			rot[q][q] = array[q][q] * cos_angle*cos_angle +
-				array[p][p] * sin_angle*sin_angle -
-				2 * array[p][q] * cos_angle*sin_angle;
-			rot[p][q] = 0.5*(array[q][q] - array[p][p]) * 2 * sin_angle*cos_angle +
-				array[p][q] * (2 * cos_angle*cos_angle - 1);
-			rot[q][p] = 0.5*(array[q][q] - array[p][p]) * 2 * sin_angle*cos_angle +
-				array[p][q] * (2 * cos_angle*cos_angle - 1);
-			for (i = 0; i < n; i++)
-			{
-				for (j = 0; j < n; j++)
-				{
-					array[i][j] = rot[i][j];
-				}
-			}
-			max = array[0][1];
-			for (i = 0; i < n; i++)
-			{
-				for (j = 0; j < n; j++)
-				{
-					if (i == j)
-					{
-						continue;
-					}
-					else
-					{
-						if (fabs(array[i][j]) >= fabs(max))
-						{
-							max = array[i][j];
-							p = i;
-							q = j;
-						}
-						else
-						{
-							continue;
-						}
-					}
-				}
-			}
-			for (i = 0; i < n; i++)
-			{
-				eig[i] = array[i][i];
-			}
-			for (i = 0; i < n; i++)
-			{
-				for (j = 0; j < n; j++)
-				{
-					sum = 0;
-					for (k = 0; k < n; k++)
-					{
-						sum = sum + result[i][k] * mat[k][j];
-					}
-					result_temp[i][j] = sum;
-				}
-			}
-			for (i = 0; i < n; i++)
-			{
-				for (j = 0; j < n; j++)
-				{
-					result[i][j] = result_temp[i][j];
-				}
-			}
-		}
-		for (i = 0; i < n; i++)
-		{
-			for (j = 0; j < n; j++)
-			{
-				array[i][j] = temp_mat[i][j];
-			}
-		}
-		Matrix_Free(result_temp, n, n);
-		Matrix_Free(rot, n, n);
-		Matrix_Free(mat, n, n);
-		Matrix_Free(temp_mat, n, n);
-		return result;
-	}
+    if (array == NULL || eig == NULL || n <= 0)
+    {
+        return NULL;
+    }
+
+    if (n == 1)
+    {
+        result = (double **)calloc(1, sizeof(double *));
+        if (result == NULL)
+        {
+            return NULL;
+        }
+
+        result[0] = (double *)malloc(sizeof(double));
+        if (result[0] == NULL)
+        {
+            free(result);
+            return NULL;
+        }
+
+        result[0][0] = 1.0;
+        eig[0] = array[0][0];
+        return result;
+    }
+
+    temp_mat = (double **)calloc((size_t)n, sizeof(double *));
+    result_temp = (double **)calloc((size_t)n, sizeof(double *));
+    if (temp_mat == NULL || result_temp == NULL)
+    {
+        Matrix_Free(temp_mat, n, n);
+        Matrix_Free(result_temp, n, n);
+        return NULL;
+    }
+
+    for (i = 0; i < n; i++)
+    {
+        temp_mat[i] = (double *)malloc((size_t)n * sizeof(double));
+        if (temp_mat[i] == NULL)
+        {
+            Matrix_Free(temp_mat, n, n);
+            Matrix_Free(result_temp, n, n);
+            return NULL;
+        }
+    }
+
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < n; j++)
+        {
+            temp_mat[i][j] = array[i][j];
+        }
+    }
+
+    flag = 0;
+    for (i = 0; i < n; i++)
+    {
+        for (j = i; j < n; j++)
+        {
+            if (array[i][j] != array[j][i])
+            {
+                flag = 1;
+                break;
+            }
+        }
+        if (flag == 1)
+            break;
+    }
+
+    if (flag == 1)
+    {
+        printf("error in Matrix_Eig: 输入并非是对称矩阵:\n");
+        Matrix_Free(temp_mat, n, n);
+        Matrix_Free(result_temp, n, n);
+        return NULL;
+    }
+
+    result = (double **)calloc((size_t)n, sizeof(double *));
+    rot    = (double **)calloc((size_t)n, sizeof(double *));
+    mat    = (double **)calloc((size_t)n, sizeof(double *));
+    if (result == NULL || rot == NULL || mat == NULL)
+    {
+        Matrix_Free(temp_mat, n, n);
+        Matrix_Free(result_temp, n, n);
+        Matrix_Free(result, n, n);
+        Matrix_Free(rot, n, n);
+        Matrix_Free(mat, n, n);
+        return NULL;
+    }
+
+    for (i = 0; i < n; i++)
+    {
+        result[i] = (double *)malloc((size_t)n * sizeof(double));
+        result_temp[i] = (double *)malloc((size_t)n * sizeof(double));
+        rot[i] = (double *)malloc((size_t)n * sizeof(double));
+        mat[i] = (double *)malloc((size_t)n * sizeof(double));
+
+        if (result[i] == NULL || result_temp[i] == NULL || rot[i] == NULL || mat[i] == NULL)
+        {
+            Matrix_Free(temp_mat, n, n);
+            Matrix_Free(result_temp, n, n);
+            Matrix_Free(result, n, n);
+            Matrix_Free(rot, n, n);
+            Matrix_Free(mat, n, n);
+            return NULL;
+        }
+    }
+
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < n; j++)
+        {
+            if (i == j)
+            {
+                result[i][j] = 1.0;
+                mat[i][j] = 1.0;
+            }
+            else
+            {
+                result[i][j] = 0.0;
+                mat[i][j] = 0.0;
+            }
+        }
+    }
+
+    max = array[0][1];
+    p = 0;
+    q = 1;
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < n; j++)
+        {
+            if (i == j)
+            {
+                continue;
+            }
+            else
+            {
+                if (fabs(array[i][j]) >= fabs(max))
+                {
+                    max = array[i][j];
+                    p = i;
+                    q = j;
+                }
+            }
+        }
+    }
+
+    while (fabs(max) > thresh)
+    {
+        tan_angle = -2 * array[p][q] / (array[q][q] - array[p][p]);
+        sin_angle = sin(0.5 * atan(tan_angle));
+        cos_angle = cos(0.5 * atan(tan_angle));
+
+        for (i = 0; i < n; i++)
+        {
+            for (j = 0; j < n; j++)
+            {
+                if (i == j)
+                    mat[i][j] = 1.0;
+                else
+                    mat[i][j] = 0.0;
+            }
+        }
+
+        mat[p][p] = cos_angle;
+        mat[q][q] = cos_angle;
+        mat[q][p] = sin_angle;
+        mat[p][q] = -sin_angle;
+
+        for (i = 0; i < n; i++)
+        {
+            for (j = 0; j < n; j++)
+            {
+                rot[i][j] = array[i][j];
+            }
+        }
+
+        for (j = 0; j < n; j++)
+        {
+            rot[p][j] = cos_angle * array[p][j] + sin_angle * array[q][j];
+            rot[q][j] = -sin_angle * array[p][j] + cos_angle * array[q][j];
+            rot[j][p] = cos_angle * array[j][p] + sin_angle * array[j][q];
+            rot[j][q] = -sin_angle * array[j][p] + cos_angle * array[j][q];
+        }
+
+        rot[p][p] = array[p][p] * cos_angle * cos_angle +
+                    array[q][q] * sin_angle * sin_angle +
+                    2 * array[p][q] * cos_angle * sin_angle;
+        rot[q][q] = array[q][q] * cos_angle * cos_angle +
+                    array[p][p] * sin_angle * sin_angle -
+                    2 * array[p][q] * cos_angle * sin_angle;
+        rot[p][q] = 0.5 * (array[q][q] - array[p][p]) * 2 * sin_angle * cos_angle +
+                    array[p][q] * (2 * cos_angle * cos_angle - 1);
+        rot[q][p] = 0.5 * (array[q][q] - array[p][p]) * 2 * sin_angle * cos_angle +
+                    array[p][q] * (2 * cos_angle * cos_angle - 1);
+
+        for (i = 0; i < n; i++)
+        {
+            for (j = 0; j < n; j++)
+            {
+                array[i][j] = rot[i][j];
+            }
+        }
+
+        max = array[0][1];
+        p = 0;
+        q = 1;
+        for (i = 0; i < n; i++)
+        {
+            for (j = 0; j < n; j++)
+            {
+                if (i == j)
+                {
+                    continue;
+                }
+                else
+                {
+                    if (fabs(array[i][j]) >= fabs(max))
+                    {
+                        max = array[i][j];
+                        p = i;
+                        q = j;
+                    }
+                }
+            }
+        }
+
+        for (i = 0; i < n; i++)
+        {
+            eig[i] = array[i][i];
+        }
+
+        for (i = 0; i < n; i++)
+        {
+            for (j = 0; j < n; j++)
+            {
+                sum = 0.0;
+                for (k = 0; k < n; k++)
+                {
+                    sum += result[i][k] * mat[k][j];
+                }
+                result_temp[i][j] = sum;
+            }
+        }
+
+        for (i = 0; i < n; i++)
+        {
+            for (j = 0; j < n; j++)
+            {
+                result[i][j] = result_temp[i][j];
+            }
+        }
+    }
+
+    for (i = 0; i < n; i++)
+    {
+        eig[i] = array[i][i];
+    }
+
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < n; j++)
+        {
+            array[i][j] = temp_mat[i][j];
+        }
+    }
+
+    Matrix_Free(result_temp, n, n);
+    Matrix_Free(rot, n, n);
+    Matrix_Free(mat, n, n);
+    Matrix_Free(temp_mat, n, n);
+
+    return result;
 }
 int Matrix_Free(double **tmp, int m, int n)
 {
@@ -1534,5 +1595,3 @@ int Matrix_Free(double **tmp, int m, int n)
 	}
 	return(0);
 }
-
-

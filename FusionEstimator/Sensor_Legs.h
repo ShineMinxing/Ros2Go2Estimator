@@ -92,7 +92,7 @@ namespace DataFusion
     static constexpr double LW_THIGH = 0.27;
     static constexpr double LW_CALF  = 0.351;
     static constexpr double LW_WHEEL = 0.195/2;
-    static constexpr double LW_Height= 0.12;
+    static constexpr double LW_Height= 0.10;
     static constexpr double LW_FORCE = -120;
 
     static constexpr double MW_PARAM[4][13] = {
@@ -159,8 +159,8 @@ namespace DataFusion
     double FootBodyEff_BF[4][3]={0}, FootBodyEff_WF[4][3]={0}, FeetEffort2BodyMotion[4][6];
     double FootBodyPos_BF[4][3]={0}, FootBodyPos_WF[4][3]={0}, FootBodyVel_WF[4][3]={0}, FootfallPositionRecord[4][4]={0}, FootfallAveragePosition[3] = {0}, FootfallProbability[4] = {0}, WheelAnglePrev[4] = {0};
     double MinimumWeight = 25.0, TimelyWeight = 25.0;
-    double SlopeModeTimeThreshold  = 0.5;
-    double SlopeModeAngleThreshold = 10.0 / 180.0 * M_PI;
+    double SlopeModeTimeThreshold  = 0.75;
+    double SlopeModeAngleThreshold = 5.0 / 180.0 * M_PI;
     double SlopeModeStepHeightThreshold  = 0.03;
     double SlopeModeFootForceAccept  = 0.3;
 

@@ -1,18 +1,7 @@
 clear all;clc;
 cd(fileparts(mfilename('fullpath')));
 
-% CSV_PATH = 'D:\project\Data\MP_LoadedWeight.csv';  DogMode = 4;
-% CSV_PATH = 'D:\project\Data\MP_XY150Z10.csv';  DogMode = 4;
-% CSV_PATH = 'D:\project\Data\LW_LoadedWeight.csv'; DogMode = 5;
-% CSV_PATH = 'D:\project\Data\LW_StairAndSlope.csv';  DogMode = 5;
-% CSV_PATH = 'D:\project\Data\LW_Flat.csv'; DogMode = 5;
-% CSV_PATH = 'D:\project\Data\LW_Stairs5.csv'; DogMode = 5;
-% CSV_PATH = 'D:\project\Data\LW_XY150Z10_1.csv';  DogMode = 5;
-CSV_PATH = 'D:\project\Data\LW_XY150Z10_3.csv';  DogMode = 5;
-% CSV_PATH = 'D:\project\Data\LW_Outdoor.csv';  DogMode = 5;
-% CSV_PATH = 'D:\project\Data\MW_XY150Z10.csv';  DogMode = 6;
-
-% CSV_PATH = 'MPXY150Z10';  DogMode = 4;
+CSV_PATH = 'MPXY150Z10';  DogMode = 4;
 % CSV_PATH = 'MWXY150Z10'; DogMode = 6;
 
 used_lines = 390000;

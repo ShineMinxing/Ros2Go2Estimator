@@ -561,12 +561,6 @@ namespace DataFusion
         int count = 0;
         
         StateSpaceModel->Double_Par[36] = 0.0;
-        
-        for (int LegNumber = 0; LegNumber < 4; ++LegNumber)
-        {
-            if (FootIsOnGround[LegNumber] && ObservationTime - FootfallPositionRecord[LegNumber][3] > SlopeModeTimeThreshold)
-                count++;
-        }
 
         for (int LegNumber = 0; LegNumber < 4; ++LegNumber)
         {
@@ -575,6 +569,10 @@ namespace DataFusion
                 
             if (!FootfallPositionRecordIsInitiated[LegNumber])
                 continue;
+
+            // 至少两个足已落地超0.5秒
+            if (ObservationTime - FootfallPositionRecord[LegNumber][3] > SlopeModeTimeThreshold)
+                count++;
 
             const double x = FootBodyPos_WF[LegNumber][0];
             const double y = FootBodyPos_WF[LegNumber][1];

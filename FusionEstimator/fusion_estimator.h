@@ -78,8 +78,8 @@ enum ConfigIndex {
     IndexJointsVelocityXYZEnable = 6,
     IndexJointsRPYEnable = 7,
 
-    IndexGroundPitchTimeThreshold   = 8,
-    IndexGroundPitchAngleThreshold  = 9,
+    IndexSlopeModeTimeThreshold = 8,
+    IndexSlopeModeAngleThreshold = 9,
     IndexLegFootForceThreshold = 10,  
     IndexLegMinStairHeight = 11,
     IndexStairHeightFogotten = 12,
@@ -143,8 +143,8 @@ public:
             legs_pos->JointsXYZVelocityEnable   = status[IndexJointsVelocityXYZEnable];
             legs_ori->JointsRPYEnable           = status[IndexJointsRPYEnable];
 
-            legs_pos->GroundPitchTimeThreshold  = status[IndexGroundPitchTimeThreshold];
-            legs_pos->GroundPitchAngleThreshold = status[IndexGroundPitchAngleThreshold];
+            legs_pos->SlopeModeTimeThreshold    = status[IndexSlopeModeTimeThreshold];
+            legs_pos->SlopeModeAngleThreshold   = status[IndexSlopeModeAngleThreshold];
             legs_pos->FootEffortThreshold       = status[IndexLegFootForceThreshold];
             legs_pos->Environement_Height_Scope = status[IndexLegMinStairHeight];
             legs_pos->Data_Fading_Time          = status[IndexStairHeightFogotten];
@@ -167,8 +167,8 @@ public:
             status[IndexJointsVelocityXYZEnable]     = legs_pos->JointsXYZVelocityEnable;
             status[IndexJointsRPYEnable]             = legs_ori->JointsRPYEnable;
 
-            status[IndexGroundPitchTimeThreshold]    = legs_pos->GroundPitchTimeThreshold ;
-            status[IndexGroundPitchAngleThreshold]   = legs_pos->GroundPitchAngleThreshold;
+            status[IndexSlopeModeTimeThreshold]      = legs_pos->SlopeModeTimeThreshold ;
+            status[IndexSlopeModeAngleThreshold]     = legs_pos->SlopeModeAngleThreshold;
             status[IndexLegFootForceThreshold]       = legs_pos->FootEffortThreshold;
             status[IndexLegMinStairHeight]           = legs_pos->Environement_Height_Scope;
             status[IndexStairHeightFogotten]         = legs_pos->Data_Fading_Time ;

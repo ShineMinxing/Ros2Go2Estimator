@@ -159,8 +159,10 @@ namespace DataFusion
     double FootBodyEff_BF[4][3]={0}, FootBodyEff_WF[4][3]={0}, FeetEffort2BodyMotion[4][6];
     double FootBodyPos_BF[4][3]={0}, FootBodyPos_WF[4][3]={0}, FootBodyVel_WF[4][3]={0}, FootfallPositionRecord[4][4]={0}, FootfallAveragePosition[3] = {0}, FootfallProbability[4] = {0}, WheelAnglePrev[4] = {0};
     double MinimumWeight = 25.0, TimelyWeight = 25.0;
-    double GroundPitchTimeThreshold  = 0.5;
-    double GroundPitchAngleThreshold = 10.0 / 180.0 * M_PI;
+    double SlopeModeTimeThreshold  = 0.5;
+    double SlopeModeAngleThreshold = 10.0 / 180.0 * M_PI;
+    double SlopeModeStepHeightThreshold  = 0.03;
+    double SlopeModeFootForceAccept  = 0.3;
 
     // ===== IKVel CKF(Estimator1003) =====
     bool IKVelEnable = false;

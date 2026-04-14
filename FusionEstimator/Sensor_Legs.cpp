@@ -401,8 +401,8 @@ namespace DataFusion
                 }
 
                 for(i = 0; i < (MapHeightStoreMax+1); i++){
-
-                    if(std::abs(MapHeightStore[0][i] - FootfallPositionRecord[LegNumber][2]) <= Environement_Height_Scope)
+                    // if(std::abs(MapHeightStore[0][i] - FootfallPositionRecord[LegNumber][2]) <= Environement_Height_Scope)
+                    if((std::abs(MapHeightStore[0][i] - FootfallPositionRecord[LegNumber][2]) <= Environement_Height_Scope && move_dir_z == 0.0 ) || std::abs(MapHeightStore[0][i] - FootfallPositionRecord[LegNumber][2]) <= SlopeModeStepHeightThreshold)
                     {
                         // std::cout << "[HIT] i=" << i
                         //         << " rec=" << MapHeightStore[0][i]
@@ -477,15 +477,15 @@ namespace DataFusion
 
              // 轮子转动角度
             double WheelRotationAngle = Message[LegNumber*4 + 3] - WheelAnglePrev[LegNumber];
-            if (WheelRotationAngle >  2.0*M_PI) WheelRotationAngle -= 4.0*M_PI;
-            if (WheelRotationAngle < -2.0*M_PI) WheelRotationAngle += 4.0*M_PI;
+            while (WheelRotationAngle >  M_PI) WheelRotationAngle -= 2.0*M_PI;
+            while (WheelRotationAngle < -M_PI) WheelRotationAngle += 2.0*M_PI;
             WheelAnglePrev[LegNumber] = Message[LegNumber*4 + 3];
 
             // 小腿摆动角
             double ShankPitch = body_pitch + Message[LegNumber*4 + 1] + Message[LegNumber*4 + 2];
             double ShankRotationAngle = ShankPitch - ShankPitchPrev[LegNumber];
-            while (WheelRotationAngle >  M_PI) WheelRotationAngle -= 2.0*M_PI;
-            while (WheelRotationAngle < -M_PI) WheelRotationAngle += 2.0*M_PI;
+            while (ShankRotationAngle >  M_PI) ShankRotationAngle -= 2.0*M_PI;
+            while (ShankRotationAngle < -M_PI) ShankRotationAngle += 2.0*M_PI;
 
             ShankPitchPrev[LegNumber] = ShankPitch;
 
@@ -558,16 +558,22 @@ namespace DataFusion
         double sx  = 0.0, sy  = 0.0;
         double sxz = 0.0, syz = 0.0, sz  = 0.0;
         int n = 0;
+        int count = 0;
+        
+        StateSpaceModel->Double_Par[36] = 0.0;
+        
+        for (int LegNumber = 0; LegNumber < 4; ++LegNumber)
+        {
+            if (FootIsOnGround[LegNumber] && ObservationTime - FootfallPositionRecord[LegNumber][3] > SlopeModeTimeThreshold)
+                count++;
+        }
 
         for (int LegNumber = 0; LegNumber < 4; ++LegNumber)
         {
-            if (!FootIsOnGround[LegNumber])
+            if (FootBodyEff_WF[LegNumber][2] > FootEffortThreshold * SlopeModeFootForceAccept)
                 continue;
                 
             if (!FootfallPositionRecordIsInitiated[LegNumber])
-                continue;
-            
-            if (ObservationTime - FootfallPositionRecord[LegNumber][3] < GroundPitchTimeThreshold)
                 continue;
 
             const double x = FootBodyPos_WF[LegNumber][0];
@@ -609,7 +615,7 @@ namespace DataFusion
         hx /= hn;
         hy /= hn;
 
-        if (n < 3 || !mat3_inv(A, Ainv))
+        if (n < 3 || !mat3_inv(A, Ainv) || count < 2)
         {
             move_dir_x = hx;
             move_dir_y = hy;
@@ -630,7 +636,7 @@ namespace DataFusion
         // =========================================================
         // 4) 坡度小：只修正 XY
         // =========================================================
-        if (std::fabs(k) <= std::tan(GroundPitchAngleThreshold))
+        if (std::fabs(k) <= std::tan(SlopeModeAngleThreshold))
         {
             move_dir_x = hx;
             move_dir_y = hy;
@@ -645,6 +651,8 @@ namespace DataFusion
         // =========================================================
         const double hxy_n = 1.0 / std::sqrt(1.0 + k * k);
         const double hz_n  = k * hxy_n;
+        
+        StateSpaceModel->Double_Par[36] = std::atan(k);
 
         move_dir_x = hx * hxy_n;
         move_dir_y = hy * hxy_n;

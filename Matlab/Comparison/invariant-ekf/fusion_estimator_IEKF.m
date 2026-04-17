@@ -1,7 +1,7 @@
 clear all; clc;
 cd(fileparts(mfilename('fullpath')));
 
-CSV_PATH = '..\..\Matlab\MPXY150Z10';  DogMode = 4; ContactThreshold = 20;
+CSV_PATH = '..\..\MPXY150Z10';  DogMode = 4; ContactThreshold = 20;
 
 used_lines = 390000;
 

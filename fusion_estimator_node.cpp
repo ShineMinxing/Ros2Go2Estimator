@@ -42,7 +42,7 @@ public:
         this->get_parameter_or("leg_ori_enable", leg_ori_enable, true);
         this->get_parameter_or("leg_ori_init_weight", leg_ori_init_weight, 0.001);
         this->get_parameter_or("leg_ori_time_wight", leg_ori_time_wight, 100.0);
-        this->get_parameter_or("leg_velcke_enable", leg_velcke_enable, false);
+        this->get_parameter_or("slope_mode_enable", slope_mode_enable, false);
         if(!(leg_ori_init_weight>-1.0 && leg_ori_init_weight<=1.0))
         {
             leg_ori_init_weight = 0.001;
@@ -65,6 +65,7 @@ public:
         status[IndexJointsXYZEnable]          = leg_pos_enable ? 1.0 : 0.0;
         status[IndexJointsVelocityXYZEnable]  = leg_vel_enable ? 1.0 : 0.0;
         status[IndexJointsRPYEnable]          = leg_ori_enable ? 1.0 : 0.0;
+        status[SlopeEstimationEnable]       = slope_mode_enable ? 1.0 : 0.0;
         // 阈值/权重
         status[IndexLegFootForceThreshold]       = -1.0;
         status[IndexLegMinStairHeight]           = min_stair_height;
@@ -72,7 +73,6 @@ public:
         status[IndexLegOrientationInitialWeight] = leg_ori_init_weight;
         status[IndexLegOrientationTimeWeight]    = leg_ori_time_wight;
 
-        status[IndexLegVelCKEEnable]       = leg_velcke_enable ? 1.0 : 0.0;
 
         fe_.fusion_estimator_status(status);
 
@@ -115,7 +115,6 @@ public:
         SMXFE_odom.twist.covariance[21] = 0.1;  // angular x
         SMXFE_odom.twist.covariance[28] = 0.1;  // angular y
         SMXFE_odom.twist.covariance[35] = 0.1;  // angular z
-
 
         SMXFE_odom_2D.header.frame_id = odom_frame_id;
         SMXFE_odom_2D.child_frame_id  = child_frame_2d_id;
@@ -161,7 +160,7 @@ private:
     nav_msgs::msg::Odometry SMXFE_odom_2D;
 
     std::string odom_frame_id, child_frame_id, child_frame_2d_id;
-    bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable, leg_velcke_enable;
+    bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable, slope_mode_enable;
     bool msg_received[2] = {0,0};
     double foot_force_threshold, min_stair_height, stair_height_fogotten;
 

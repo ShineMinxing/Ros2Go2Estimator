@@ -1,0 +1,11 @@
+https://github.com/RossHartley/invariant-ekf.git
+
+@INPROCEEDINGS{Hartley-RSS-18, 
+    AUTHOR    = {Ross Hartley AND Maani Ghaffari Jadidi AND Jessy Grizzle AND Ryan M Eustice}, 
+    TITLE     = {Contact-Aided Invariant Extended Kalman Filtering for Legged Robot State Estimation}, 
+    BOOKTITLE = {Proceedings of Robotics: Science and Systems}, 
+    YEAR      = {2018}, 
+    ADDRESS   = {Pittsburgh, Pennsylvania}, 
+    MONTH     = {June}, 
+    DOI       = {10.15607/RSS.2018.XIV.050} 
+} 

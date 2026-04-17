@@ -4,13 +4,61 @@
 
 namespace DataFusion
 {
+  static constexpr int MAX_CONTACT_CHAIN = 4;
+  static constexpr int MAX_CHAIN_NODE = 12;
+  static constexpr int MAX_PITCH_SUM_JOINT = 8;
+
+  enum TFJointAxis
+  {
+    TF_AXIS_FIXED = -1,
+    TF_AXIS_X = 0,
+    TF_AXIS_Y = 1,
+    TF_AXIS_Z = 2
+  };
+
+  struct TFNode
+  {
+    int parent = -1;
+    int q_index = -1;
+    int dq_index = -1;
+    int tau_index = -1;
+    int axis = TF_AXIS_FIXED;
+
+    double t[3] = {0.0, 0.0, 0.0};
+    double q_fix[4] = {1.0, 0.0, 0.0, 0.0};
+
+    TFNode() = default;
+
+    TFNode(int parent_, int q_index_, int dq_index_, int tau_index_, int axis_, double x, double y, double z, double roll, double pitch, double yaw)
+        : parent(parent_), q_index(q_index_), dq_index(dq_index_), tau_index(tau_index_), axis(axis_)
+    {
+      t[0] = x; t[1] = y; t[2] = z;
+      eulerZYX_to_quat(roll, pitch, yaw, q_fix);
+    }
+  };
+
+  struct LegTFChain
+  {
+    int node_num = 0;
+    TFNode node[MAX_CHAIN_NODE];
+    TFNode ee;
+
+    double wheel_radius = 0.0;
+    int wheel_q_index = -1;
+    int wheel_dq_index = -1;
+
+    int pitch_joint_num = 0;
+    int pitch_q_index[MAX_PITCH_SUM_JOINT]  = {-1,-1,-1,-1,-1,-1,-1,-1};
+    int pitch_dq_index[MAX_PITCH_SUM_JOINT] = {-1,-1,-1,-1,-1,-1,-1,-1};
+  };
+
   class SensorLegsPos : public Sensors
   {
     public:
 
     SensorLegsPos(EstimatorPortN* StateSpaceModel_):Sensors(StateSpaceModel_)
     {
-      for(int i=0;i<4;i++)
+      for(int i=0;i<MAX_CONTACT_CHAIN;i++)
       {
         FootIsOnGround[i] = 1;
         FootWasOnGround[i] = 1;
@@ -21,132 +69,286 @@ namespace DataFusion
       UseGo2P();
     }
         
-    ~SensorLegsPos()
-    {
-      if (IKVelCKF_Inited_) {
-        StateSpaceModel_IKVel_EstimatorPortTermination(&IKVelCKF_);
-        IKVelCKF_Inited_ = false;
-      }
-    }
+    ~SensorLegsPos() override = default;
 
-    double KinematicParams[4][13];
-    double Par_HipLength = 0, Par_ThighLength = 0, Par_CalfLength = 0, Par_WheelRadius = 0;
+    int ContactChainNum = 4;
+    LegTFChain LegChains_[MAX_CONTACT_CHAIN];
     double FootEffortThreshold = -80.0, Environement_Height_Scope = 0.08, Data_Fading_Time = 1200.0;
-
-    // ========= 预设：Go2点足 =========
-    static constexpr double Go2P_PARAM[4][13] = {
-      {  0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022 },
-      {  0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022 },
-      { -0.1934, -0.0465,  0.000,   0.0, -0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022 },
-      { -0.1934,  0.0465,  0.000,   0.0,  0.0955,  0.0,   0.0,  0.0, -0.213,   0.0,  0.0, -0.213,  0.022 }
-    };
-    static constexpr double Go2P_HIP   = 0.0955;
-    static constexpr double Go2P_THIGH = 0.213;
-    static constexpr double Go2P_CALF  = 0.213 + 0.022;   // 把点足的半径放在这里
-    static constexpr double Go2P_WHEEL = 0.00;            // 把轮子的半径长度放在这里
-    static constexpr double Go2P_Height= 0.08;
-    static constexpr double Go2P_FORCE = -1.0;
 
     void UseGo2P()
     {
-      std::memcpy(KinematicParams, Go2P_PARAM, sizeof(KinematicParams));
-      Par_HipLength = Go2P_HIP; Par_ThighLength = Go2P_THIGH; Par_CalfLength = Go2P_CALF; Par_WheelRadius = Go2P_WHEEL;
-      Environement_Height_Scope = Go2P_Height;
-      FootEffortThreshold = Go2P_FORCE;
+      // Go2 点足模型
+      // TFNode(parent, q_index, dq_index, tau_index, axis, x, y, z, roll, pitch, yaw)
+      // 含义：
+      // 1) parent：父节点编号，-1 表示 body
+      // 2) q/dq/tau_index：在 joint[48] 中的索引
+      //    joint[0..15]   = q
+      //    joint[16..31]  = dq
+      //    joint[32..47]  = tau
+      // 3) axis：该节点关节轴方向
+      // 4) x,y,z：父节点坐标系下，到当前关节原点的固定平移
+      // 5) roll,pitch,yaw：父节点到当前节点的固定安装旋转
+      //
+      // 本函数中每条腿统一采用 3 关节链：
+      // node[0] : body -> q1 原点，挂 q1
+      // node[1] : q1   -> q2 原点，挂 q2
+      // node[2] : q2   -> q3 原点，挂 q3
+      // ee      : q3   -> 足端固定点
+      //
+      // 点足设置原则：
+      // 1) wheel_radius = 0
+      // 2) ee 的 z 直接写“膝关节到足端接触点”的总长度
+      // 3) pitch_joint_num = 0，因为没有轮子，不做滚动补偿
+  
+      for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
 
-      if (!IKVelCKF_Inited_) {
-        StateSpaceModel_IKVel_Initialization(&IKVelCKF_);
-        IKVelCKF_Inited_ = true;
-      }
-      for (int i = 0; i < 4; ++i) {
-        IKVelLegInited_[i] = false;
-        IKVelLastT_[i] = 0.0;
-      }
-      IKVelCKF_.Double_Par[1] = Par_HipLength;
-      IKVelCKF_.Double_Par[2] = Par_ThighLength;
-      IKVelCKF_.Double_Par[3] = Par_CalfLength;
-      IKVelCKF_.Double_Par[4] = Par_WheelRadius;
+      ContactChainNum = 4;
+      Environement_Height_Scope = 0.08;
+      FootEffortThreshold = -1.0;
+
+      // FL: q=(0,1,2), dq=(16,17,18), tau=(32,33,34)
+      // body 安装点 = (0.1934, -0.0465, 0)
+      // q1 为1号电机沿 X 轴旋转，q2/q3 为 Y 轴
+      // q1->q2 侧向偏置 = +0.0955
+      // q2->q3 大腿长度 = 0.213
+      // q3->foot 足端总长度 = 0.235 = 0.213 + 0.022
+      LegChains_[0].node_num = 3;
+      LegChains_[0].node[0] = TFNode(-1,  0, 16, 32, TF_AXIS_X,  0.1934, -0.0465,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[0].node[1] = TFNode( 0,  1, 17, 33, TF_AXIS_Y,  0.0000,  0.0955,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[0].node[2] = TFNode( 1,  2, 18, 34, TF_AXIS_Y,  0.0000,  0.0000, -0.2130, 0.0, 0.0, 0.0);
+      LegChains_[0].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2350, 0.0, 0.0, 0.0);
+      LegChains_[0].wheel_radius = 0.0;
+      LegChains_[0].wheel_q_index = -1;
+      LegChains_[0].wheel_dq_index = -1;
+      LegChains_[0].pitch_joint_num = 0;
+      // FR
+      LegChains_[1].node_num = 3;
+      LegChains_[1].node[0] = TFNode(-1,  4, 20, 36, TF_AXIS_X,  0.1934,  0.0465,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[1].node[1] = TFNode( 0,  5, 21, 37, TF_AXIS_Y,  0.0000, -0.0955,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[1].node[2] = TFNode( 1,  6, 22, 38, TF_AXIS_Y,  0.0000,  0.0000, -0.2130, 0.0, 0.0, 0.0);
+      LegChains_[1].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2350, 0.0, 0.0, 0.0);
+      LegChains_[1].wheel_radius = 0.0;
+      LegChains_[1].wheel_q_index = -1;
+      LegChains_[1].wheel_dq_index = -1;
+      LegChains_[1].pitch_joint_num = 0;
+      // RL
+      LegChains_[2].node_num = 3;
+      LegChains_[2].node[0] = TFNode(-1,  8, 24, 40, TF_AXIS_X, -0.1934, -0.0465,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[2].node[1] = TFNode( 0,  9, 25, 41, TF_AXIS_Y,  0.0000,  0.0955,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[2].node[2] = TFNode( 1, 10, 26, 42, TF_AXIS_Y,  0.0000,  0.0000, -0.2130, 0.0, 0.0, 0.0);
+      LegChains_[2].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2350, 0.0, 0.0, 0.0);
+      LegChains_[2].wheel_radius = 0.0;
+      LegChains_[2].wheel_q_index = -1;
+      LegChains_[2].wheel_dq_index = -1;
+      LegChains_[2].pitch_joint_num = 0;
+      // RR
+      LegChains_[3].node_num = 3;
+      LegChains_[3].node[0] = TFNode(-1, 12, 28, 44, TF_AXIS_X, -0.1934,  0.0465,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[3].node[1] = TFNode( 0, 13, 29, 45, TF_AXIS_Y,  0.0000, -0.0955,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[3].node[2] = TFNode( 1, 14, 30, 46, TF_AXIS_Y,  0.0000,  0.0000, -0.2130, 0.0, 0.0, 0.0);
+      LegChains_[3].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2350, 0.0, 0.0, 0.0);
+      LegChains_[3].wheel_radius = 0.0;
+      LegChains_[3].wheel_q_index = -1;
+      LegChains_[3].wheel_dq_index = -1;
+      LegChains_[3].pitch_joint_num = 0;
     }
-    
-    // ========= 预设：中狗点足MP / 大狗轮足LW / 中狗轮足MW =========
-    static constexpr double MP_PARAM[4][13] = {
-      {  0.2878,  0.07,  0.000,   0.0,  0.1709,  0.0,   0.0,  0.0, -0.26,  0.0,  0.0, -0.26,  0.03 },
-      {  0.2878, -0.07,  0.000,   0.0, -0.1709,  0.0,   0.0,  0.0, -0.26,  0.0,  0.0, -0.26,  0.03 },
-      { -0.2878,  0.07,  0.000,   0.0,  0.1709,  0.0,   0.0,  0.0, -0.26,  0.0,  0.0, -0.26,  0.03 },
-      { -0.2878, -0.07,  0.000,   0.0, -0.1709,  0.0,   0.0,  0.0, -0.26,  0.0,  0.0, -0.26,  0.03 }
-    };
-    static constexpr double MP_HIP   = 0.1709;
-    static constexpr double MP_THIGH = 0.26;
-    static constexpr double MP_CALF  = 0.26 + 0.03;
-    static constexpr double MP_WHEEL = 0.00;
-    static constexpr double MP_Height= 0.08;
-    static constexpr double MP_FORCE = -80;
-
-    static constexpr double LW_PARAM[4][13] = {
-      {  0.3405,  0.1,  -0.0666,   0.0,  0.1522,  0.0,  0.0,  0.0, -0.27,  0.0,  0.0, -0.351,  0.195/2 },
-      {  0.3405, -0.1,  -0.0666,   0.0, -0.1522,  0.0,  0.0,  0.0, -0.27,  0.0,  0.0, -0.351,  0.195/2 },
-      { -0.3405,  0.1,  -0.0666,   0.0,  0.1522,  0.0,  0.0,  0.0, -0.27,  0.0,  0.0, -0.351,  0.195/2 },
-      { -0.3405, -0.1,  -0.0666,   0.0, -0.1522,  0.0,  0.0,  0.0, -0.27,  0.0,  0.0, -0.351,  0.195/2 }
-    };
-    static constexpr double LW_HIP   = 0.1522;
-    static constexpr double LW_THIGH = 0.27;
-    static constexpr double LW_CALF  = 0.351;
-    static constexpr double LW_WHEEL = 0.195/2;
-    static constexpr double LW_Height= 0.10;
-    static constexpr double LW_FORCE = -120;
-
-    static constexpr double MW_PARAM[4][13] = {
-      {  0.2878,  0.07,  0.000,   0.0,  0.1709,  0.0,   0.0,  0.0, -0.26,  0.0,  0.0, -0.26,  0.195/2 },
-      {  0.2878, -0.07,  0.000,   0.0, -0.1709,  0.0,   0.0,  0.0, -0.26,  0.0,  0.0, -0.26,  0.195/2 },
-      { -0.2878,  0.07,  0.000,   0.0,  0.1709,  0.0,   0.0,  0.0, -0.26,  0.0,  0.0, -0.26,  0.195/2 },
-      { -0.2878, -0.07,  0.000,   0.0, -0.1709,  0.0,   0.0,  0.0, -0.26,  0.0,  0.0, -0.26,  0.195/2 }
-    };
-    static constexpr double MW_HIP   = 0.1709;
-    static constexpr double MW_THIGH = 0.26;
-    static constexpr double MW_CALF  = 0.26;
-    static constexpr double MW_WHEEL = 0.195/2;
-    static constexpr double MW_Height= 0.03;
-    static constexpr double MW_FORCE = -85;
 
     void UseMP()
     {
-      std::memcpy(KinematicParams, MP_PARAM, sizeof(KinematicParams));
-      Par_HipLength = MP_HIP; Par_ThighLength = MP_THIGH; Par_CalfLength = MP_CALF; Par_WheelRadius = MP_WHEEL;
-      Environement_Height_Scope = MP_Height;
-      FootEffortThreshold = MP_FORCE;
-      
-      if (!IKVelCKF_Inited_) {
-        StateSpaceModel_IKVel_Initialization(&IKVelCKF_);
-        IKVelCKF_Inited_ = true;
-      }
-      for (int i = 0; i < 4; ++i) {
-        IKVelLegInited_[i] = false;
-        IKVelLastT_[i] = 0.0;
-      }
-      IKVelCKF_.Double_Par[1] = Par_HipLength;
-      IKVelCKF_.Double_Par[2] = Par_ThighLength;
-      IKVelCKF_.Double_Par[3] = Par_CalfLength;
-      IKVelCKF_.Double_Par[4] = Par_WheelRadius;
-    }
+      for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
 
+      ContactChainNum = 4;
+      Environement_Height_Scope = 0.08;
+      FootEffortThreshold = -80.0;
+
+      LegChains_[0].node_num = 3;
+      LegChains_[0].node[0] = TFNode(-1,  0, 16, 32, TF_AXIS_X,  0.2878,  0.0700,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[0].node[1] = TFNode( 0,  1, 17, 33, TF_AXIS_Y,  0.0000,  0.1709,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[0].node[2] = TFNode( 1,  2, 18, 34, TF_AXIS_Y,  0.0000,  0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[0].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2900, 0.0, 0.0, 0.0);
+      LegChains_[0].wheel_radius = 0.0;
+      LegChains_[0].wheel_q_index = -1;
+      LegChains_[0].wheel_dq_index = -1;
+      LegChains_[0].pitch_joint_num = 0;
+
+      LegChains_[1].node_num = 3;
+      LegChains_[1].node[0] = TFNode(-1,  4, 20, 36, TF_AXIS_X,  0.2878, -0.0700,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[1].node[1] = TFNode( 0,  5, 21, 37, TF_AXIS_Y,  0.0000, -0.1709,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[1].node[2] = TFNode( 1,  6, 22, 38, TF_AXIS_Y,  0.0000,  0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[1].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2900, 0.0, 0.0, 0.0);
+      LegChains_[1].wheel_radius = 0.0;
+      LegChains_[1].wheel_q_index = -1;
+      LegChains_[1].wheel_dq_index = -1;
+      LegChains_[1].pitch_joint_num = 0;
+
+      LegChains_[2].node_num = 3;
+      LegChains_[2].node[0] = TFNode(-1,  8, 24, 40, TF_AXIS_X, -0.2878,  0.0700,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[2].node[1] = TFNode( 0,  9, 25, 41, TF_AXIS_Y,  0.0000,  0.1709,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[2].node[2] = TFNode( 1, 10, 26, 42, TF_AXIS_Y,  0.0000,  0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[2].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2900, 0.0, 0.0, 0.0);
+      LegChains_[2].wheel_radius = 0.0;
+      LegChains_[2].wheel_q_index = -1;
+      LegChains_[2].wheel_dq_index = -1;
+      LegChains_[2].pitch_joint_num = 0;
+
+      LegChains_[3].node_num = 3;
+      LegChains_[3].node[0] = TFNode(-1, 12, 28, 44, TF_AXIS_X, -0.2878, -0.0700,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[3].node[1] = TFNode( 0, 13, 29, 45, TF_AXIS_Y,  0.0000, -0.1709,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[3].node[2] = TFNode( 1, 14, 30, 46, TF_AXIS_Y,  0.0000,  0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[3].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2900, 0.0, 0.0, 0.0);
+      LegChains_[3].wheel_radius = 0.0;
+      LegChains_[3].wheel_q_index = -1;
+      LegChains_[3].wheel_dq_index = -1;
+      LegChains_[3].pitch_joint_num = 0;
+    }
+    
     void UseLW()
     {
-      std::memcpy(KinematicParams, LW_PARAM, sizeof(KinematicParams));
-      Par_HipLength = LW_HIP; Par_ThighLength = LW_THIGH; Par_CalfLength = LW_CALF; Par_WheelRadius = LW_WHEEL;
-      Environement_Height_Scope = LW_Height;
-      FootEffortThreshold = LW_FORCE;
-      
-      IKVelCKF_Inited_ = false;
+      // LW 轮足模型
+      // 与点足相比，多了轮相关参数：
+      // 1) wheel_radius：轮半径
+      // 2) wheel_q_index / wheel_dq_index：轮电机角度/角速度在 joint[48] 中的索引
+      // 3) pitch_joint_num：参与“小腿姿态补偿”的关节数
+      // 4) pitch_q_index / pitch_dq_index：这些关节在 q/dq 中的索引
+      //
+      // 轮足设置原则：
+      // 1) ee 的 z 写“膝关节到轮轴中心”或当前定义的末端刚体长度
+      // 2) 轮滚动位移不在 FK 中体现，而在 FootFallPositionRecord() 中由 wheel_radius 和轮角增量补偿
+      // 3) pitch_joint_num 一般取 2，对应 q2、q3，用于扣除小腿摆动带来的轮角假转动
+      //
+      // 重要：
+      // 当前配置要求 joint[0..15] / joint[16..31] 中包含轮电机 3,7,11,15。
+      // 如果外层只传 12 个关节而没有轮电机数据，则不能使用本配置。
+
+      for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
+
+      ContactChainNum = 4;
+      Environement_Height_Scope = 0.10;
+      FootEffortThreshold = -120.0;
+
+      // FL: 腿关节 q=(0,1,2)，轮关节 q=3
+      // dq=(16,17,18,19), tau=(32,33,34)
+      // pitch 补偿关节取 q2,q3，即 (1,2)
+      LegChains_[0].node_num = 3;
+      LegChains_[0].node[0] = TFNode(-1,  0, 16, 32, TF_AXIS_X,  0.3405,  0.1000, -0.0666, 0.0, 0.0, 0.0);
+      LegChains_[0].node[1] = TFNode( 0,  1, 17, 33, TF_AXIS_Y,  0.0000,  0.1522,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[0].node[2] = TFNode( 1,  2, 18, 34, TF_AXIS_Y,  0.0000,  0.0000, -0.2700, 0.0, 0.0, 0.0);
+      LegChains_[0].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.3510, 0.0, 0.0, 0.0);
+      LegChains_[0].wheel_radius = 0.195 / 2.0;
+      LegChains_[0].wheel_q_index = 3;
+      LegChains_[0].wheel_dq_index = 19;
+      LegChains_[0].pitch_joint_num = 2;
+      LegChains_[0].pitch_q_index[0] = 1;
+      LegChains_[0].pitch_q_index[1] = 2;
+      LegChains_[0].pitch_dq_index[0] = 17;
+      LegChains_[0].pitch_dq_index[1] = 18;
+      // FR
+      LegChains_[1].node_num = 3;
+      LegChains_[1].node[0] = TFNode(-1,  4, 20, 36, TF_AXIS_X,  0.3405, -0.1000, -0.0666, 0.0, 0.0, 0.0);
+      LegChains_[1].node[1] = TFNode( 0,  5, 21, 37, TF_AXIS_Y,  0.0000, -0.1522,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[1].node[2] = TFNode( 1,  6, 22, 38, TF_AXIS_Y,  0.0000,  0.0000, -0.2700, 0.0, 0.0, 0.0);
+      LegChains_[1].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.3510, 0.0, 0.0, 0.0);
+      LegChains_[1].wheel_radius = 0.195 / 2.0;
+      LegChains_[1].wheel_q_index = 7;
+      LegChains_[1].wheel_dq_index = 23;
+      LegChains_[1].pitch_joint_num = 2;
+      LegChains_[1].pitch_q_index[0] = 5;
+      LegChains_[1].pitch_q_index[1] = 6;
+      LegChains_[1].pitch_dq_index[0] = 21;
+      LegChains_[1].pitch_dq_index[1] = 22;
+      // RL
+      LegChains_[2].node_num = 3;
+      LegChains_[2].node[0] = TFNode(-1,  8, 24, 40, TF_AXIS_X, -0.3405,  0.1000, -0.0666, 0.0, 0.0, 0.0);
+      LegChains_[2].node[1] = TFNode( 0,  9, 25, 41, TF_AXIS_Y,  0.0000,  0.1522,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[2].node[2] = TFNode( 1, 10, 26, 42, TF_AXIS_Y,  0.0000,  0.0000, -0.2700, 0.0, 0.0, 0.0);
+      LegChains_[2].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.3510, 0.0, 0.0, 0.0);
+      LegChains_[2].wheel_radius = 0.195 / 2.0;
+      LegChains_[2].wheel_q_index = 11;
+      LegChains_[2].wheel_dq_index = 27;
+      LegChains_[2].pitch_joint_num = 2;
+      LegChains_[2].pitch_q_index[0] = 9;
+      LegChains_[2].pitch_q_index[1] = 10;
+      LegChains_[2].pitch_dq_index[0] = 25;
+      LegChains_[2].pitch_dq_index[1] = 26;
+      // RR
+      LegChains_[3].node_num = 3;
+      LegChains_[3].node[0] = TFNode(-1, 12, 28, 44, TF_AXIS_X, -0.3405, -0.1000, -0.0666, 0.0, 0.0, 0.0);
+      LegChains_[3].node[1] = TFNode( 0, 13, 29, 45, TF_AXIS_Y,  0.0000, -0.1522,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[3].node[2] = TFNode( 1, 14, 30, 46, TF_AXIS_Y,  0.0000,  0.0000, -0.2700, 0.0, 0.0, 0.0);
+      LegChains_[3].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.3510, 0.0, 0.0, 0.0);
+      LegChains_[3].wheel_radius = 0.195 / 2.0;
+      LegChains_[3].wheel_q_index = 15;
+      LegChains_[3].wheel_dq_index = 31;
+      LegChains_[3].pitch_joint_num = 2;
+      LegChains_[3].pitch_q_index[0] = 13;
+      LegChains_[3].pitch_q_index[1] = 14;
+      LegChains_[3].pitch_dq_index[0] = 29;
+      LegChains_[3].pitch_dq_index[1] = 30;
     }
     
     void UseMW()
     {
-      std::memcpy(KinematicParams, MW_PARAM, sizeof(KinematicParams));
-      Par_HipLength = MW_HIP; Par_ThighLength = MW_THIGH; Par_CalfLength = MW_CALF; Par_WheelRadius = MW_WHEEL;
-      Environement_Height_Scope = MW_Height;
-      FootEffortThreshold = MW_FORCE;
-      
-      IKVelCKF_Inited_ = false;
+      for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
+
+      ContactChainNum = 4;
+      Environement_Height_Scope = 0.08;
+      FootEffortThreshold = -85.0;
+
+      LegChains_[0].node_num = 3;
+      LegChains_[0].node[0] = TFNode(-1,  0, 16, 32, TF_AXIS_X,  0.2878,  0.0700,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[0].node[1] = TFNode( 0,  1, 17, 33, TF_AXIS_Y,  0.0000,  0.1709,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[0].node[2] = TFNode( 1,  2, 18, 34, TF_AXIS_Y,  0.0000,  0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[0].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[0].wheel_radius = 0.195 / 2.0;
+      LegChains_[0].wheel_q_index = 3;
+      LegChains_[0].wheel_dq_index = 19;
+      LegChains_[0].pitch_joint_num = 2;
+      LegChains_[0].pitch_q_index[0] = 1;
+      LegChains_[0].pitch_q_index[1] = 2;
+      LegChains_[0].pitch_dq_index[0] = 17;
+      LegChains_[0].pitch_dq_index[1] = 18;
+
+      LegChains_[1].node_num = 3;
+      LegChains_[1].node[0] = TFNode(-1,  4, 20, 36, TF_AXIS_X,  0.2878, -0.0700,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[1].node[1] = TFNode( 0,  5, 21, 37, TF_AXIS_Y,  0.0000, -0.1709,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[1].node[2] = TFNode( 1,  6, 22, 38, TF_AXIS_Y,  0.0000,  0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[1].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[1].wheel_radius = 0.195 / 2.0;
+      LegChains_[1].wheel_q_index = 7;
+      LegChains_[1].wheel_dq_index = 23;
+      LegChains_[1].pitch_joint_num = 2;
+      LegChains_[1].pitch_q_index[0] = 5;
+      LegChains_[1].pitch_q_index[1] = 6;
+      LegChains_[1].pitch_dq_index[0] = 21;
+      LegChains_[1].pitch_dq_index[1] = 22;
+
+      LegChains_[2].node_num = 3;
+      LegChains_[2].node[0] = TFNode(-1,  8, 24, 40, TF_AXIS_X, -0.2878,  0.0700,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[2].node[1] = TFNode( 0,  9, 25, 41, TF_AXIS_Y,  0.0000,  0.1709,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[2].node[2] = TFNode( 1, 10, 26, 42, TF_AXIS_Y,  0.0000,  0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[2].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[2].wheel_radius = 0.195 / 2.0;
+      LegChains_[2].wheel_q_index = 11;
+      LegChains_[2].wheel_dq_index = 27;
+      LegChains_[2].pitch_joint_num = 2;
+      LegChains_[2].pitch_q_index[0] = 9;
+      LegChains_[2].pitch_q_index[1] = 10;
+      LegChains_[2].pitch_dq_index[0] = 25;
+      LegChains_[2].pitch_dq_index[1] = 26;
+
+      LegChains_[3].node_num = 3;
+      LegChains_[3].node[0] = TFNode(-1, 12, 28, 44, TF_AXIS_X, -0.2878, -0.0700,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[3].node[1] = TFNode( 0, 13, 29, 45, TF_AXIS_Y,  0.0000, -0.1709,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[3].node[2] = TFNode( 1, 14, 30, 46, TF_AXIS_Y,  0.0000,  0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[3].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2600, 0.0, 0.0, 0.0);
+      LegChains_[3].wheel_radius = 0.195 / 2.0;
+      LegChains_[3].wheel_q_index = 15;
+      LegChains_[3].wheel_dq_index = 31;
+      LegChains_[3].pitch_joint_num = 2;
+      LegChains_[3].pitch_q_index[0] = 13;
+      LegChains_[3].pitch_q_index[1] = 14;
+      LegChains_[3].pitch_dq_index[0] = 29;
+      LegChains_[3].pitch_dq_index[1] = 30;
     }
 
     bool JointsXYZEnable = true;
@@ -155,24 +357,17 @@ namespace DataFusion
     void SensorDataHandle(double* Message, double Time)  override;
     void LoadedWeightCheck(double* Message, double Time);
 
-    bool FootfallPositionRecordIsInitiated[4] = {0}, FootIsOnGround[4] = {0}, FootWasOnGround[4] = {0}, FootLastMotion[4] = {0}, FootLanding[4] = {0}, CalculateWeightEnable = false;
-    double FootBodyEff_BF[4][3]={0}, FootBodyEff_WF[4][3]={0}, FeetEffort2BodyMotion[4][6];
-    double FootBodyPos_BF[4][3]={0}, FootBodyPos_WF[4][3]={0}, FootBodyVel_WF[4][3]={0}, FootfallPositionRecord[4][4]={0}, FootfallAveragePosition[3] = {0}, FootfallProbability[4] = {0}, WheelAnglePrev[4] = {0};
+    bool FootfallPositionRecordIsInitiated[MAX_CONTACT_CHAIN] = {0}, FootIsOnGround[MAX_CONTACT_CHAIN] = {0}, FootWasOnGround[MAX_CONTACT_CHAIN] = {0}, FootLastMotion[MAX_CONTACT_CHAIN] = {0}, FootLanding[MAX_CONTACT_CHAIN] = {0}, CalculateWeightEnable = false;
+    double FootBodyEff_BF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyEff_WF[MAX_CONTACT_CHAIN][3] = {0}, FeetEffort2BodyMotion[MAX_CONTACT_CHAIN][6] = {0};
+    double FootBodyPos_BF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyPos_WF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyVel_WF[MAX_CONTACT_CHAIN][3] = {0}, FootfallPositionRecord[MAX_CONTACT_CHAIN][4] = {0}, FootfallAveragePosition[3] = {0}, FootfallProbability[MAX_CONTACT_CHAIN] = {0}, WheelAnglePrev[MAX_CONTACT_CHAIN] = {0};
+
     double MinimumWeight = 25.0, TimelyWeight = 25.0;
-    double SlopeModeTimeThreshold  = 0.75;
+    
+    bool SlopeModeEnable = true;
+    double SlopeModeTimeThreshold  = 1.0;
     double SlopeModeAngleThreshold = 5.0 / 180.0 * M_PI;
     double SlopeModeStepHeightThreshold  = 0.03;
-    double SlopeModeFootForceAccept  = 0.3;
-
-    // ===== IKVel CKF(Estimator1003) =====
-    bool IKVelEnable = false;
-    EstimatorPortN IKVelCKF_;
-    bool IKVelCKF_Inited_ = false;
-    bool   IKVelLegInited_[4] = {false, false, false, false};
-    double IKVelLastT_[4]     = {0.0, 0.0, 0.0, 0.0};
-    double IKVelX_[4][6]      = {{0}};     // IK坐标（未做你那里 Observation[0]/[1] 的 x 翻转）
-    double IKVelP_[4][36]     = {{0}};     // 6x6 row-major
-    double FootBodyVel_CKE[4][3]={0};
+    double SlopeModeFootForceAccept  = 0.5;
 
     protected:
 

@@ -87,7 +87,7 @@ enum ConfigIndex {
     IndexLegOrientationInitialWeight = 13, 
     IndexLegOrientationTimeWeight = 14,
 
-    IndexLegVelCKEEnable = 15,
+    IndexSlopeEstimationEnable = 15,
 };
 
 class FusionEstimatorCore
@@ -151,8 +151,8 @@ public:
             
             legs_ori->legori_init_weight        = status[IndexLegOrientationInitialWeight];
             legs_ori->legori_time_weight        = status[IndexLegOrientationTimeWeight];
-
-            legs_pos->IKVelEnable               = status[IndexLegVelCKEEnable];
+            
+            legs_pos->SlopeModeEnable           = status[IndexSlopeEstimationEnable];
         }
         else if (status[IndexInOrOut] == 2){
             status[IndexInOrOut] = 0;
@@ -175,8 +175,8 @@ public:
 
             status[IndexLegOrientationInitialWeight] = legs_ori->legori_init_weight;
             status[IndexLegOrientationTimeWeight]    = legs_ori->legori_time_weight;
-
-            status[IndexLegVelCKEEnable]             = legs_pos->IKVelEnable;
+            
+            status[IndexSlopeEstimationEnable]            = legs_pos->SlopeModeEnable;
 
             for(int i = 0; i < 9; i++){
                 status[50 + i] = sensors[0]->EstimatedState[i];

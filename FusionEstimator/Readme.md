@@ -1,1 +1,0 @@
-This repository is a pure C/C++ program, doesn't contain fusion_estimator_node.cpp or other ROS file. Which means you can use it in both ROS1 ROS2 and other platform.

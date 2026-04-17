@@ -14,7 +14,7 @@ namespace DataFusion
         for(i = 0; i < StateSpaceModel->Nz; i++)
             Observation[i] = 0;
 
-        for(LegNumber = 0; LegNumber<4; LegNumber++)
+        for(LegNumber = 0; LegNumber< ContactChainNum; LegNumber++)
         {
             for(i = 0; i < 3; i++){
                 FootBodyEff_WF[LegNumber][i] = 0;
@@ -24,7 +24,7 @@ namespace DataFusion
             }
             for(i = 0; i < 3; i++)
             {
-                SensorPosition[i] = KinematicParams[LegNumber][i];
+                SensorPosition[i] = LegChains_[LegNumber].node[0].t[i];
             }
             
             Joint2HipFoot(Message,LegNumber);
@@ -56,7 +56,14 @@ namespace DataFusion
             }
         }
         
-        if(FootIsOnGround[0]||FootIsOnGround[1]||FootIsOnGround[2]||FootIsOnGround[3])
+        bool BoolTemp = false;
+        for(LegNumber = 0; LegNumber< ContactChainNum; LegNumber++)
+            if(FootIsOnGround[LegNumber])
+            {
+                BoolTemp = true;
+                break;
+            }
+        if(BoolTemp)
         {
             for(i = 0; i < 9; i++)
             {
@@ -79,8 +86,8 @@ namespace DataFusion
             }
             StateSpaceModel_Go2_EstimatorPort(Observation, ObservationTime, StateSpaceModel);
 
-            double p_w[4][2];
-            for (LegNumber = 0; LegNumber < 4; ++LegNumber) {
+            double p_w[MAX_CONTACT_CHAIN][2] = {{0.0}};
+            for (LegNumber = 0; LegNumber < ContactChainNum; ++LegNumber) {
                 if (FootIsOnGround[LegNumber]) {
                     p_w[LegNumber][0] = FootfallPositionRecord[LegNumber][0];
                     p_w[LegNumber][1] = FootfallPositionRecord[LegNumber][1];
@@ -90,22 +97,34 @@ namespace DataFusion
                 }
             }
 
-            const double fx = 0.5 * (p_w[0][0] + p_w[1][0]);
-            const double fy = 0.5 * (p_w[0][1] + p_w[1][1]);
-            const double rx = 0.5 * (p_w[2][0] + p_w[3][0]);
-            const double ry = 0.5 * (p_w[2][1] + p_w[3][1]);
+            if (ContactChainNum == 4) {
+                const double fx = 0.5 * (p_w[0][0] + p_w[1][0]);
+                const double fy = 0.5 * (p_w[0][1] + p_w[1][1]);
+                const double rx = 0.5 * (p_w[2][0] + p_w[3][0]);
+                const double ry = 0.5 * (p_w[2][1] + p_w[3][1]);
 
-            // 四足中心（世界系）
-            const double x_mean = 0.5 * (fx + rx);
-            const double y_mean = 0.5 * (fy + ry);
+                const double x_mean = 0.5 * (fx + rx);
+                const double y_mean = 0.5 * (fy + ry);
 
-            double yaw_ff = std::atan2(fy - ry, fx - rx);
+                double yaw_ff = std::atan2(fy - ry, fx - rx);
+                angle_unwrap(yaw_ff);
 
-            angle_unwrap(yaw_ff);
+                FootfallAveragePosition[0] = x_mean;
+                FootfallAveragePosition[1] = y_mean;
+                FootfallAveragePosition[2] = yaw_ff;
+            } else {
+                double x_sum = 0.0, y_sum = 0.0;
+                int cnt = 0;
+                for (LegNumber = 0; LegNumber < ContactChainNum; ++LegNumber) {
+                    x_sum += p_w[LegNumber][0];
+                    y_sum += p_w[LegNumber][1];
+                    cnt++;
+                }
 
-            FootfallAveragePosition[0] = x_mean;
-            FootfallAveragePosition[1] = y_mean;
-            FootfallAveragePosition[2] = yaw_ff; 
+                FootfallAveragePosition[0] = x_sum / (double)cnt;
+                FootfallAveragePosition[1] = y_sum / (double)cnt;
+                FootfallAveragePosition[2] = 0.0;
+            }
         }
     }
 
@@ -157,143 +176,171 @@ namespace DataFusion
 
     void SensorLegsPos::Joint2HipFoot(double *Message, int LegNumber)
     {
-        double s1, s2, s3, c1, c2, c3, c23, s23, dq1, dq2, dq3;
-        int SideSign, i;
+        const LegTFChain& chain = LegChains_[LegNumber];
 
-        if (LegNumber == 0 || LegNumber == 2)
-            SideSign = 1;
-        else
-            SideSign = -1;
+        double node_pos[MAX_CHAIN_NODE][3] = {{0.0}};
+        double node_quat[MAX_CHAIN_NODE][4] = {{0.0}};
 
-        s1 = sin(Message[LegNumber*4+0]);
-        s2 = sin(Message[LegNumber*4+1]);
-        s3 = sin(Message[LegNumber*4+2]);
-        c1 = cos(Message[LegNumber*4+0]);
-        c2 = cos(Message[LegNumber*4+1]);
-        c3 = cos(Message[LegNumber*4+2]);
-        dq1 = Message[16 + LegNumber*4+0];
-        dq2 = Message[16 + LegNumber*4+1];
-        dq3 = Message[16 + LegNumber*4+2];
+        double joint_org[MAX_CHAIN_NODE][3] = {{0.0}};
+        double joint_axis[MAX_CHAIN_NODE][3] = {{0.0}};
+        int joint_dq_index[MAX_CHAIN_NODE];
+        int joint_tau_index[MAX_CHAIN_NODE];
+        int joint_num = 0;
 
-        c23 = c2 * c3 - s2 * s3;
-        s23 = s2 * c3 + c2 * s3;
+        const double p_zero[3] = {0.0, 0.0, 0.0};
+        const double q_id[4]   = {1.0, 0.0, 0.0, 0.0};
 
-        Observation[0] = Par_CalfLength  * s23 + Par_ThighLength * s2;
-        Observation[3] = Par_HipLength * SideSign * c1 + (Par_CalfLength + Par_WheelRadius) * (s1 * c23) + Par_ThighLength * c2 * s1;
-        Observation[6] = Par_HipLength * SideSign * s1 - Par_CalfLength * (c1 * c23) - Par_ThighLength * c1 * c2 + Par_WheelRadius;
-
-        Observation[1] = (Par_CalfLength *c23 + Par_ThighLength * c2)*dq2 + (Par_CalfLength *c23)*dq3;
-        Observation[4] = ((Par_CalfLength + Par_WheelRadius) *c1*c23 + Par_ThighLength * c1*c2 - Par_HipLength*SideSign*s1)*dq1\
-        + (-(Par_CalfLength + Par_WheelRadius)  * s1*s23 - Par_ThighLength * s1*s2)*dq2\
-        + (-(Par_CalfLength + Par_WheelRadius)  * s1*s23)*dq3;
-        Observation[7] = (Par_CalfLength *s1*c23 + Par_ThighLength * c2*s1 + Par_HipLength*SideSign*c1)*dq1\
-        + (Par_CalfLength *c1*s23 + Par_ThighLength * c1*s2)*dq2\
-        + (Par_CalfLength *c1*s23)*dq3;
-
-        Observation[0] = -Observation[0];
-        Observation[1] = -Observation[1];
-
-        FootBodyPos_BF[LegNumber][0] = Observation[0] + SensorPosition[0];
-        FootBodyPos_BF[LegNumber][1] = Observation[3] + SensorPosition[1];
-        FootBodyPos_BF[LegNumber][2] = Observation[6] + SensorPosition[2];
-
-
-        // ===== IKVel CKF(1003): 用关节角/角速度观测，对足端速度做估计与滤波 =====
-        if (IKVelEnable && IKVelCKF_Inited_)
-        {
-            // 观测 z = [q1 q2 q3 dq1 dq2 dq3]
-            double z_ik[6];
-            z_ik[0] = Message[LegNumber*4 + 0];
-            z_ik[1] = Message[LegNumber*4 + 1];
-            z_ik[2] = Message[LegNumber*4 + 2];
-            z_ik[3] = Message[16 + LegNumber*4 + 0];
-            z_ik[4] = Message[16 + LegNumber*4 + 1];
-            z_ik[5] = Message[16 + LegNumber*4 + 2];
-
-            IKVelCKF_.Double_Par[0] = (double)SideSign;
-
-            // 第一次：用当前正解出来的 (pos, vel) 作为初值
-            // 注意：你这里把 Observation[0]/[1] 做了 x 翻转，所以要还原成 IKVel 状态使用的坐标
-            if (!IKVelLegInited_[LegNumber])
-            {
-                IKVelX_[LegNumber][0] = -Observation[0]; // x
-                IKVelX_[LegNumber][1] =  Observation[3]; // y
-                IKVelX_[LegNumber][2] =  Observation[6]; // z
-                IKVelX_[LegNumber][3] = -Observation[1]; // vx
-                IKVelX_[LegNumber][4] =  Observation[4]; // vy
-                IKVelX_[LegNumber][5] =  Observation[7]; // vz
-
-                // P 初值：直接用 IKVelCKF_ 初始化后的 Matrix_P
-                std::memcpy(IKVelP_[LegNumber], IKVelCKF_.Matrix_P, 36 * sizeof(double));
-
-                IKVelLastT_[LegNumber] = ObservationTime;   // 你在 SensorDataHandle 里赋值过 ObservationTime
-                IKVelLegInited_[LegNumber] = true;
-            }
-
-            // 把该腿缓存装入复用的 IKVelCKF_ 实例
-            std::memcpy(IKVelCKF_.EstimatedState, IKVelX_[LegNumber], 6 * sizeof(double));
-            std::memcpy(IKVelCKF_.PredictedState, IKVelX_[LegNumber], 6 * sizeof(double));
-            std::memcpy(IKVelCKF_.Matrix_P,      IKVelP_[LegNumber], 36 * sizeof(double));
-            IKVelCKF_.StateUpdateTimestamp = IKVelLastT_[LegNumber];
-
-            // 调 IKVel CKF
-            StateSpaceModel_IKVel_EstimatorPort(z_ik, ObservationTime, &IKVelCKF_);
-
-            // 把结果存回该腿缓存
-            std::memcpy(IKVelX_[LegNumber], IKVelCKF_.EstimatedState, 6 * sizeof(double));
-            std::memcpy(IKVelP_[LegNumber], IKVelCKF_.Matrix_P,      36 * sizeof(double));
-            IKVelLastT_[LegNumber] = IKVelCKF_.StateUpdateTimestamp; // 一般会等于 ObservationTime
-
-            // 用滤波后的速度覆盖你当前的 Observation 速度
-            // 仍然保持你原来的“x 轴翻转约定”
-            Observation[1] = -IKVelX_[LegNumber][3]; // vx flip back
-            Observation[4] =  IKVelX_[LegNumber][4]; // vy
-            Observation[7] =  IKVelX_[LegNumber][5]; // vz
-
-            FootBodyVel_CKE[LegNumber][0] = Observation[1];
-            FootBodyVel_CKE[LegNumber][1] = Observation[4];
-            FootBodyVel_CKE[LegNumber][2] = Observation[7];
+        for (int i = 0; i < MAX_CHAIN_NODE; ++i) {
+            joint_dq_index[i] = -1;
+            joint_tau_index[i] = -1;
         }
 
+        for (int n = 0; n < chain.node_num; ++n)
+        {
+            const TFNode& nd = chain.node[n];
 
-        double tau_hip   = Message[32 + LegNumber * 4 + 0];
-        double tau_thigh = Message[32 + LegNumber * 4 + 1];
-        double tau_knee  = Message[32 + LegNumber * 4 + 2];
+            const double* p_parent = (nd.parent < 0) ? p_zero : node_pos[nd.parent];
+            const double* q_parent = (nd.parent < 0) ? q_id   : node_quat[nd.parent];
 
-        double J[3][3];
+            double t_body[3];
+            quat_rot_vec3(q_parent, nd.t, t_body);
 
-        double Jx1_raw = 0.0;
-        double Jx2_raw = Par_CalfLength * c23 + Par_ThighLength * c2;
-        double Jx3_raw = Par_CalfLength * c23;
+            double p_pre[3] = {
+                p_parent[0] + t_body[0],
+                p_parent[1] + t_body[1],
+                p_parent[2] + t_body[2]
+            };
 
-        double Jy1 = (Par_CalfLength + Par_WheelRadius) * c1 * c23 + Par_ThighLength * c1 * c2 - Par_HipLength * SideSign * s1;
-        double Jy2 = -(Par_CalfLength + Par_WheelRadius) * s1 * s23 - Par_ThighLength * s1 * s2;
-        double Jy3 = -(Par_CalfLength + Par_WheelRadius) * s1 * s23;
+            double q_pre[4];
+            quat_mul(q_parent, nd.q_fix, q_pre);
+            quat_normalize(q_pre);
 
-        double Jz1 = Par_CalfLength * s1 * c23 + Par_ThighLength * c2 * s1 + Par_HipLength * SideSign * c1;
-        double Jz2 = Par_CalfLength * c1 * s23 + Par_ThighLength * c1 * s2;
-        double Jz3 = Par_CalfLength * c1 * s23;
+            if (nd.q_index >= 0)
+            {
+                double axis_local[3] = {0.0, 0.0, 0.0};
+                if (nd.axis == TF_AXIS_X) axis_local[0] = 1.0;
+                else if (nd.axis == TF_AXIS_Y) axis_local[1] = 1.0;
+                else if (nd.axis == TF_AXIS_Z) axis_local[2] = 1.0;
 
-        J[0][0] = -Jx1_raw;
-        J[0][1] = -Jx2_raw;
-        J[0][2] = -Jx3_raw;
+                joint_org[joint_num][0] = p_pre[0];
+                joint_org[joint_num][1] = p_pre[1];
+                joint_org[joint_num][2] = p_pre[2];
 
-        J[1][0] =  Jy1;  J[1][1] =  Jy2;  J[1][2] =  Jy3;
-        J[2][0] =  Jz1;  J[2][1] =  Jz2;  J[2][2] =  Jz3;
+                quat_rot_vec3(q_pre, axis_local, joint_axis[joint_num]);
 
+                joint_dq_index[joint_num] = nd.dq_index;
+                joint_tau_index[joint_num] = nd.tau_index;
 
-        const double tau[3] = { tau_hip, tau_thigh, tau_knee };
-        // w = J * tau
-        double w[3];
-        mat3_mul_vec(J, tau, w);
-        // M = J * J^T
-        double M[3][3];
-        mat3_mul_mat3T(J, M);
-        // f = inv(M) * w
-        double Minv[3][3];
-        double f[3] = {0,0,0};
-        if (mat3_inv(M, Minv))
-            mat3_mul_vec(Minv, w, FootBodyEff_BF[LegNumber]);
+                const double ang = Message[nd.q_index];
+                const double h = 0.5 * ang;
+                const double s = std::sin(h);
+
+                double q_joint[4] = {
+                    std::cos(h),
+                    axis_local[0] * s,
+                    axis_local[1] * s,
+                    axis_local[2] * s
+                };
+
+                quat_mul(q_pre, q_joint, node_quat[n]);
+                quat_normalize(node_quat[n]);
+
+                node_pos[n][0] = p_pre[0];
+                node_pos[n][1] = p_pre[1];
+                node_pos[n][2] = p_pre[2];
+
+                joint_num++;
+            }
+            else
+            {
+                node_pos[n][0] = p_pre[0];
+                node_pos[n][1] = p_pre[1];
+                node_pos[n][2] = p_pre[2];
+
+                node_quat[n][0] = q_pre[0];
+                node_quat[n][1] = q_pre[1];
+                node_quat[n][2] = q_pre[2];
+                node_quat[n][3] = q_pre[3];
+            }
+        }
+
+        const TFNode& ee = chain.ee;
+        const double* p_ee_parent = (ee.parent < 0) ? p_zero : node_pos[ee.parent];
+        const double* q_ee_parent = (ee.parent < 0) ? q_id   : node_quat[ee.parent];
+
+        double ee_t_body[3];
+        quat_rot_vec3(q_ee_parent, ee.t, ee_t_body);
+
+        double p_ee[3] = {
+            p_ee_parent[0] + ee_t_body[0],
+            p_ee_parent[1] + ee_t_body[1],
+            p_ee_parent[2] + ee_t_body[2]
+        };
+
+        double J[3][MAX_CHAIN_NODE] = {{0.0}};
+        for (int j = 0; j < joint_num; ++j)
+        {
+            double r[3] = {
+                p_ee[0] - joint_org[j][0],
+                p_ee[1] - joint_org[j][1],
+                p_ee[2] - joint_org[j][2]
+            };
+
+            J[0][j] = joint_axis[j][1] * r[2] - joint_axis[j][2] * r[1];
+            J[1][j] = joint_axis[j][2] * r[0] - joint_axis[j][0] * r[2];
+            J[2][j] = joint_axis[j][0] * r[1] - joint_axis[j][1] * r[0];
+        }
+
+        double v_ee[3] = {0.0, 0.0, 0.0};
+        for (int j = 0; j < joint_num; ++j)
+        {
+            const double dqj = (joint_dq_index[j] >= 0) ? Message[joint_dq_index[j]] : 0.0;
+            v_ee[0] += J[0][j] * dqj;
+            v_ee[1] += J[1][j] * dqj;
+            v_ee[2] += J[2][j] * dqj;
+        }
+
+        FootBodyPos_BF[LegNumber][0] = p_ee[0];
+        FootBodyPos_BF[LegNumber][1] = p_ee[1];
+        FootBodyPos_BF[LegNumber][2] = p_ee[2];
+
+        Observation[0] = p_ee[0] - SensorPosition[0];
+        Observation[3] = p_ee[1] - SensorPosition[1];
+        Observation[6] = p_ee[2] - SensorPosition[2];
+
+        Observation[1] = v_ee[0];
+        Observation[4] = v_ee[1];
+        Observation[7] = v_ee[2];
+
+        double Jtau[3] = {0.0, 0.0, 0.0};
+        double JJT[3][3] = {{0.0}};
+        double JJT_inv[3][3];
+
+        for (int j = 0; j < joint_num; ++j)
+        {
+            const double tauj = (joint_tau_index[j] >= 0) ? Message[joint_tau_index[j]] : 0.0;
+
+            Jtau[0] += J[0][j] * tauj;
+            Jtau[1] += J[1][j] * tauj;
+            Jtau[2] += J[2][j] * tauj;
+
+            JJT[0][0] += J[0][j] * J[0][j];
+            JJT[0][1] += J[0][j] * J[1][j];
+            JJT[0][2] += J[0][j] * J[2][j];
+            JJT[1][0] += J[1][j] * J[0][j];
+            JJT[1][1] += J[1][j] * J[1][j];
+            JJT[1][2] += J[1][j] * J[2][j];
+            JJT[2][0] += J[2][j] * J[0][j];
+            JJT[2][1] += J[2][j] * J[1][j];
+            JJT[2][2] += J[2][j] * J[2][j];
+        }
+
+        FootBodyEff_BF[LegNumber][0] = 0.0;
+        FootBodyEff_BF[LegNumber][1] = 0.0;
+        FootBodyEff_BF[LegNumber][2] = 0.0;
+
+        if (mat3_inv(JJT, JJT_inv))
+            mat3_mul_vec(JJT_inv, Jtau, FootBodyEff_BF[LegNumber]);
 
         quat_rot_vec3(Est_Quaternion, FootBodyEff_BF[LegNumber], FootBodyEff_WF[LegNumber]);
 
@@ -305,36 +352,32 @@ namespace DataFusion
             FootfallProbability[LegNumber] = (FootBodyEff_WF[LegNumber][2] - 0.3 * FootEffortThreshold) / (FootEffortThreshold);
 
         if(FootBodyEff_WF[LegNumber][2] <= FootEffortThreshold)
-        {
             FootIsOnGround[LegNumber] = true;
-        }
         else
-        {
             FootIsOnGround[LegNumber] = false;
-        }
 
         if(FootIsOnGround[LegNumber] && !FootWasOnGround[LegNumber])
         {
-            // std::cout << "[Check] L" << LegNumber
-            //     << " t=" << ObservationTime
-            //     << " FootBodyEff_WF[LegNumber][2]=" << FootBodyEff_WF[LegNumber][2]
-            //     << " FootEffortThreshold=" << FootEffortThreshold
-            //     << " LastStatus=" << FootWasOnGround[LegNumber]
-            //     << " LastMotion=" << FootLastMotion[LegNumber]
-            //     << std::endl;
             FootLanding[LegNumber] = true;
             FootLastMotion[LegNumber] = true;
         }
         else
-            FootLanding[LegNumber] = false;
-        
-        if(!FootIsOnGround[LegNumber] && FootWasOnGround[LegNumber])
         {
-            FootLastMotion[LegNumber] = false;
+            FootLanding[LegNumber] = false;
         }
 
-        if(LegNumber==3&&!FootIsOnGround[0]&&!FootIsOnGround[1]&&!FootIsOnGround[2]&&Observation[6]>-0.1)
-            FootIsOnGround[LegNumber] = true;
+        if(!FootIsOnGround[LegNumber] && FootWasOnGround[LegNumber])
+            FootLastMotion[LegNumber] = false;
+
+        // 辨别狗趴在地上的状态
+        if(LegNumber == ContactChainNum - 1){
+            int count;
+            for(count = 0; count < ContactChainNum; count++)
+                if(FootIsOnGround[count])
+                    break;
+            if(count == ContactChainNum && Observation[6] > -0.25)
+                FootIsOnGround[LegNumber] = true;
+        }
 
         FootWasOnGround[LegNumber] = FootIsOnGround[LegNumber];
     }
@@ -343,14 +386,14 @@ namespace DataFusion
 
         double p_sum[3] = {0}, v_sum[3] = {0};
         int    leg_cnt = 0;
-        static double ShankPitchPrev[4] = {0,0,0,0};
+        static double ShankPitchPrev[MAX_CONTACT_CHAIN] = {0};
         double body_roll=0.0, body_pitch=0.0, body_yaw=0.0;
         quat_to_eulerZYX(Est_Quaternion, body_roll, body_pitch, body_yaw);
 
         double move_dir_x = 1.0, move_dir_y = 0.0, move_dir_z = 0.0;
         EstimateGroundPitchAlongHeading(move_dir_x, move_dir_y, move_dir_z);
 
-        for (int LegNumber = 0; LegNumber < 4; ++LegNumber)
+        for (int LegNumber = 0; LegNumber < ContactChainNum; ++LegNumber)
         {
             if (!FootIsOnGround[LegNumber])
                 continue;
@@ -362,8 +405,15 @@ namespace DataFusion
                 FootfallPositionRecord[LegNumber][1] = StateSpaceModel->EstimatedState[3] + FootBodyPos_WF[LegNumber][1];
                 FootfallPositionRecord[LegNumber][2] = 0;
                 FootfallPositionRecord[LegNumber][3] = ObservationTime;
-                WheelAnglePrev[LegNumber] = Message[LegNumber*4 + 3];
-                ShankPitchPrev[LegNumber] = body_pitch + Message[LegNumber*4 + 1] + Message[LegNumber*4 + 2];
+
+                if (LegChains_[LegNumber].wheel_q_index >= 0)
+                    WheelAnglePrev[LegNumber] = Message[LegChains_[LegNumber].wheel_q_index];
+                else
+                    WheelAnglePrev[LegNumber] = 0.0;
+                ShankPitchPrev[LegNumber] = body_pitch;
+                for (int k = 0; k < LegChains_[LegNumber].pitch_joint_num; ++k)
+                    if (LegChains_[LegNumber].pitch_q_index[k] >= 0)
+                        ShankPitchPrev[LegNumber] += Message[LegChains_[LegNumber].pitch_q_index[k]];
 
             }
             else if(FootLanding[LegNumber])
@@ -373,8 +423,15 @@ namespace DataFusion
                 FootfallPositionRecord[LegNumber][1] = StateSpaceModel->EstimatedState[3] + FootBodyPos_WF[LegNumber][1];
                 FootfallPositionRecord[LegNumber][2] = StateSpaceModel->EstimatedState[6] + FootBodyPos_WF[LegNumber][2];
                 FootfallPositionRecord[LegNumber][3] = ObservationTime;
-                WheelAnglePrev[LegNumber] = Message[LegNumber*4 + 3];
-                ShankPitchPrev[LegNumber] = body_pitch + Message[LegNumber*4 + 1] + Message[LegNumber*4 + 2];
+                
+                if (LegChains_[LegNumber].wheel_q_index >= 0)
+                    WheelAnglePrev[LegNumber] = Message[LegChains_[LegNumber].wheel_q_index];
+                else
+                    WheelAnglePrev[LegNumber] = 0.0;
+                ShankPitchPrev[LegNumber] = body_pitch;
+                for (int k = 0; k < LegChains_[LegNumber].pitch_joint_num; ++k)
+                    if (LegChains_[LegNumber].pitch_q_index[k] >= 0)
+                        ShankPitchPrev[LegNumber] += Message[LegChains_[LegNumber].pitch_q_index[k]];
 
                 static double MapHeightStore[3][1000] = {0};
                 static int MapHeightStoreMax = 0;
@@ -475,33 +532,40 @@ namespace DataFusion
                 FootfallPositionRecord[LegNumber][2] = FootfallPositionRecord[LegNumber][2] - Zdifference;
             }
 
-             // 轮子转动角度
-            double WheelRotationAngle = Message[LegNumber*4 + 3] - WheelAnglePrev[LegNumber];
-            while (WheelRotationAngle >  M_PI) WheelRotationAngle -= 2.0*M_PI;
-            while (WheelRotationAngle < -M_PI) WheelRotationAngle += 2.0*M_PI;
-            WheelAnglePrev[LegNumber] = Message[LegNumber*4 + 3];
+            // 轮子转动角度
+            double WheelMove = 0.0;
+            double WheelVel = 0.0;
 
-            // 小腿摆动角
-            double ShankPitch = body_pitch + Message[LegNumber*4 + 1] + Message[LegNumber*4 + 2];
-            double ShankRotationAngle = ShankPitch - ShankPitchPrev[LegNumber];
-            while (ShankRotationAngle >  M_PI) ShankRotationAngle -= 2.0*M_PI;
-            while (ShankRotationAngle < -M_PI) ShankRotationAngle += 2.0*M_PI;
+            if (LegChains_[LegNumber].wheel_radius > 0.0 && LegChains_[LegNumber].wheel_q_index >= 0 && LegChains_[LegNumber].wheel_dq_index >= 0)
+            {
+                double WheelRotationAngle = Message[LegChains_[LegNumber].wheel_q_index] - WheelAnglePrev[LegNumber];
+                while (WheelRotationAngle >  M_PI) WheelRotationAngle -= 2.0*M_PI;
+                while (WheelRotationAngle < -M_PI) WheelRotationAngle += 2.0*M_PI;
+                WheelAnglePrev[LegNumber] = Message[LegChains_[LegNumber].wheel_q_index];
 
-            ShankPitchPrev[LegNumber] = ShankPitch;
+                double ShankRotationAngle = body_pitch;
+                double WheelRotationVelocityEff = Message[LegChains_[LegNumber].wheel_dq_index];
+                for (int k = 0; k < LegChains_[LegNumber].pitch_joint_num; ++k)
+                {
+                    if (LegChains_[LegNumber].pitch_q_index[k] >= 0)
+                        ShankRotationAngle += Message[LegChains_[LegNumber].pitch_q_index[k]];
+                    if (LegChains_[LegNumber].pitch_dq_index[k] >= 0)
+                        WheelRotationVelocityEff -= Message[LegChains_[LegNumber].pitch_dq_index[k]];
+                }
 
-            // 轮子有效转动角
-            const double WheelRotationAngleEff = WheelRotationAngle - ShankRotationAngle;
-            
-            // 轮子沿地面的实际滚动距离
-            const double WheelMove = Par_WheelRadius * WheelRotationAngleEff;
+                double temp = ShankRotationAngle;
+                ShankRotationAngle -= ShankPitchPrev[LegNumber];
+                while (ShankRotationAngle >  M_PI) ShankRotationAngle -= 2.0*M_PI;
+                while (ShankRotationAngle < -M_PI) ShankRotationAngle += 2.0*M_PI;
+                ShankPitchPrev[LegNumber] = temp;
+
+                WheelMove = LegChains_[LegNumber].wheel_radius * (WheelRotationAngle - ShankRotationAngle);
+                WheelVel = LegChains_[LegNumber].wheel_radius * WheelRotationVelocityEff;
+            }
 
             FootfallPositionRecord[LegNumber][0] += WheelMove * move_dir_x;
             FootfallPositionRecord[LegNumber][1] += WheelMove * move_dir_y;
             FootfallPositionRecord[LegNumber][2] += WheelMove * move_dir_z;
-
-            // 轮对地有效角速度
-            const double WheelRotationVelocityEff = Message[16 + LegNumber*4 + 3] - (Message[16 + LegNumber*4 + 1] + Message[16 + LegNumber*4 + 2]); 
-            const double WheelVel = Par_WheelRadius * WheelRotationVelocityEff;
 
             p_sum[0] += FootfallPositionRecord[LegNumber][0] - FootBodyPos_WF[LegNumber][0];
             p_sum[1] += FootfallPositionRecord[LegNumber][1] - FootBodyPos_WF[LegNumber][1];
@@ -562,7 +626,7 @@ namespace DataFusion
         
         StateSpaceModel->Double_Par[36] = 0.0;
 
-        for (int LegNumber = 0; LegNumber < 4; ++LegNumber)
+        for (int LegNumber = 0; LegNumber < ContactChainNum; ++LegNumber)
         {
             if (FootBodyEff_WF[LegNumber][2] > FootEffortThreshold * SlopeModeFootForceAccept)
                 continue;
@@ -613,7 +677,7 @@ namespace DataFusion
         hx /= hn;
         hy /= hn;
 
-        if (n < 3 || !mat3_inv(A, Ainv) || count < 2)
+        if (!SlopeModeEnable || n < 3 || !mat3_inv(A, Ainv) || count < 2)
         {
             move_dir_x = hx;
             move_dir_y = hy;
@@ -662,12 +726,12 @@ namespace DataFusion
         if(!JointsRPYEnable)
             return;
         
-        double P_body[4][3];
-        double P_world[4][3];
+        double P_body[MAX_CONTACT_CHAIN][3];
+        double P_world[MAX_CONTACT_CHAIN][3];
         static double TimeRecord = Time;
         int LegNumber, i;
 
-        for (LegNumber = 0; LegNumber < 4; ++LegNumber) {
+        for (LegNumber = 0; LegNumber < legs_pos_ref_->ContactChainNum; ++LegNumber) {
             for (i = 0; i < 3; i++){
                 P_body[LegNumber][i] = legs_pos_ref_->FootBodyPos_BF[LegNumber][i];
                 P_world[LegNumber][i] = legs_pos_ref_->FootfallPositionRecord[LegNumber][i];
@@ -675,7 +739,7 @@ namespace DataFusion
         }
 
         int n_ground = 0;
-        for (LegNumber = 0; LegNumber < 4; LegNumber++) {
+        for (LegNumber = 0; LegNumber < legs_pos_ref_->ContactChainNum; LegNumber++) {
             if (legs_pos_ref_->FootIsOnGround[LegNumber])
                 n_ground++;
         }
@@ -683,7 +747,7 @@ namespace DataFusion
         if (n_ground < 2) {
             return;
         }
-        if (n_ground < 4){
+        if (n_ground < legs_pos_ref_->ContactChainNum){
             TimeRecord = Time;
             legori_current_weight = legori_init_weight;
         }
@@ -700,11 +764,11 @@ namespace DataFusion
         eulerZYX_to_quat(roll, pitch, 0.0, q_rp);
 
         double sx = 0.0, sy = 0.0;
-        for (i = 0; i < 4; ++i) {
+        for (i = 0; i < legs_pos_ref_->ContactChainNum; ++i) {
             if(!legs_pos_ref_->FootIsOnGround[i])
                 continue;
 
-            for (int j = i + 1; j < 4; ++j) {
+            for (int j = i + 1; j < legs_pos_ref_->ContactChainNum; ++j) {
                 if(!legs_pos_ref_->FootIsOnGround[j])
                     continue;
 

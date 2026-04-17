@@ -110,11 +110,6 @@ EXPORT void StateSpaceModel_Go2_Initialization(struct EstimatorPortN *estimator)
 EXPORT void StateSpaceModel_Go2_EstimatorPort(double *In_Observation, double In_Observation_Timestamp, struct EstimatorPortN *estimator);
 EXPORT void StateSpaceModel_Go2_EstimatorPortTermination(struct EstimatorPortN *estimator);
 
-EXPORT extern EstimatorPortN StateSpaceModel_IKVel_;
-EXPORT void StateSpaceModel_IKVel_Initialization(struct EstimatorPortN *estimator);
-EXPORT void StateSpaceModel_IKVel_EstimatorPort(double *In_Observation, double In_Observation_Timestamp, struct EstimatorPortN *estimator);
-EXPORT void StateSpaceModel_IKVel_EstimatorPortTermination(struct EstimatorPortN *estimator);
-
 #ifdef __cplusplus
 }
 #endif

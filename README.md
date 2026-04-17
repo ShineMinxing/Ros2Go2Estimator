@@ -2,15 +2,13 @@
 
 **Language / 语言：** **English** | [中文](#capo-leggedrobotodometry--中文)
 
-**CAPO-LeggedRobotOdometry** is a ROS 2 (**Humble**) proprioceptive odometry / state-estimation repository for **biped / quadruped / wheel-legged** robots on **Ubuntu 22.04**.
+**CAPO-LeggedRobotOdometry** is a **pure proprioceptive odometry library** for legged robots, implemented with a **portable C++ estimator core** that depends only on **IMU and joint motor data**.
 
-It provides high-accuracy odometry using only **IMU + joint encoders + foot contact/force signals**, without requiring cameras or LiDAR.
+The core estimation logic is implemented in **`FusionEstimator/fusion_estimator.h`**. The file **`fusion_estimator_node.cpp`** provides a **ROS 2 wrapper** around this estimator, while the **`Matlab/`** folder contains examples for **MATLAB + C++ mixed compilation** and offline evaluation.
+
+For side-by-side comparison, **`Matlab/Comparison/invariant-ekf/`** provides a MATLAB mixed-compilation workflow for **`invariant-ekf`**, making it easier to compare this repository against a representative open-source legged odometry baseline.
 
 In 3D closed-loop trials (a **200 m** horizontal and **15 m** vertical loop), Astrall point-foot robot A achieves **0.1638 m** horizontal error and **0.219 m** vertical error; for wheel-legged robot B, the corresponding errors are **0.2264 m** and **0.199 m**.
-
-At the repository level, **`fusion_estimator_node.cpp`** is mainly the **ROS2 wrapper** (topics, parameters, message conversion, publishing), while the actual fusion-estimation algorithm lives in **`FusionEstimator/`** as a **portable, pure C++ implementation**. This makes it straightforward to port the estimator to **ROS1**, **non-ROS2 applications**, or **embedded platforms**.
-
-In addition, the **`Matlab/`** folder provides a **MATLAB + MEX** example that compiles and calls the same C++ estimator core for **offline validation**, **algorithm analysis**, and **cross-platform reuse**.
 
 ---
 
@@ -39,10 +37,10 @@ To help readers quickly validate the pipeline, we provide **two Go2-EDU trial da
 | Category | Description |
 | --- | --- |
 | **Biped / Quadruped / Wheel-Legged Unified** | Online contact-set switching; stance legs are detected automatically, supporting fast transitions between standing and walking. |
+| **IMU + Joint-Motor Only** | The estimator core works with only IMU and joint motor measurements, without requiring cameras or LiDAR. |
+| **MATLAB / C++ Mixed Compilation** | The `Matlab/` folder provides MATLAB + MEX examples for calling the same C++ core, and `Matlab/Comparison/invariant-ekf/` includes a comparable mixed-compilation setup for `invariant-ekf`. |
 | **Full 3D & Planar 2D** | Publishes both 6DoF odometry (`SMX/Odom`) and a gravity-flattened 2D odometry (`SMX/Odom_2D`). |
-| **No Exteroception Required** | Works without cameras or LiDAR; only IMU, joint encoders, and foot contact/force signals are required. |
 | **Portable Pure C++ Core** | The estimator core is isolated in `FusionEstimator/`, making it easier to reuse outside ROS2. |
-| **MATLAB / MEX Validation** | The `Matlab/` folder demonstrates how to compile and invoke the same C++ core from MATLAB. |
 | **Runtime Tuning** | Key parameters can be adjusted through `config.yaml`, and platform-dependent thresholds can be tuned for different robots. |
 
 ---
@@ -70,10 +68,10 @@ CAPO-LeggedRobotOdometry/
 ├── CMakeLists.txt
 ├── package.xml
 ├── config.yaml
-├── fusion_estimator_node.cpp        # ROS2 node wrapper: params / topics / odom publishing
-├── FusionEstimator/                 # pure C++ fusion-estimation core (portable)
+├── fusion_estimator_node.cpp        # ROS2 wrapper around the C++ estimator core
+├── FusionEstimator/                 # portable pure C++ estimator core
 │   ├── Estimators/
-│   ├── fusion_estimator.h
+│   ├── fusion_estimator.h           # main estimator entry
 │   ├── LowlevelState.h
 │   ├── SensorBase.cpp
 │   ├── SensorBase.h
@@ -82,54 +80,38 @@ CAPO-LeggedRobotOdometry/
 │   ├── Sensor_Legs.cpp
 │   ├── Sensor_Legs.h
 │   └── Readme.md
-├── Matlab/                          # MATLAB + MEX example for calling the C++ core
+├── Matlab/                          # MATLAB + MEX examples for the same C++ core
 │   ├── build_mex.m
 │   ├── fusion_estimator.m
 │   ├── fusion_estimator_mex.cpp
-│   ├── MPXY150Z10.csv
-│   └── MWXY150Z10.csv
-├── Plotjuggler.xml                  # PlotJuggler layout / visualization helper
+│   ├── Comparison/
+│   │   └── invariant-ekf/           # MATLAB mixed-compilation workflow for invariant-ekf
+│   ├── MPXY150Z10
+│   └── MWXY150Z10
+├── Plotjuggler.xml
 └── Readme.md
-```
 
 ---
 
 ## 🧩 Architecture Notes
 
-This repository is intentionally split into two layers:
+This repository is intentionally split into three layers:
 
-### 1. ROS2 wrapper layer
-`fusion_estimator_node.cpp` is responsible for:
+### 1. Estimator core
+The actual odometry algorithm is implemented in **`FusionEstimator/fusion_estimator.h`** and the accompanying files under **`FusionEstimator/`**.  
+This is the **main pure C++ proprioceptive estimator core**, designed to work with only **IMU and joint motor data**.
 
-* reading parameters from `config.yaml`
-* subscribing to ROS2 topics
-* converting ROS messages into estimator inputs
-* invoking the fusion-estimation core
-* publishing `nav_msgs/Odometry`
+### 2. ROS2 wrapper
+**`fusion_estimator_node.cpp`** wraps the estimator core into a ROS 2 node, handling:
 
-### 2. Portable estimator core
-`FusionEstimator/` contains the actual estimation logic:
+* ROS2 topic subscriptions
+* parameter loading
+* message conversion
+* odometry publication
 
-* IMU handling
-* leg kinematics / leg sensors
-* contact-anchored fusion logic
-* estimator state update
-* reusable C++ interfaces
-
-Because this part is **pure C++**, it can be reused in:
-
-* **ROS1**
-* **non-ROS Linux applications**
-* **embedded / custom runtime systems**
-* **MATLAB via MEX**
-
-### 3. MATLAB / MEX bridge
-`Matlab/` is not required for ROS2 runtime, but it is useful when you want to:
-
-* validate the estimator offline
-* replay data in MATLAB
-* compare C++ results with MATLAB scripts
-* reuse the same `FusionEstimator/` core without ROS2
+### 3. MATLAB mixed-compilation support
+The **`Matlab/`** folder provides examples for compiling and calling the same C++ estimator core from MATLAB via MEX.  
+In addition, **`Matlab/Comparison/invariant-ekf/`** provides a comparable MATLAB mixed-compilation workflow for **`invariant-ekf`**, which is useful for offline benchmarking and side-by-side evaluation.
 
 ---
 
@@ -207,7 +189,7 @@ git lfs pull
 │       layout:
 │         data[0..11]   = 12 joint positions q
 │         data[12..23]  = 12 joint velocities dq
-│         data[24..27]  = 4 foot-force / contact-related values
+│         data[24..27]  = 12 joint torque tau or contact-related values
 │   • SMX/SportCmd     std_msgs/Float64MultiArray
 │       reset example:
 │         data[0] == 25140000  → estimator reset
@@ -267,7 +249,7 @@ This design is useful for:
 
 ## 🧪 MATLAB / MEX (Optional)
 
-The `Matlab/` folder provides an additional example for compiling the C++ estimator core into a MATLAB MEX module.
+The **`Matlab/`** folder provides examples for compiling the estimator core into a MATLAB-callable MEX module.
 
 Typical workflow:
 
@@ -282,14 +264,9 @@ Files in this folder:
 * `build_mex.m` — build script for MEX compilation
 * `fusion_estimator_mex.cpp` — MEX bridge wrapping the C++ estimator core
 * `fusion_estimator.m` — MATLAB-side usage / validation example
-* `MPXY150Z10.csv`, `MWXY150Z10.csv` — sample data for offline tests
+* `MPXY150Z10`, `MWXY150Z10` — sample data for offline tests
 
-This is especially useful when you want to:
-
-* verify C++ estimator behavior in MATLAB
-* compare offline results quickly
-* reuse the same `FusionEstimator/` implementation without ROS2
-* debug algorithm changes before reintegrating them into the ROS2 node
+For comparison with another representative legged-odometry implementation, Matlab/Comparison/invariant-ekf/ also provides a MATLAB mixed-compilation workflow for invariant-ekf.
 
 ---
 
@@ -323,14 +300,6 @@ You can use it to inspect:
 
 ---
 
-## 📄 Further Reading
-
-* Paper (arXiv): https://arxiv.org/abs/2602.17393
-* Technical notes (Notion): https://www.notion.so/Ros2Go2-1e3a3ea29e778044a4c9c35df4c27b22
-* ROS1 reference implementation: https://github.com/ShineMinxing/FusionEstimation
-
----
-
 ## 📨 Contact
 
 | Email | Affiliation |
@@ -343,21 +312,15 @@ You can use it to inspect:
 
 # CAPO-LeggedRobotOdometry 🦾 (中文)
 
-**语言 / Language：** [English](#capo-leggedrobotodometry-) | **中文**
+**CAPO-LeggedRobotOdometry** 是一个面向腿式机器人的**纯本体感知里程计库**，核心是**只依赖 IMU 和关节电机数据**的**可移植 C++ 估计器**。
 
-**CAPO-LeggedRobotOdometry** 是面向 **双足 / 四足 / 轮足** 机器人的 **ROS 2（Humble）** 本体状态估计 / 里程计算法仓库，可在 **Ubuntu 22.04** 上运行。
+其中，核心算法实现位于 **`FusionEstimator/fusion_estimator.h`**；  
+**`fusion_estimator_node.cpp`** 提供该估计器的 **ROS2 封装**；  
+**`Matlab/`** 文件夹提供 **MATLAB 与 C++ 混合编译**及离线验证示例。
 
-本仓库仅依赖 **IMU + 关节编码器 + 足端接触/力信号** 即可输出高精度里程计，不依赖相机或激光雷达。
+另外，仓库中的 **`Matlab/Comparison/invariant-ekf/`** 提供了 **`invariant-ekf`** 的 MATLAB 混编方法，便于做离线对比与基线比较。
 
-在 3D 闭环运动实验（水平 **200 m**、竖直 **15 m**）中：Astrall 公司的点足机器人 A 的水平与竖直误差分别为 **0.1638 m** 和 **0.219 m**；轮足机器人 B 的对应误差分别为 **0.2264 m** 和 **0.199 m**。
-
-从工程结构上看，**`fusion_estimator_node.cpp`** 主要负责 **ROS2 封装层**（参数、Topic、消息转换、发布），而真正的融合估计算法位于 **`FusionEstimator/`** 中，并且实现为 **纯 C++、可移植** 的核心模块。因此它不仅能用于 ROS2，也便于迁移到：
-
-* **ROS1**
-* **非 ROS2 平台**
-* **嵌入式 / 自定义运行环境**
-
-另外，仓库中的 **`Matlab/`** 文件夹额外提供了 **MATLAB + MEX 混合编译并调用 `FusionEstimator` 中 C++ 核心代码** 的示例，方便离线验证、算法分析和跨平台复用。
+在 3D 闭环运动实验（水平 **200 m**、竖直 **15 m**）中：璇玑动力公司的点足机器人 A 的水平与竖直误差分别为 **0.1638 m** 和 **0.219 m**；轮足机器人 B 的对应误差分别为 **0.2264 m** 和 **0.199 m**。
 
 ---
 
@@ -386,10 +349,10 @@ You can use it to inspect:
 | 类别 | 说明 |
 | --- | --- |
 | **双足 / 四足 / 轮足统一支持** | 运行中自动识别支撑足，支持站立、行走和形态切换。 |
+| **仅依赖 IMU 与关节电机数据** | 核心估计器只依赖 IMU 和关节电机测量即可工作，不依赖相机或激光雷达。 |
+| **MATLAB / C++ 混编对比** | `Matlab/` 中提供 MATLAB + MEX 调用同一套 C++ 核心的方法，`Matlab/Comparison/invariant-ekf/` 中提供了 `invariant-ekf` 的 MATLAB 混编方法，便于离线比较。 |
 | **全 3D + 平面 2D** | 同时发布 6DoF 里程计 `SMX/Odom` 与压平后的 `SMX/Odom_2D`。 |
-| **零依赖外部感知** | 不依赖相机或激光雷达，仅依赖本体传感器。 |
 | **纯 C++ 可移植核心** | `FusionEstimator/` 中是独立的纯 C++ 融合估计实现，便于脱离 ROS2 使用。 |
-| **MATLAB / MEX 联调** | `Matlab/` 中给出了用 MATLAB 混编调用同一套 C++ 核心的示例。 |
 | **参数可调** | `config.yaml` 中的关键参数和阈值可按平台进行调整。 |
 
 ---
@@ -417,10 +380,10 @@ CAPO-LeggedRobotOdometry/
 ├── CMakeLists.txt
 ├── package.xml
 ├── config.yaml
-├── fusion_estimator_node.cpp        # ROS2 节点封装：参数 / Topic / 里程计发布
-├── FusionEstimator/                 # 纯 C++ 融合估计算法核心（可移植）
+├── fusion_estimator_node.cpp        # ROS2 节点封装
+├── FusionEstimator/                 # 纯 C++ 本体里程计核心
 │   ├── Estimators/
-│   ├── fusion_estimator.h
+│   ├── fusion_estimator.h           # 估计器主入口
 │   ├── LowlevelState.h
 │   ├── SensorBase.cpp
 │   ├── SensorBase.h
@@ -429,55 +392,35 @@ CAPO-LeggedRobotOdometry/
 │   ├── Sensor_Legs.cpp
 │   ├── Sensor_Legs.h
 │   └── Readme.md
-├── Matlab/                          # MATLAB + MEX 调用 C++ 核心的示例
+├── Matlab/                          # MATLAB + MEX 混编示例
 │   ├── build_mex.m
 │   ├── fusion_estimator.m
 │   ├── fusion_estimator_mex.cpp
+│   ├── Comparison/
+│   │   └── invariant-ekf/           # invariant-ekf 的 MATLAB 混编与对比示例
 │   ├── MPXY150Z10.csv
 │   └── MWXY150Z10.csv
-├── Plotjuggler.xml                  # PlotJuggler 可视化配置
+├── Plotjuggler.xml
 └── Readme.md
-```
-
 ---
 
-## 🧩 架构说明
+本仓库有意分成三层：
 
-本仓库有意分成两层：
+### 1）估计器核心
+真正的本体感知里程计算法位于 **`FusionEstimator/fusion_estimator.h`** 及其相关文件中。  
+这是本仓库的**主要纯 C++ 估计器核心**，设计目标是仅依赖 **IMU 和关节电机数据**。
 
-### 1）ROS2 封装层
-`fusion_estimator_node.cpp` 主要负责：
+### 2）ROS2 封装层
+**`fusion_estimator_node.cpp`** 负责把该估计器封装成 ROS2 节点，主要处理：
 
-* 从 `config.yaml` 读取参数
-* 订阅 ROS2 Topic
-* 将 ROS 消息转换为估计器输入
-* 调用融合估计算法核心
-* 发布 `nav_msgs/Odometry`
+* Topic 订阅
+* 参数读取
+* 消息转换
+* 里程计发布
 
-### 2）可移植的估计器核心
-`FusionEstimator/` 中包含真正的估计逻辑，例如：
-
-* IMU 数据处理
-* 腿部运动学 / 腿部传感器建模
-* 接触锚定约束
-* 融合估计状态更新
-* 可复用的 C++ 接口
-
-因为这里是**纯 C++ 实现**，所以它不仅能在 ROS2 中使用，也很适合迁移到：
-
-* **ROS1**
-* **非 ROS2 的 Linux 程序**
-* **嵌入式 / 自定义系统**
-* **MATLAB MEX**
-* **离线回放与仿真验证**
-
-### 3）MATLAB / MEX 桥接层
-`Matlab/` 文件夹不是 ROS2 运行必须的，但在以下场景里很有用：
-
-* 做离线数据验证
-* 在 MATLAB 中回放与分析估计结果
-* 快速对比 C++ 结果与 MATLAB 脚本
-* 不依赖 ROS2 直接复用同一套 `FusionEstimator/` 核心
+### 3）MATLAB 混编与对比
+**`Matlab/`** 中提供了 MATLAB + MEX 调用同一套 C++ 核心的方法。  
+同时，**`Matlab/Comparison/invariant-ekf/`** 中还提供了 **`invariant-ekf`** 的 MATLAB 混编方法，便于做离线对比与基线评测。
 
 ---
 
@@ -555,7 +498,7 @@ git lfs pull
 │       数据布局：
 │         data[0..11]   = 12 个关节位置 q
 │         data[12..23]  = 12 个关节速度 dq
-│         data[24..27]  = 4 个足端力 / 接触相关数值
+│         data[24..27]  = 12 个关节力矩 tau / 足端接触力
 │   • SMX/SportCmd     std_msgs/Float64MultiArray
 │       复位示例：
 │         data[0] == 25140000  → 复位估计器
@@ -615,9 +558,9 @@ git lfs pull
 
 ## 🧪 MATLAB / MEX（可选）
 
-`Matlab/` 文件夹提供了一个额外示例，用来把 `FusionEstimator/` 中的纯 C++ 核心编译成 MATLAB 可调用的 MEX 模块。
+`Matlab/` 文件夹提供了将本仓库 C++ 估计器核心编译成 MATLAB 可调用 MEX 模块的示例。
 
-典型流程如下：
+典型流程：
 
 ```matlab
 cd Matlab
@@ -630,7 +573,7 @@ fusion_estimator
 * `build_mex.m`：MEX 编译脚本
 * `fusion_estimator_mex.cpp`：MEX 桥接文件，负责封装 C++ 估计器核心
 * `fusion_estimator.m`：MATLAB 侧调用示例
-* `MPXY150Z10.csv`、`MWXY150Z10.csv`：离线测试用示例数据
+* `MPXY150Z10`、`MWXY150Z10`：离线测试用示例数据
 
 这部分特别适合以下需求：
 
@@ -669,13 +612,6 @@ fusion_estimator
 | 吊舱 + 固定相机协同 | [![img](https://i2.hdslb.com/bfs/archive/07ac6082b7efdc2e2d200e18fc8074eec1d9cfba.jpg)](https://www.bilibili.com/video/BV1fTY7z7E5T) |
 | 多种 SLAM 方法集成 | [![img](https://i1.hdslb.com/bfs/archive/f299bafc7486f71e061eb31f9f00347063e1e621.jpg)](https://www.bilibili.com/video/BV1ytMizEEdG) |
 
----
-
-## 📄 延伸阅读
-
-* 论文（arXiv）：https://arxiv.org/abs/2602.17393
-* 技术笔记（Notion）：https://www.notion.so/Ros2Go2-1e3a3ea29e778044a4c9c35df4c27b22
-* ROS1 参考实现：https://github.com/ShineMinxing/FusionEstimation
 
 ---
 

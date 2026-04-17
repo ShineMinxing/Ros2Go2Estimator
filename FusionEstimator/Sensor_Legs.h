@@ -16,15 +16,36 @@ namespace DataFusion
     TF_AXIS_Z = 2
   };
 
+  // ---------------- Joint axis enumeration for kinematic TF nodes ----------------
+  // ---------------- 运动学 TF 节点的关节轴枚举 ----------------
   struct TFNode
   {
+    // parent node index, -1 means the body frame
+    // 父节点编号，-1 表示机体坐标系（body）
     int parent = -1;
+
+    // index of q in joint[0..15], -1 means this node is fixed
+    // q 在 joint[0..15] 中的索引，-1 表示该节点没有主动关节
     int q_index = -1;
+
+    // index of dq in joint[16..31], -1 means unavailable
+    // dq 在 joint[16..31] 中的索引，-1 表示该节点没有可用角速度输入
     int dq_index = -1;
+
+    // index of tau in joint[32..47], -1 means unavailable
+    // tau 在 joint[32..47] 中的索引，-1 表示该节点没有可用力矩输入
     int tau_index = -1;
+
+    // rotation axis of this joint
+    // 该关节的转轴方向
     int axis = TF_AXIS_FIXED;
 
+    // fixed translation from parent frame to this node, expressed in parent frame
+    // 从父节点到当前节点的固定平移，表达在父节点坐标系下
     double t[3] = {0.0, 0.0, 0.0};
+
+    // fixed installation rotation from parent to this node
+    // 从父节点到当前节点的固定安装旋转
     double q_fix[4] = {1.0, 0.0, 0.0, 0.0};
 
     TFNode() = default;
@@ -37,17 +58,38 @@ namespace DataFusion
     }
   };
 
+  // ---------------- One contact chain / one leg kinematic description ----------------
+  // ---------------- 单条接触链 / 单条腿的运动学描述 ----------------
   struct LegTFChain
   {
+    // number of active TF nodes used by this chain
+    // 当前链实际使用的 TF 节点数量
     int node_num = 0;
+
+    // TF nodes from body to end-effector
+    // 从机体到末端的 TF 节点序列
     TFNode node[MAX_CHAIN_NODE];
+
+    // fixed transform from the last joint node to the end-effector / contact point
+    // 从最后一个关节节点到末端 / 接触点的固定变换
     TFNode ee;
 
+    // wheel radius for wheel-foot models
+    // 轮足模型的轮半径
     double wheel_radius = 0.0;
+
+    // wheel angle index in joint[0..15]
+    // 轮电机角度在 joint[0..15] 中的索引
     int wheel_q_index = -1;
+
+    // wheel velocity index in joint[16..31]
+    // 轮电机角速度在 joint[16..31] 中的索引
     int wheel_dq_index = -1;
 
+    // number of pitch-related joints used for wheel swing compensation
+    // 用于轮滚动摆角补偿的 pitch 相关关节数量
     int pitch_joint_num = 0;
+
     int pitch_q_index[MAX_PITCH_SUM_JOINT]  = {-1,-1,-1,-1,-1,-1,-1,-1};
     int pitch_dq_index[MAX_PITCH_SUM_JOINT] = {-1,-1,-1,-1,-1,-1,-1,-1};
   };
@@ -75,31 +117,33 @@ namespace DataFusion
     LegTFChain LegChains_[MAX_CONTACT_CHAIN];
     double FootEffortThreshold = -80.0, Environement_Height_Scope = 0.08, Data_Fading_Time = 1200.0;
 
+    // ---------------- Go2 point-foot preset ----------------
+    // ---------------- Go2 点足参数预设 ----------------
+    /*
+    * This preset describes a 3-DOF point-foot leg:
+    *   node[0] : body -> q1 origin, with q1 mounted on this node
+    *   node[1] : q1   -> q2 origin, with q2 mounted on this node
+    *   node[2] : q2   -> q3 origin, with q3 mounted on this node
+    *   ee      : q3   -> fixed foot contact point
+    *
+    * For point-foot models:
+    * 1) wheel_radius = 0
+    * 2) ee.z stores the full effective distal length
+    * 3) no wheel compensation is used
+    *
+    * 本预设描述一个三自由度点足腿：
+    *   node[0] : body -> q1 髋关节电机原点，并在该节点挂 q1
+    *   node[1] : q1   -> q2 大腿关节电机原点，并在该节点挂 q2
+    *   node[2] : q2   -> q3 小腿关节电机原点，并在该节点挂 q3
+    *   ee      : q3   -> 固定足端接触点
+    *
+    * 对于点足模型：
+    * 1）wheel_radius = 0
+    * 2）ee.z 直接表示末端总有效长度
+    * 3）不进行轮滚动补偿
+    */
     void UseGo2P()
-    {
-      // Go2 点足模型
-      // TFNode(parent, q_index, dq_index, tau_index, axis, x, y, z, roll, pitch, yaw)
-      // 含义：
-      // 1) parent：父节点编号，-1 表示 body
-      // 2) q/dq/tau_index：在 joint[48] 中的索引
-      //    joint[0..15]   = q
-      //    joint[16..31]  = dq
-      //    joint[32..47]  = tau
-      // 3) axis：该节点关节轴方向
-      // 4) x,y,z：父节点坐标系下，到当前关节原点的固定平移
-      // 5) roll,pitch,yaw：父节点到当前节点的固定安装旋转
-      //
-      // 本函数中每条腿统一采用 3 关节链：
-      // node[0] : body -> q1 原点，挂 q1
-      // node[1] : q1   -> q2 原点，挂 q2
-      // node[2] : q2   -> q3 原点，挂 q3
-      // ee      : q3   -> 足端固定点
-      //
-      // 点足设置原则：
-      // 1) wheel_radius = 0
-      // 2) ee 的 z 直接写“膝关节到足端接触点”的总长度
-      // 3) pitch_joint_num = 0，因为没有轮子，不做滚动补偿
-  
+    {  
       for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
 
       ContactChainNum = 4;
@@ -107,12 +151,13 @@ namespace DataFusion
       FootEffortThreshold = -1.0;
 
       // FL: q=(0,1,2), dq=(16,17,18), tau=(32,33,34)
-      // body 安装点 = (0.1934, -0.0465, 0)
-      // q1 为1号电机沿 X 轴旋转，q2/q3 为 Y 轴
-      // q1->q2 侧向偏置 = +0.0955
-      // q2->q3 大腿长度 = 0.213
-      // q3->foot 足端总长度 = 0.235 = 0.213 + 0.022
+      // q1 is fixed on body (0.1934, -0.0465, 0)
+      // q1 motor rotate along axis X，q2/q3 ~ axis Y
+      // q1->q2  Y = +0.0955
+      // q2->q3  hip lenght = 0.213
+      // q3->foot shank and foot length = 0.235 = 0.213 + 0.022
       LegChains_[0].node_num = 3;
+      // SensorDataHandle(double* Message, double Time)----Message[0 16 32]分别是一号电机的角度、角速度、力矩
       LegChains_[0].node[0] = TFNode(-1,  0, 16, 32, TF_AXIS_X,  0.1934, -0.0465,  0.0000, 0.0, 0.0, 0.0);
       LegChains_[0].node[1] = TFNode( 0,  1, 17, 33, TF_AXIS_Y,  0.0000,  0.0955,  0.0000, 0.0, 0.0, 0.0);
       LegChains_[0].node[2] = TFNode( 1,  2, 18, 34, TF_AXIS_Y,  0.0000,  0.0000, -0.2130, 0.0, 0.0, 0.0);
@@ -202,33 +247,35 @@ namespace DataFusion
       LegChains_[3].pitch_joint_num = 0;
     }
     
+    // ---------------- LW wheel-foot preset ----------------
+    // ---------------- LW 轮足参数预设 ----------------
+    /*
+    * This preset describes a 3-DOF leg plus one wheel motor.
+    * The kinematic chain itself still uses q1/q2/q3.
+    * Wheel rolling displacement is NOT injected into forward kinematics directly.
+    * Instead, wheel radius and wheel angle increments are used later in
+    * FootFallPositionRecord() to compensate rolling motion along the support direction.
+    *
+    * pitch_joint_num / pitch_q_index / pitch_dq_index are used to remove the
+    * apparent wheel rotation caused by shank swing.
+    *
+    * 本预设描述一个三自由度腿加一个轮电机的轮足模型。
+    * 运动学链本身仍然只使用 q1/q2/q3。
+    * 轮滚动位移不会直接写进前向运动学，而是在 FootFallPositionRecord() 中
+    * 利用轮半径和轮角增量，对支撑方向上的滚动位移进行补偿。
+    *
+    * pitch_joint_num / pitch_q_index / pitch_dq_index
+    * 用于扣除小腿摆动造成的“轮子假转动”。
+    */
     void UseLW()
     {
-      // LW 轮足模型
-      // 与点足相比，多了轮相关参数：
-      // 1) wheel_radius：轮半径
-      // 2) wheel_q_index / wheel_dq_index：轮电机角度/角速度在 joint[48] 中的索引
-      // 3) pitch_joint_num：参与“小腿姿态补偿”的关节数
-      // 4) pitch_q_index / pitch_dq_index：这些关节在 q/dq 中的索引
-      //
-      // 轮足设置原则：
-      // 1) ee 的 z 写“膝关节到轮轴中心”或当前定义的末端刚体长度
-      // 2) 轮滚动位移不在 FK 中体现，而在 FootFallPositionRecord() 中由 wheel_radius 和轮角增量补偿
-      // 3) pitch_joint_num 一般取 2，对应 q2、q3，用于扣除小腿摆动带来的轮角假转动
-      //
-      // 重要：
-      // 当前配置要求 joint[0..15] / joint[16..31] 中包含轮电机 3,7,11,15。
-      // 如果外层只传 12 个关节而没有轮电机数据，则不能使用本配置。
-
       for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
 
       ContactChainNum = 4;
       Environement_Height_Scope = 0.10;
       FootEffortThreshold = -120.0;
 
-      // FL: 腿关节 q=(0,1,2)，轮关节 q=3
-      // dq=(16,17,18,19), tau=(32,33,34)
-      // pitch 补偿关节取 q2,q3，即 (1,2)
+      // FL
       LegChains_[0].node_num = 3;
       LegChains_[0].node[0] = TFNode(-1,  0, 16, 32, TF_AXIS_X,  0.3405,  0.1000, -0.0666, 0.0, 0.0, 0.0);
       LegChains_[0].node[1] = TFNode( 0,  1, 17, 33, TF_AXIS_Y,  0.0000,  0.1522,  0.0000, 0.0, 0.0, 0.0);

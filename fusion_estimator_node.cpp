@@ -17,7 +17,7 @@ public:
     FusionEstimatorNode(const rclcpp::NodeOptions &options)
     : Node("fusion_estimator_node", options)
     {        
-        /* ────────────── 读取参数 ────────────── */
+        /* ────────────── Read ROS2 parameters ────────────── */
         std::string sub_imu_topic;
         this->get_parameter_or("sub_imu_topic", sub_imu_topic, std::string("NoYamlRead/Go2IMU"));
         std::string sub_joint_topic;
@@ -55,10 +55,10 @@ public:
         }
 
 
-        /* ────────────── 设置参数 ────────────── */
+        /* ────────────── Configure estimator status ────────────── */
         double status[200] = {0};
         status[IndexInOrOut] = 1;
-        // enable 开关
+        // enable
         status[IndexIMUAccEnable]         = imu_data_enable ? 1.0 : 0.0;
         status[IndexIMUQuaternionEnable]  = imu_data_enable ? 1.0 : 0.0;
         status[IndexIMUGyroEnable]        = imu_data_enable ? 1.0 : 0.0;
@@ -66,7 +66,7 @@ public:
         status[IndexJointsVelocityXYZEnable]  = leg_vel_enable ? 1.0 : 0.0;
         status[IndexJointsRPYEnable]          = leg_ori_enable ? 1.0 : 0.0;
         status[SlopeEstimationEnable]       = slope_mode_enable ? 1.0 : 0.0;
-        // 阈值/权重
+        // Threshold/Weight
         status[IndexLegFootForceThreshold]       = -1.0;
         status[IndexLegMinStairHeight]           = min_stair_height;
         status[IndexStairHeightFogotten]         = stair_height_fogotten;
@@ -76,7 +76,7 @@ public:
 
         fe_.fusion_estimator_status(status);
 
-        /* ────────────── 数据通信 ────────────── */
+        /* ────────────── Create ROS communication interfaces ────────────── */
         go2_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(sub_imu_topic, 10, std::bind(&FusionEstimatorNode::imu_callback, this, std::placeholders::_1));
         go2_joint_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(sub_joint_topic, 10, std::bind(&FusionEstimatorNode::joint_callback, this, std::placeholders::_1));
         joystick_cmd_sub = this->create_subscription<std_msgs::msg::Float64MultiArray>(
@@ -201,16 +201,43 @@ private:
         const auto& arr = msg->data;
         if (arr.size() < 28) return;
 
-        // 12 个关节对应的电机编号
+        /*
+        * ------ Joint index mapping for point-foot mode -------
+        * -------------- 点足模式下的关节索引映射 ----------------
+        * The incoming joint topic is assumed to contain 12 actuated leg joints:
+        * 
+        *   leg0: motors 0,1,2
+        *   leg1: motors 4,5,6
+        *   leg2: motors 8,9,10
+        *   leg3: motors 12,13,14
+        * 
+        * 当前 joint topic 默认只包含 12 个腿部关节：
+        * 
+        *   第 0 条腿：0,1,2 号电机
+        *   第 1 条腿：4,5,6 号电机
+        *   第 2 条腿：8,9,10 号电机
+        *   第 3 条腿：12,13,14 号电机
+        * 
+        * ---------------- Joint topic layout ----------------
+        * ------------------ 关节话题数据布局 ---=-------------
+        * 
+        * data[ 0..11] : 12 joint positions q
+        * data[12..23] : 12 joint velocities dq
+        * data[24..27] : 4 contact-related values (for example foot-force or contact confidence)
+        *
+        * If wheel motors are available, the layout should be extended to include
+        * motors 3, 7, 11, 15, and the input msg should be data[0..15]--q, data[16..31]--dq, data[32..48]--tau,.
+        *
+        * data[ 0..11] : 12 个关节角 q
+        * data[12..23] : 12 个关节角速度 dq
+        * data[24..27] : 4 个接触相关量（例如足端力或接触置信度）
+        *
+        * 如果系统包含轮电机，则应扩展布局以包含 3、7、11、15 号电机，
+        * 传入的 msg 应该是 data[0..15]--q, data[16..31]--dq, data[32..48]--tau,.
+        */
+
         static const int desired_joints[] = {0,1,2, 4,5,6, 8,9,10, 12,13,14};
 
-        // joint topic layout
-        // data[ 0..11] : 12×q
-        // data[12..23] : 12×dq
-        // data[24..27] : 4×foot_force
-        // 如果有轮电机，就是编号3 7 11 15，把数值放进去，把下面的两个12改成16
-
-        // 写入 st_
         for (int i = 0; i < 12; ++i) {
             const int mid = desired_joints[i];
             st_.motorState[mid].q = arr[i];
@@ -218,18 +245,33 @@ private:
             st_.motorState[mid].tauEst = 0.0;
         }
 
-        // 如果有力矩就在上面正常填力矩，此段注释掉
-        // 将足段触地1/0等效为小腿关节大力矩
+        // ---------------- Optional torque handling ----------------
+        // ---------------- 可选的力矩处理方式 ----------------
+        /*
+        * If real joint torque is available, it should be written directly above instead of 0.0.
+        * Otherwise, the incoming contact-related 1/0 signal is converted into a
+        * large pseudo knee torque, so that the estimator can still infer support state.
+        *
+        * The pseudo torque is written to knee motors:
+        *   2, 6, 10, 14
+        *
+        * 如果上游已经提供真实关节力矩，应直接在前面写入 tauEst 而不是 0.0。
+        * 否则，这里将接触相关的 1/0 信号转换成较大的“小腿/膝关节伪力矩”，
+        * 以便估计器仍然能够判断支撑状态。
+        *
+        * 伪力矩写入的小腿/膝关节编号为：
+        *   2、6、10、14
+        */
         static const int tau_idx[4] = {2, 6, 10, 14};
         for (int leg = 0; leg < 4; ++leg) {
             const bool on = (arr[24 + leg] >= foot_force_threshold);
             st_.motorState[tau_idx[leg]].tauEst = on ? 100.0 : 0.0;
         }
 
-        // 只有 joint_callback 调用融合更新
+        // ---------------- Estimation is triggered only by the joint callback ----------------
+        // ---------------- 估计更新只在 joint 回调中触发 ----------------
         odom_ = fe_.fusion_estimator(st_);
 
-        // 回填 SMXFE_odom
         SMXFE_odom.pose.pose.position.x = odom_.XPos;
         SMXFE_odom.pose.pose.position.y = odom_.YPos;
         SMXFE_odom.pose.pose.position.z = odom_.ZPos;
@@ -238,7 +280,6 @@ private:
         SMXFE_odom.twist.twist.linear.y = odom_.YVel;
         SMXFE_odom.twist.twist.linear.z = odom_.ZVel;
 
-        // 使用 odom roll, pitch, yaw 转换为四元数
         tf2::Quaternion q;
         q.setRPY(odom_.RollRad, odom_.PitchRad, odom_.YawRad);
         SMXFE_odom.pose.pose.orientation = tf2::toMsg(q);
@@ -247,7 +288,6 @@ private:
         SMXFE_odom.twist.twist.angular.y = odom_.PitchVel;
         SMXFE_odom.twist.twist.angular.z = odom_.YawVel;
 
-        // 回填 SMXFE_odom_2D
         SMXFE_odom_2D.pose.pose.position.x = odom_.XPos;
         SMXFE_odom_2D.pose.pose.position.y = odom_.YPos;
         SMXFE_odom_2D.pose.pose.position.z = 0;
@@ -256,7 +296,6 @@ private:
         SMXFE_odom_2D.twist.twist.linear.y = odom_.YVel;
         SMXFE_odom_2D.twist.twist.linear.z = 0;
 
-        // 使用 odom 的前 3 个元素 Yaw 转换为四元数
         q.setRPY(0, 0, odom_.YawRad);
         SMXFE_odom_2D.pose.pose.orientation = tf2::toMsg(q);
 
@@ -265,7 +304,7 @@ private:
         SMXFE_odom_2D.twist.twist.angular.z = odom_.YawVel;
 
         msg_received[1] = 1;
-        Msg_Publish();   // 只在 joint 回调里 publish
+        Msg_Publish();
     }
 
     void Msg_Publish()

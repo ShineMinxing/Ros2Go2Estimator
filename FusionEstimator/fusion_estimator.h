@@ -2,57 +2,109 @@
 #define __FUSION_ESTIMATOR_H_
 
 /*
-点足腿式里程计算法说明
-算法作用：
-    使用IMU和关节电机数据，反解腿式机器人状态，提供里程计数据。
-算法函数：
-    1. 外部调用初始化示例：
-        #include "fusion_estimator.h"
-        auto Robot_Estimation = CreateRobot_Estimation();
-    2. 外部调用状态估计示例：
-        #include "LowlevelState.h"
-        LowlevelState st{};
-        Odometer odom = Robot_Estimation.fusion_estimator(st);
-    3. 外部调用算法调参和读取反馈示例：
-        double status[200] = {0};
-        Robot_Estimation.fusion_estimator(status);
-        
-        参数设置为：        
-        IndexInOrOut = 0,
-        IndexStatusOK = 1,
+Proprioceptive legged odometry overview
+本体感知腿式里程计说明
 
-        IndexIMUAccEnable = 2,  
-        IndexIMUQuaternionEnable = 3,
-        IndexIMUGyroEnable = 4,  
+Purpose:
+作用：
+    This estimator computes robot odometry using only IMU and joint motor related data.
+    It provides body position, velocity, acceleration, attitude, angular velocity,
+    angular acceleration, support-state related statistics, and optional support-center
+    / slope related quantities.
 
-        IndexJointsXYZEnable = 5,
-        IndexJointsVelocityXYZEnable = 6,
-        IndexJointsRPYEnable = 7,
+    本估计器仅依赖 IMU 和关节电机相关数据完成机器人的本体里程计估计。
+    它输出机体的位置、速度、加速度、姿态角、角速度、角加速度，
+    以及与支撑状态相关的统计量，并可选输出支撑中心 / 坡度相关量。
 
-        IndexLoadedWeight = 9,
-        IndexLegFootForceThreshold = 10,  
-        IndexLegMinStairHeight = 11,
+Main entry:
+主要入口：
+    1. Initialization example:
+       初始化示例：
+           #include "fusion_estimator.h"
+           auto Robot_Estimation = CreateRobot_Estimation();
 
-        IndexLegOrientationInitialWeight = 12, 
-        IndexLegOrientationTimeWeight = 13,
+    2. Runtime estimation example:
+       运行时估计示例：
+           #include "LowlevelState.h"
+           LowlevelState st{};
+           Odometer odom = Robot_Estimation.fusion_estimator(st);
 
-        当status[IndexInOrOut]
-            ==1：修改估计算法参数
-            ==2：读取估计算法参数（建议先读一次，再设置参数，避免把enable设置成false）
-            ==3：重置估计的位置为[0,0,0.4]
-        
-        status[IndexInOrOut]在每次成功设置后，数值会发生变化
-        
-        为保证更快运行速度，初始模式为：
-            status[0:13] = [0,0, 0,1,0, 1,0,0, 0,-80,0.08, 0.001,1000]
+    3. Runtime status/config interface:
+       运行时状态/参数接口：
+           double status[200] = {0};
+           Robot_Estimation.fusion_estimator_status(status);
 
-算法原理：
-    1. 基于IMU估计机器狗姿态角和角速度
-    2. 基于关节获得各足在身体坐标系中的位置和速度
-    3. 根据身体的世界坐标系位置与方向角，计算各足在世界坐标系中的位置和速度
-    4. 基于关节计算足点的z方向作用力，当力超过阈值，认为足落地，并记录落足点[x,y,z]
-    5. 根据落足点[x,y,z]，足在地面时，反解身体的位置速度
-    6. 对于落足点z，离散化为至少0.08m间隔的高度，每次落地时拉向记录过的高度
+Configuration index meaning:
+配置索引说明：
+
+    IndexInOrOut = 0
+    IndexStatusOK = 1
+
+    IndexIMUAccEnable = 2
+    IndexIMUQuaternionEnable = 3
+    IndexIMUGyroEnable = 4
+
+    IndexJointsXYZEnable = 5
+    IndexJointsVelocityXYZEnable = 6
+    IndexJointsRPYEnable = 7
+
+    IndexSlopeModeTimeThreshold = 8
+    IndexSlopeModeAngleThreshold = 9
+    IndexLegFootForceThreshold = 10
+    IndexLegMinStairHeight = 11
+    IndexStairHeightFogotten = 12
+
+    IndexLegOrientationInitialWeight = 13
+    IndexLegOrientationTimeWeight = 14
+
+    IndexSlopeEstimationEnable = 15
+
+Runtime control:
+运行控制：
+    status[IndexInOrOut] == 1:
+        write/modify estimator parameters
+        写入/修改估计器参数
+
+    status[IndexInOrOut] == 2:
+        read current estimator parameters and internal state
+        读取当前估计器参数和部分内部状态
+
+    status[IndexInOrOut] == 3:
+        reset estimated position to zero and re-align yaw correction
+        将估计位置清零，并重新对齐 yaw 修正项
+
+    status[IndexInOrOut] == 4:
+        switch to MP kinematic preset
+        切换到 MP 运动学参数
+
+    status[IndexInOrOut] == 5:
+        switch to LW kinematic preset
+        切换到 LW 运动学参数
+
+    status[IndexInOrOut] == 6:
+        switch to MW kinematic preset
+        切换到 MW 运动学参数
+
+    status[IndexInOrOut] == 99:
+        switch to Go2P kinematic preset
+        切换到 Go2P 运动学参数
+
+Algorithm pipeline:
+算法流程：
+    1. IMU quaternion / gyroscope update attitude and angular rate related states.
+       使用 IMU 四元数 / 角速度更新姿态与角速度相关状态。
+    2. Joint motor states are converted to foot positions and velocities in body frame.
+       将关节电机状态转换为机体系下的足端位置和速度。
+    3. Foot positions / velocities are transformed into world-related support constraints.
+       将足端位置 / 速度转化为世界系支撑约束。
+    4. Contact / support state is inferred from joint-force-related information.
+       基于关节力相关信息推断触地 / 支撑状态。
+    5. When support constraints are available, body position and velocity are corrected.
+       当支撑约束有效时，对机体位置和速度进行校正。
+    6. Optional leg-based yaw correction is applied when enabled.
+       当启用时，使用腿部几何关系对 yaw 进行辅助校正。
+    7. Optional slope estimation is applied when enough support geometry is available.
+       当支撑几何充分时，可选进行坡度估计。
 */
 
 #include <memory>
@@ -311,7 +363,6 @@ public:
             }
         }
 
-        // ===== 位置/速度/加速度：来自 sensors[0] =====
         odom.XPos = static_cast<float>(sensors[0]->EstimatedState[0]);
         odom.YPos = static_cast<float>(sensors[0]->EstimatedState[3]);
         odom.ZPos = static_cast<float>(sensors[0]->EstimatedState[6]);
@@ -324,7 +375,6 @@ public:
         odom.YAcc = static_cast<float>(sensors[0]->EstimatedState[5]);
         odom.ZAcc = static_cast<float>(sensors[0]->EstimatedState[8]);
 
-        // ===== 姿态角/角速度/角加速度：来自 sensors[1] =====
         odom.RollRad  = static_cast<float>(sensors[1]->EstimatedState[0]);
         odom.PitchRad = static_cast<float>(sensors[1]->EstimatedState[3]);
         odom.YawRad   = static_cast<float>(sensors[1]->EstimatedState[6]);

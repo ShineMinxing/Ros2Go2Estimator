@@ -34,7 +34,7 @@ namespace DataFusion
 
                 for(i = 0; i < 3; i++)
                 {
-                    StateSpaceModel->Double_Par[0 + LegNumber * 3 + i] = Observation[3 * i]; 
+                    StateSpaceModel->Double_Par[0 + LegNumber * 3 + i] = FootBodyPos_BF[LegNumber][i]; 
                     FootBodyPos_WF[LegNumber][i] = Observation[3 * i];
                 }
             }

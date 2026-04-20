@@ -1,15 +1,10 @@
 clear all;clc;
 cd(fileparts(mfilename('fullpath')));
 
-CSV_PATH = 'D:\project\Data\MP_XY150Z10.csv';  DogMode = 4;
-% CSV_PATH = 'D:\project\Data\LW_Flat.csv'; DogMode = 5;
-% CSV_PATH = 'D:\project\Data\LW_XY150Z10_1.csv';  DogMode = 5;
-% CSV_PATH = 'D:\project\Data\LW_XY150Z10_3.csv';  DogMode = 5;
-% CSV_PATH = 'D:\project\Data\LW_Outdoor.csv';  DogMode = 5;
-% CSV_PATH = 'D:\project\Data\MW_XY150Z10.csv';  DogMode = 6;
-
 % CSV_PATH = 'MPXY150Z10'; DogMode = 4;
 % CSV_PATH = 'MWXY150Z10'; DogMode = 6;
+% CSV_PATH = 'GO2Stairs'; DogMode = 99;
+CSV_PATH = 'GO2Flat'; DogMode = 99;
 
 used_lines = 390000;
 
@@ -86,7 +81,7 @@ clear fusion_estimator_mex
 fprintf('[DONE] frames=%d\n', k);
 
 ZoomTime = [0,data(end-1,1)/1000];
-% ZoomTime = [3,40];
+ZoomTime = [18,19];
 
 figure(1); clf; hold on; grid on;
 plot(odom_log(range,1), odom_log(range,2), 'bo')

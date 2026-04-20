@@ -24,9 +24,10 @@ If you use this repository in research, please consider citing the paper.
 
 ## 📦 Data Sharing (Go2-EDU ROS bags)
 
-To help readers quickly validate the pipeline, we provide **two Go2-EDU trial datasets**, including **real-world videos** and the corresponding **ROS bag topics/messages** required by this node, enabling fast reproduction and sanity checks.
+To help readers quickly validate the pipeline, we provide **Go2-EDU trial datasets**, including **real-world videos**, derived CSV files, and the corresponding **ROS bag topics/messages** required by this node, enabling fast reproduction and sanity checks.
 
-* Download (Google Drive): https://drive.google.com/drive/folders/1FfVO69rfmUu6B9crPhZCfKf9wFnV4L7n?usp=sharing
+* Download (GitHub Releases): https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry/releases/tag/DataForTest
+* Recommended assets in that release include `GO2Flat`, `GO2Stairs`, `MPXY150Z10`, `MWXY150Z10`, `robot_flat_1_compress.zip`, and `robot_stairs_1_compress.zip`
 
 > Note: the IMU on this Go2-EDU platform exhibits **noticeable yaw drift**, so the odometry accuracy is generally **worse than** the results reported for Astrall robots A and B in the paper.
 
@@ -86,8 +87,7 @@ CAPO-LeggedRobotOdometry/
 │   ├── fusion_estimator_mex.cpp
 │   ├── Comparison/
 │   │   └── invariant-ekf/           # MATLAB mixed-compilation workflow for invariant-ekf
-│   ├── MPXY150Z10
-│   └── MWXY150Z10
+│   └── ...                          # optional test datasets are published via GitHub Releases
 ├── Plotjuggler.xml
 └── Readme.md
 
@@ -161,21 +161,6 @@ source install/setup.bash
 ros2 run fusion_estimator fusion_estimator_node
 ```
 
-### Optional: pull large files / sample data
-
-If you want to use optional sample CSV files or large assets, you may need Git LFS:
-
-```bash
-sudo apt update
-sudo apt install git-lfs
-git lfs install
-cd ~/ros2_ws/src/CAPO-LeggedRobotOdometry
-git lfs pull
-```
-
-> Note: in some versions of this repository, the node loads `config.yaml` through a hard-coded `--params-file` path inside `fusion_estimator_node.cpp`. If your local workspace path differs, update that path and rebuild.
-
----
 
 ## 📑 ROS 2 Interfaces
 
@@ -265,7 +250,7 @@ Files in this folder:
 * `build_mex.m` — build script for MEX compilation
 * `fusion_estimator_mex.cpp` — MEX bridge wrapping the C++ estimator core
 * `fusion_estimator.m` — MATLAB-side usage / validation example
-* `MPXY150Z10`, `MWXY150Z10` — sample data for offline tests
+* sample CSV files and compressed test datasets — published via GitHub Releases: https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry/releases/tag/DataForTest
 
 For comparison with another representative legged-odometry implementation, Matlab/Comparison/invariant-ekf/ also provides a MATLAB mixed-compilation workflow for invariant-ekf.
 
@@ -337,9 +322,10 @@ You can use it to inspect:
 
 ## 📦 数据共享
 
-为便于大家快速验证本仓库的有效性，我们提供了 **Go2-EDU** 的两段示例数据，包含**实拍录像**以及可直接用于本节点的 **ROS bag topic / message**，用于快速复现与 sanity check。
+为便于大家快速验证本仓库的有效性，我们提供了 **Go2-EDU** 的示例数据，包含**实拍录像**、离线 CSV 以及可直接用于本节点的 **ROS bag topic / message**，用于快速复现与 sanity check。
 
-* 数据下载（Google Drive）：https://drive.google.com/drive/folders/1FfVO69rfmUu6B9crPhZCfKf9wFnV4L7n?usp=sharing
+* 数据下载（GitHub Releases）：https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry/releases/tag/DataForTest
+* 推荐下载该 release 中的 `GO2Flat`、`GO2Stairs`、`MPXY150Z10`、`MWXY150Z10`、`robot_flat_1_compress.zip`、`robot_stairs_1_compress.zip`
 
 > 说明：该 Go2-EDU 平台的 IMU **yaw 漂移较明显**，因此里程计精度通常会**劣于**论文中 Astrall 机器人 A 与 B 的实验结果。
 
@@ -399,8 +385,7 @@ CAPO-LeggedRobotOdometry/
 │   ├── fusion_estimator_mex.cpp
 │   ├── Comparison/
 │   │   └── invariant-ekf/           # invariant-ekf 的 MATLAB 混编与对比示例
-│   ├── MPXY150Z10.csv
-│   └── MWXY150Z10.csv
+│   └── ...                          # 可选测试数据通过 GitHub Releases 提供
 ├── Plotjuggler.xml
 └── Readme.md
 ```
@@ -470,22 +455,6 @@ colcon build --packages-select fusion_estimator
 source install/setup.bash
 ros2 run fusion_estimator fusion_estimator_node
 ```
-
-### 可选：拉取大文件 / 示例数据
-
-如果你需要示例 CSV 或大文件资源，可以安装 Git LFS：
-
-```bash
-sudo apt update
-sudo apt install git-lfs
-git lfs install
-cd ~/ros2_ws/src/CAPO-LeggedRobotOdometry
-git lfs pull
-```
-
-> 说明：某些版本中，`fusion_estimator_node.cpp` 会通过硬编码的 `--params-file` 路径加载 `config.yaml`。如果你的本地工作空间路径不同，需要先修改该路径并重新编译。
-
----
 
 ## 📑 节点接口
 
@@ -575,7 +544,7 @@ fusion_estimator
 * `build_mex.m`：MEX 编译脚本
 * `fusion_estimator_mex.cpp`：MEX 桥接文件，负责封装 C++ 估计器核心
 * `fusion_estimator.m`：MATLAB 侧调用示例
-* `MPXY150Z10`、`MWXY150Z10`：离线测试用示例数据
+* 离线测试用示例数据与压缩包：统一通过 GitHub Releases 提供：https://github.com/ShineMinxing/CAPO-LeggedRobotOdometry/releases/tag/DataForTest
 
 这部分特别适合以下需求：
 

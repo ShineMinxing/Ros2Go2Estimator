@@ -1,7 +1,9 @@
 clear all; clc;
 cd(fileparts(mfilename('fullpath')));
 
-CSV_PATH = '..\..\MPXY150Z10';  DogMode = 4; ContactThreshold = 20;
+% CSV_PATH = '../../MPXY150Z10';  DogMode = 4; ContactThreshold = 20;
+% CSV_PATH = '../../GO2Stairs';  DogMode = 99; ContactThreshold = 50;
+CSV_PATH = '../../GO2Flat';  DogMode = 99; ContactThreshold = 50;
 
 used_lines = 390000;
 
@@ -80,7 +82,8 @@ clear inekf_legged_core_mex
 
 fprintf('[DONE] frames=%d\n', k);
 
-% figure(1); clf; hold on; grid on;
+% figure(1); clf; 
+hold on; grid on;
 plot(odom_log(range,1), odom_log(range,2), 'b-');
 plot(odom_log(range,1), odom_log(range,3), 'r-');
 plot(odom_log(range,1), odom_log(range,4), 'g-');

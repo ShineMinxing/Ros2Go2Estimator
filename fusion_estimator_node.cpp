@@ -65,7 +65,7 @@ public:
         status[IndexJointsXYZEnable]          = leg_pos_enable ? 1.0 : 0.0;
         status[IndexJointsVelocityXYZEnable]  = leg_vel_enable ? 1.0 : 0.0;
         status[IndexJointsRPYEnable]          = leg_ori_enable ? 1.0 : 0.0;
-        status[SlopeEstimationEnable]       = slope_mode_enable ? 1.0 : 0.0;
+        status[IndexSlopeEstimationEnable]       = slope_mode_enable ? 1.0 : 0.0;
         // Threshold/Weight
         status[IndexLegFootForceThreshold]       = -1.0;
         status[IndexLegMinStairHeight]           = min_stair_height;

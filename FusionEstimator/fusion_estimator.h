@@ -228,16 +228,16 @@ public:
             status[IndexLegOrientationInitialWeight] = legs_ori->legori_init_weight;
             status[IndexLegOrientationTimeWeight]    = legs_ori->legori_time_weight;
             
-            status[IndexSlopeEstimationEnable]            = legs_pos->SlopeModeEnable;
+            status[IndexSlopeEstimationEnable]       = legs_pos->SlopeModeEnable;
 
             for(int i = 0; i < 9; i++){
-                status[50 + i] = sensors[0]->EstimatedState[i];
+                status[20 + i] = sensors[0]->EstimatedState[i];
             }
             for(int i = 0; i < 9; i++){
-                status[60 + i] = sensors[1]->EstimatedState[i];
+                status[30 + i] = sensors[1]->EstimatedState[i];
             }
-            for(int i = 0; i < 100; i++){
-                status[100 + i] = sensors[0]->Double_Par[i];
+            for(int i = 0; i < 60; i++){
+                status[40 + i] = sensors[0]->Double_Par[i];
             }
         }
         else if (status[IndexInOrOut] == 3){
@@ -248,7 +248,7 @@ public:
             sensors[0]->EstimatedState[0] = 0;
             sensors[0]->EstimatedState[3] = 0;
             sensors[0]->EstimatedState[6] = 0;
-            yaw_correct = - sensors[1]->EstimatedState[6];
+            yaw_correct = yaw_correct - sensors[1]->EstimatedState[6];
             legs_pos->FootfallPositionRecordIsInitiated[0] = false;
             legs_pos->FootfallPositionRecordIsInitiated[1] = false;
             legs_pos->FootfallPositionRecordIsInitiated[2] = false;

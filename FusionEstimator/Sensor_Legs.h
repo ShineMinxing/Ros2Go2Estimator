@@ -92,6 +92,11 @@ namespace DataFusion
 
     int pitch_q_index[MAX_PITCH_SUM_JOINT]  = {-1,-1,-1,-1,-1,-1,-1,-1};
     int pitch_dq_index[MAX_PITCH_SUM_JOINT] = {-1,-1,-1,-1,-1,-1,-1,-1};
+
+    // node[n] origin position/orientation in body frame
+    // node[n] 在身体坐标系地位置和角度
+    double node_pos_b[MAX_CHAIN_NODE][3] = {{0.0}};
+    double node_quat_b[MAX_CHAIN_NODE][4] = {{0.0}};
   };
 
   class SensorLegsPos : public Sensors

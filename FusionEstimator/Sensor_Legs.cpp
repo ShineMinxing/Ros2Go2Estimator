@@ -28,13 +28,20 @@ namespace DataFusion
             }
             
             Joint2HipFoot(Message,LegNumber);
+            
+            for(i = 0; i < 3; i++)
+            {
+                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 0 * 3 + i] = LegChains_[LegNumber].node_pos_b[0][i];
+                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 1 * 3 + i] = LegChains_[LegNumber].node_pos_b[1][i];
+                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 2 * 3 + i] = LegChains_[LegNumber].node_pos_b[2][i];
+                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 3 * 3 + i] = FootBodyPos_BF[LegNumber][i];
+            }
 
             if(JointsXYZEnable){
                 ObservationCorrect_Position();
 
                 for(i = 0; i < 3; i++)
                 {
-                    StateSpaceModel->Double_Par[0 + LegNumber * 3 + i] = FootBodyPos_BF[LegNumber][i]; 
                     FootBodyPos_WF[LegNumber][i] = Observation[3 * i];
                 }
             }
@@ -49,11 +56,6 @@ namespace DataFusion
             }
 
             FeetEffort2Body(LegNumber);
-
-            for(i = 0; i < 6; i++)
-            {
-                StateSpaceModel->Double_Par[12+LegNumber*6+i] = FeetEffort2BodyMotion[LegNumber][i]; 
-            }
         }
         
         bool BoolTemp = false;
@@ -176,63 +178,66 @@ namespace DataFusion
 
     void SensorLegsPos::Joint2HipFoot(double *Message, int LegNumber)
     {
-        const LegTFChain& chain = LegChains_[LegNumber];
-
-        double node_pos[MAX_CHAIN_NODE][3] = {{0.0}};
-        double node_quat[MAX_CHAIN_NODE][4] = {{0.0}};
-
-        double joint_org[MAX_CHAIN_NODE][3] = {{0.0}};
-        double joint_axis[MAX_CHAIN_NODE][3] = {{0.0}};
-        int joint_dq_index[MAX_CHAIN_NODE];
-        int joint_tau_index[MAX_CHAIN_NODE];
+        double joint_org[MAX_CHAIN_NODE][3];
+        double joint_axis[MAX_CHAIN_NODE][3];
+        double joint_dq[MAX_CHAIN_NODE];
+        double joint_tau[MAX_CHAIN_NODE];
         int joint_num = 0;
 
         const double p_zero[3] = {0.0, 0.0, 0.0};
         const double q_id[4]   = {1.0, 0.0, 0.0, 0.0};
 
-        for (int i = 0; i < MAX_CHAIN_NODE; ++i) {
-            joint_dq_index[i] = -1;
-            joint_tau_index[i] = -1;
-        }
-
-        for (int n = 0; n < chain.node_num; ++n)
+        for (int n = 0; n < LegChains_[LegNumber].node_num; ++n)
         {
-            const TFNode& nd = chain.node[n];
+            const double* p_parent =
+                (LegChains_[LegNumber].node[n].parent < 0) ?
+                p_zero :
+                LegChains_[LegNumber].node_pos_b[LegChains_[LegNumber].node[n].parent];
 
-            const double* p_parent = (nd.parent < 0) ? p_zero : node_pos[nd.parent];
-            const double* q_parent = (nd.parent < 0) ? q_id   : node_quat[nd.parent];
+            const double* q_parent =
+                (LegChains_[LegNumber].node[n].parent < 0) ?
+                q_id :
+                LegChains_[LegNumber].node_quat_b[LegChains_[LegNumber].node[n].parent];
 
-            double t_body[3];
-            quat_rot_vec3(q_parent, nd.t, t_body);
+            quat_rot_vec3(
+                q_parent,
+                LegChains_[LegNumber].node[n].t,
+                LegChains_[LegNumber].node_pos_b[n]
+            );
 
-            double p_pre[3] = {
-                p_parent[0] + t_body[0],
-                p_parent[1] + t_body[1],
-                p_parent[2] + t_body[2]
-            };
+            LegChains_[LegNumber].node_pos_b[n][0] += p_parent[0];
+            LegChains_[LegNumber].node_pos_b[n][1] += p_parent[1];
+            LegChains_[LegNumber].node_pos_b[n][2] += p_parent[2];
 
             double q_pre[4];
-            quat_mul(q_parent, nd.q_fix, q_pre);
+            quat_mul(q_parent, LegChains_[LegNumber].node[n].q_fix, q_pre);
             quat_normalize(q_pre);
 
-            if (nd.q_index >= 0)
+            if (LegChains_[LegNumber].node[n].q_index >= 0)
             {
-                double axis_local[3] = {0.0, 0.0, 0.0};
-                if (nd.axis == TF_AXIS_X) axis_local[0] = 1.0;
-                else if (nd.axis == TF_AXIS_Y) axis_local[1] = 1.0;
-                else if (nd.axis == TF_AXIS_Z) axis_local[2] = 1.0;
+                double axis_local[3] = {
+                    (LegChains_[LegNumber].node[n].axis == TF_AXIS_X) ? 1.0 : 0.0,
+                    (LegChains_[LegNumber].node[n].axis == TF_AXIS_Y) ? 1.0 : 0.0,
+                    (LegChains_[LegNumber].node[n].axis == TF_AXIS_Z) ? 1.0 : 0.0
+                };
 
-                joint_org[joint_num][0] = p_pre[0];
-                joint_org[joint_num][1] = p_pre[1];
-                joint_org[joint_num][2] = p_pre[2];
+                joint_org[joint_num][0] = LegChains_[LegNumber].node_pos_b[n][0];
+                joint_org[joint_num][1] = LegChains_[LegNumber].node_pos_b[n][1];
+                joint_org[joint_num][2] = LegChains_[LegNumber].node_pos_b[n][2];
 
                 quat_rot_vec3(q_pre, axis_local, joint_axis[joint_num]);
 
-                joint_dq_index[joint_num] = nd.dq_index;
-                joint_tau_index[joint_num] = nd.tau_index;
+                joint_dq[joint_num] =
+                    (LegChains_[LegNumber].node[n].dq_index >= 0) ?
+                    Message[LegChains_[LegNumber].node[n].dq_index] :
+                    0.0;
 
-                const double ang = Message[nd.q_index];
-                const double h = 0.5 * ang;
+                joint_tau[joint_num] =
+                    (LegChains_[LegNumber].node[n].tau_index >= 0) ?
+                    Message[LegChains_[LegNumber].node[n].tau_index] :
+                    0.0;
+
+                const double h = 0.5 * Message[LegChains_[LegNumber].node[n].q_index];
                 const double s = std::sin(h);
 
                 double q_joint[4] = {
@@ -242,75 +247,40 @@ namespace DataFusion
                     axis_local[2] * s
                 };
 
-                quat_mul(q_pre, q_joint, node_quat[n]);
-                quat_normalize(node_quat[n]);
-
-                node_pos[n][0] = p_pre[0];
-                node_pos[n][1] = p_pre[1];
-                node_pos[n][2] = p_pre[2];
+                quat_mul(q_pre, q_joint, LegChains_[LegNumber].node_quat_b[n]);
+                quat_normalize(LegChains_[LegNumber].node_quat_b[n]);
 
                 joint_num++;
             }
             else
             {
-                node_pos[n][0] = p_pre[0];
-                node_pos[n][1] = p_pre[1];
-                node_pos[n][2] = p_pre[2];
-
-                node_quat[n][0] = q_pre[0];
-                node_quat[n][1] = q_pre[1];
-                node_quat[n][2] = q_pre[2];
-                node_quat[n][3] = q_pre[3];
+                LegChains_[LegNumber].node_quat_b[n][0] = q_pre[0];
+                LegChains_[LegNumber].node_quat_b[n][1] = q_pre[1];
+                LegChains_[LegNumber].node_quat_b[n][2] = q_pre[2];
+                LegChains_[LegNumber].node_quat_b[n][3] = q_pre[3];
             }
         }
 
-        const TFNode& ee = chain.ee;
-        const double* p_ee_parent = (ee.parent < 0) ? p_zero : node_pos[ee.parent];
-        const double* q_ee_parent = (ee.parent < 0) ? q_id   : node_quat[ee.parent];
+        const double* p_ee_parent = LegChains_[LegNumber].node_pos_b[LegChains_[LegNumber].ee.parent];
+        const double* q_ee_parent = LegChains_[LegNumber].node_quat_b[LegChains_[LegNumber].ee.parent];
 
-        double ee_t_body[3];
-        quat_rot_vec3(q_ee_parent, ee.t, ee_t_body);
+        quat_rot_vec3(
+            q_ee_parent,
+            LegChains_[LegNumber].ee.t,
+            FootBodyPos_BF[LegNumber]
+        );
 
-        double p_ee[3] = {
-            p_ee_parent[0] + ee_t_body[0],
-            p_ee_parent[1] + ee_t_body[1],
-            p_ee_parent[2] + ee_t_body[2]
-        };
+        FootBodyPos_BF[LegNumber][0] += p_ee_parent[0];
+        FootBodyPos_BF[LegNumber][1] += p_ee_parent[1];
+        FootBodyPos_BF[LegNumber][2] += p_ee_parent[2];
 
-        double J[3][MAX_CHAIN_NODE] = {{0.0}};
-        for (int j = 0; j < joint_num; ++j)
-        {
-            double r[3] = {
-                p_ee[0] - joint_org[j][0],
-                p_ee[1] - joint_org[j][1],
-                p_ee[2] - joint_org[j][2]
-            };
+        Observation[0] = FootBodyPos_BF[LegNumber][0] - SensorPosition[0];
+        Observation[3] = FootBodyPos_BF[LegNumber][1] - SensorPosition[1];
+        Observation[6] = FootBodyPos_BF[LegNumber][2] - SensorPosition[2];
 
-            J[0][j] = joint_axis[j][1] * r[2] - joint_axis[j][2] * r[1];
-            J[1][j] = joint_axis[j][2] * r[0] - joint_axis[j][0] * r[2];
-            J[2][j] = joint_axis[j][0] * r[1] - joint_axis[j][1] * r[0];
-        }
-
-        double v_ee[3] = {0.0, 0.0, 0.0};
-        for (int j = 0; j < joint_num; ++j)
-        {
-            const double dqj = (joint_dq_index[j] >= 0) ? Message[joint_dq_index[j]] : 0.0;
-            v_ee[0] += J[0][j] * dqj;
-            v_ee[1] += J[1][j] * dqj;
-            v_ee[2] += J[2][j] * dqj;
-        }
-
-        FootBodyPos_BF[LegNumber][0] = p_ee[0];
-        FootBodyPos_BF[LegNumber][1] = p_ee[1];
-        FootBodyPos_BF[LegNumber][2] = p_ee[2];
-
-        Observation[0] = p_ee[0] - SensorPosition[0];
-        Observation[3] = p_ee[1] - SensorPosition[1];
-        Observation[6] = p_ee[2] - SensorPosition[2];
-
-        Observation[1] = v_ee[0];
-        Observation[4] = v_ee[1];
-        Observation[7] = v_ee[2];
+        Observation[1] = 0.0;
+        Observation[4] = 0.0;
+        Observation[7] = 0.0;
 
         double Jtau[3] = {0.0, 0.0, 0.0};
         double JJT[3][3] = {{0.0}};
@@ -318,22 +288,33 @@ namespace DataFusion
 
         for (int j = 0; j < joint_num; ++j)
         {
-            const double tauj = (joint_tau_index[j] >= 0) ? Message[joint_tau_index[j]] : 0.0;
+            const double rx = FootBodyPos_BF[LegNumber][0] - joint_org[j][0];
+            const double ry = FootBodyPos_BF[LegNumber][1] - joint_org[j][1];
+            const double rz = FootBodyPos_BF[LegNumber][2] - joint_org[j][2];
 
-            Jtau[0] += J[0][j] * tauj;
-            Jtau[1] += J[1][j] * tauj;
-            Jtau[2] += J[2][j] * tauj;
+            const double J0 = joint_axis[j][1] * rz - joint_axis[j][2] * ry;
+            const double J1 = joint_axis[j][2] * rx - joint_axis[j][0] * rz;
+            const double J2 = joint_axis[j][0] * ry - joint_axis[j][1] * rx;
 
-            JJT[0][0] += J[0][j] * J[0][j];
-            JJT[0][1] += J[0][j] * J[1][j];
-            JJT[0][2] += J[0][j] * J[2][j];
-            JJT[1][0] += J[1][j] * J[0][j];
-            JJT[1][1] += J[1][j] * J[1][j];
-            JJT[1][2] += J[1][j] * J[2][j];
-            JJT[2][0] += J[2][j] * J[0][j];
-            JJT[2][1] += J[2][j] * J[1][j];
-            JJT[2][2] += J[2][j] * J[2][j];
+            Observation[1] += J0 * joint_dq[j];
+            Observation[4] += J1 * joint_dq[j];
+            Observation[7] += J2 * joint_dq[j];
+
+            Jtau[0] += J0 * joint_tau[j];
+            Jtau[1] += J1 * joint_tau[j];
+            Jtau[2] += J2 * joint_tau[j];
+
+            JJT[0][0] += J0 * J0;
+            JJT[0][1] += J0 * J1;
+            JJT[0][2] += J0 * J2;
+            JJT[1][1] += J1 * J1;
+            JJT[1][2] += J1 * J2;
+            JJT[2][2] += J2 * J2;
         }
+
+        JJT[1][0] = JJT[0][1];
+        JJT[2][0] = JJT[0][2];
+        JJT[2][1] = JJT[1][2];
 
         FootBodyEff_BF[LegNumber][0] = 0.0;
         FootBodyEff_BF[LegNumber][1] = 0.0;
@@ -606,6 +587,9 @@ namespace DataFusion
         FeetEffort2BodyMotion[LegNumber][3] = tau_w[0];
         FeetEffort2BodyMotion[LegNumber][4] = tau_w[1];
         FeetEffort2BodyMotion[LegNumber][5] = tau_w[2];
+        
+        for(int i = 0; i < 3; i++)
+            StateSpaceModel->Double_Par[LegNumber * 3 + i] = FeetEffort2BodyMotion[LegNumber][i]; 
     }
 
     void SensorLegsPos::EstimateGroundPitchAlongHeading(double& move_dir_x, double& move_dir_y, double& move_dir_z)
@@ -623,8 +607,6 @@ namespace DataFusion
         double sxz = 0.0, syz = 0.0, sz  = 0.0;
         int n = 0;
         int count = 0;
-        
-        StateSpaceModel->Double_Par[36] = 0.0;
 
         for (int LegNumber = 0; LegNumber < ContactChainNum; ++LegNumber)
         {
@@ -713,8 +695,6 @@ namespace DataFusion
         // =========================================================
         const double hxy_n = 1.0 / std::sqrt(1.0 + k * k);
         const double hz_n  = k * hxy_n;
-        
-        StateSpaceModel->Double_Par[36] = std::atan(k);
 
         move_dir_x = hx * hxy_n;
         move_dir_y = hy * hxy_n;

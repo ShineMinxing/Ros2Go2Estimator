@@ -27,6 +27,10 @@ fusion_estimator_node:
     base_frame: "base_link"
     base_frame_2d: "base_link_2D"
 
+    # 各关节的身体坐标系连线
+    pub_body_joint_marker_enable: true
+    pub_body_joint_marker_topic: "body_joint_markers"
+
     # IMU使能
     imu_data_enable: true
     # 运动学估计使能

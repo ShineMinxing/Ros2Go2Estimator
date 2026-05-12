@@ -6,7 +6,8 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h> 
 //#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp> doesn't work on Ubuntu20.04
-#include "std_msgs/msg/float64_multi_array.hpp"
+#include <std_msgs/msg/float64_multi_array.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 
 #include "FusionEstimator/fusion_estimator.h"
@@ -32,6 +33,9 @@ public:
         this->get_parameter_or("base_frame", child_frame_id, std::string("base_link"));
         this->get_parameter_or("base_frame_2d", child_frame_2d_id, std::string("base_link_2D"));
         this->get_parameter_or("RobotType", robot_type_, std::string("Leg"));
+
+        this->get_parameter_or("pub_body_joint_marker_enable", pub_body_joint_marker_enable, false);
+        this->get_parameter_or("pub_body_joint_marker_topic", pub_body_joint_marker_topic, std::string("body_joint_markers"));
 
         this->get_parameter_or("imu_data_enable", imu_data_enable, true);
         this->get_parameter_or("leg_pos_enable", leg_pos_enable, true);
@@ -96,6 +100,9 @@ public:
 
         SMXFE_publisher   = this->create_publisher<nav_msgs::msg::Odometry>(pub_odom_topic, 10);
         SMXFE_2D_publisher= this->create_publisher<nav_msgs::msg::Odometry>(pub_odom_2d_topic, 10);
+
+        if (pub_body_joint_marker_enable)
+            body_joint_marker_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>(pub_body_joint_marker_topic, 10);
 
         SMXFE_odom.header.frame_id    = odom_frame_id;
         SMXFE_odom.child_frame_id     = child_frame_id;
@@ -162,20 +169,22 @@ private:
     LowlevelState st_;        // “静态”输入缓存（节点生命周期内一直保留）
     Odometer odom_;           // “静态”输出缓存（仅 joint 回调更新）
 
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher, SMXFE_2D_publisher;
-    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr go2_imu_sub;
-    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr go2_joint_sub;
-    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr joystick_cmd_sub;
-
     nav_msgs::msg::Odometry SMXFE_odom;
     nav_msgs::msg::Odometry SMXFE_odom_2D;
 
-    std::string odom_frame_id, child_frame_id, child_frame_2d_id, robot_type_;
-    bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable, slope_mode_enable;
-    bool msg_received[2] = {0,0};
-    double foot_force_threshold, min_stair_height, stair_height_fogotten;
+    std::string odom_frame_id, child_frame_id, child_frame_2d_id, robot_type_, pub_body_joint_marker_topic;
 
+    bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable, slope_mode_enable, pub_body_joint_marker_enable;
+    bool msg_received[2] = {0,0};
+
+    double foot_force_threshold, min_stair_height, stair_height_fogotten;
     double leg_ori_init_weight, leg_ori_time_wight;
+    
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr go2_imu_sub;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr go2_joint_sub;
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr joystick_cmd_sub;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr SMXFE_publisher, SMXFE_2D_publisher;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr body_joint_marker_publisher;
 
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
@@ -333,6 +342,102 @@ private:
         Msg_Publish();
     }
 
+    void BodyJointMarkerPublish()
+    {
+        double status[200] = {0};
+        status[IndexInOrOut] = 2;
+        fe_.fusion_estimator_status(status);
+
+        visualization_msgs::msg::MarkerArray markers;
+
+        const char* leg_names[4]  = {"FL", "FR", "RL", "RR"};
+        const char* node_names[4] = {"Hip", "Thigh", "Calf", "Foot"};
+
+        for (int leg = 0; leg < 4; ++leg)
+        {
+            visualization_msgs::msg::Marker line;
+
+            line.header.stamp = SMXFE_odom.header.stamp;
+            line.header.frame_id = odom_frame_id;
+            line.ns = std::string(leg_names[leg]) + "_LegLine";
+            line.id = 100 + leg;
+            line.type = visualization_msgs::msg::Marker::LINE_STRIP;
+            line.action = visualization_msgs::msg::Marker::ADD;
+            line.pose.orientation.w = 1.0;
+            line.scale.x = 0.015;
+            line.color.r = 1.0;
+            line.color.g = 1.0;
+            line.color.b = 1.0;
+            line.color.a = 1.0;
+
+            for (int node = 0; node < 4; ++node)
+            {
+                const int pos_id = 12 + leg * 12 + node * 3;
+
+                const double x = status[40 + pos_id + 0];
+                const double y = status[40 + pos_id + 1];
+                const double z = status[40 + pos_id + 2] + 0.5;
+
+                visualization_msgs::msg::Marker marker;
+
+                marker.header.stamp = SMXFE_odom.header.stamp;
+                marker.header.frame_id = odom_frame_id;
+                marker.ns = std::string(leg_names[leg]) + "_" + node_names[node];
+                marker.id = leg * 4 + node;
+                marker.type = visualization_msgs::msg::Marker::SPHERE;
+                marker.action = visualization_msgs::msg::Marker::ADD;
+
+                marker.pose.position.x = x;
+                marker.pose.position.y = y;
+                marker.pose.position.z = z;
+                marker.pose.orientation.w = 1.0;
+
+                marker.scale.x = 0.04;
+                marker.scale.y = 0.04;
+                marker.scale.z = 0.04;
+
+                if (node == 0)
+                {
+                    marker.color.r = 1.0;
+                    marker.color.g = 0.0;
+                    marker.color.b = 0.0;
+                }
+                else if (node == 1)
+                {
+                    marker.color.r = 0.0;
+                    marker.color.g = 1.0;
+                    marker.color.b = 0.0;
+                }
+                else if (node == 2)
+                {
+                    marker.color.r = 0.0;
+                    marker.color.g = 0.0;
+                    marker.color.b = 1.0;
+                }
+                else
+                {
+                    marker.color.r = 1.0;
+                    marker.color.g = 1.0;
+                    marker.color.b = 0.0;
+                }
+
+                marker.color.a = 1.0;
+
+                geometry_msgs::msg::Point p;
+                p.x = x;
+                p.y = y;
+                p.z = z;
+                line.points.push_back(p);
+
+                markers.markers.push_back(marker);
+            }
+
+            markers.markers.push_back(line);
+        }
+
+        body_joint_marker_publisher->publish(markers);
+    }
+
     void Msg_Publish()
     {
         if (!msg_received[0] || !msg_received[1])
@@ -343,6 +448,8 @@ private:
         // 发布 odometry 消息
         SMXFE_publisher->publish(SMXFE_odom);
         SMXFE_2D_publisher->publish(SMXFE_odom_2D);
+        if(pub_body_joint_marker_enable)
+            BodyJointMarkerPublish();
     }
 
     // 回调函数，处理SportCmd消息

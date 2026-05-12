@@ -4,101 +4,6 @@
 
 namespace DataFusion
 {
-  static constexpr int MAX_CONTACT_CHAIN = 4;
-  static constexpr int MAX_CHAIN_NODE = 12;
-  static constexpr int MAX_PITCH_SUM_JOINT = 8;
-
-  enum TFJointAxis
-  {
-    TF_AXIS_FIXED = -1,
-    TF_AXIS_X = 0,
-    TF_AXIS_Y = 1,
-    TF_AXIS_Z = 2
-  };
-
-  // ---------------- Joint axis enumeration for kinematic TF nodes ----------------
-  // ---------------- 运动学 TF 节点的关节轴枚举 ----------------
-  struct TFNode
-  {
-    // parent node index, -1 means the body frame
-    // 父节点编号，-1 表示机体坐标系（body）
-    int parent = -1;
-
-    // index of q in joint[0..15], -1 means this node is fixed
-    // q 在 joint[0..15] 中的索引，-1 表示该节点没有主动关节
-    int q_index = -1;
-
-    // index of dq in joint[16..31], -1 means unavailable
-    // dq 在 joint[16..31] 中的索引，-1 表示该节点没有可用角速度输入
-    int dq_index = -1;
-
-    // index of tau in joint[32..47], -1 means unavailable
-    // tau 在 joint[32..47] 中的索引，-1 表示该节点没有可用力矩输入
-    int tau_index = -1;
-
-    // rotation axis of this joint
-    // 该关节的转轴方向
-    int axis = TF_AXIS_FIXED;
-
-    // fixed translation from parent frame to this node, expressed in parent frame
-    // 从父节点到当前节点的固定平移，表达在父节点坐标系下
-    double t[3] = {0.0, 0.0, 0.0};
-
-    // fixed installation rotation from parent to this node
-    // 从父节点到当前节点的固定安装旋转
-    double q_fix[4] = {1.0, 0.0, 0.0, 0.0};
-
-    TFNode() = default;
-
-    TFNode(int parent_, int q_index_, int dq_index_, int tau_index_, int axis_, double x, double y, double z, double roll, double pitch, double yaw)
-        : parent(parent_), q_index(q_index_), dq_index(dq_index_), tau_index(tau_index_), axis(axis_)
-    {
-      t[0] = x; t[1] = y; t[2] = z;
-      eulerZYX_to_quat(roll, pitch, yaw, q_fix);
-    }
-  };
-
-  // ---------------- One contact chain / one leg kinematic description ----------------
-  // ---------------- 单条接触链 / 单条腿的运动学描述 ----------------
-  struct LegTFChain
-  {
-    // number of active TF nodes used by this chain
-    // 当前链实际使用的 TF 节点数量
-    int node_num = 0;
-
-    // TF nodes from body to end-effector
-    // 从机体到末端的 TF 节点序列
-    TFNode node[MAX_CHAIN_NODE];
-
-    // fixed transform from the last joint node to the end-effector / contact point
-    // 从最后一个关节节点到末端 / 接触点的固定变换
-    TFNode ee;
-
-    // wheel radius for wheel-foot models
-    // 轮足模型的轮半径
-    double wheel_radius = 0.0;
-
-    // wheel angle index in joint[0..15]
-    // 轮电机角度在 joint[0..15] 中的索引
-    int wheel_q_index = -1;
-
-    // wheel velocity index in joint[16..31]
-    // 轮电机角速度在 joint[16..31] 中的索引
-    int wheel_dq_index = -1;
-
-    // number of pitch-related joints used for wheel swing compensation
-    // 用于轮滚动摆角补偿的 pitch 相关关节数量
-    int pitch_joint_num = 0;
-
-    int pitch_q_index[MAX_PITCH_SUM_JOINT]  = {-1,-1,-1,-1,-1,-1,-1,-1};
-    int pitch_dq_index[MAX_PITCH_SUM_JOINT] = {-1,-1,-1,-1,-1,-1,-1,-1};
-
-    // node[n] origin position/orientation in body frame
-    // node[n] 在身体坐标系地位置和角度
-    double node_pos_b[MAX_CHAIN_NODE][3] = {{0.0}};
-    double node_quat_b[MAX_CHAIN_NODE][4] = {{0.0}};
-  };
-
   class SensorLegsPos : public Sensors
   {
     public:
@@ -117,10 +22,32 @@ namespace DataFusion
     }
         
     ~SensorLegsPos() override = default;
-
+    
     int ContactChainNum = 4;
-    LegTFChain LegChains_[MAX_CONTACT_CHAIN];
+    static constexpr int MAX_CONTACT_CHAIN = 4;
+    static constexpr int MAX_CHAIN_NODE = 12;
+    static constexpr int MAX_PITCH_SUM_JOINT = 8;
+
+    bool JointsXYZEnable = true;
+    bool JointsXYZVelocityEnable = true;
+
+    void SensorDataHandle(double* Message, double Time)  override;
+    void LoadedWeightCheck(double* Message, double Time);
+
+    bool FootfallPositionRecordIsInitiated[MAX_CONTACT_CHAIN] = {0}, FootIsOnGround[MAX_CONTACT_CHAIN] = {0}, FootWasOnGround[MAX_CONTACT_CHAIN] = {0}, FootLastMotion[MAX_CONTACT_CHAIN] = {0}, FootLanding[MAX_CONTACT_CHAIN] = {0}, CalculateWeightEnable = false;
+    double FootBodyEff_BF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyEff_WF[MAX_CONTACT_CHAIN][3] = {0}, FeetEffort2BodyMotion[MAX_CONTACT_CHAIN][6] = {0};
+    double FootBodyPos_BF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyPos_WF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyVel_WF[MAX_CONTACT_CHAIN][3] = {0}, FootfallPositionRecord[MAX_CONTACT_CHAIN][4] = {0}, FootfallAveragePosition[3] = {0}, FootfallProbability[MAX_CONTACT_CHAIN] = {0}, WheelAnglePrev[MAX_CONTACT_CHAIN] = {0};
+
     double FootEffortThreshold = -80.0, Environement_Height_Scope = 0.08, Data_Fading_Time = 1200.0;
+    double MinimumWeight = 25.0, TimelyWeight = 25.0;
+    
+    double SidewayMotionForwardCompensationRate = 5.0;
+
+    bool   SlopeModeEnable = true;
+    double SlopeModeTimeThreshold  = 1.0;
+    double SlopeModeAngleThreshold = 5.0 / 180.0 * M_PI;
+    double SlopeModeStepHeightThreshold  = 0.03;
+    double SlopeModeFootForceAccept  = 0.5;
 
     // ---------------- Go2 point-foot preset ----------------
     // ---------------- Go2 点足参数预设 ----------------
@@ -278,7 +205,7 @@ namespace DataFusion
 
       ContactChainNum = 4;
       Environement_Height_Scope = 0.10;
-      FootEffortThreshold = -120.0;
+      FootEffortThreshold = -125.0;
 
       // FL
       LegChains_[0].node_num = 3;
@@ -473,25 +400,100 @@ namespace DataFusion
       LegChains_[3].pitch_dq_index[1] = 30;
     }
 
-    bool JointsXYZEnable = true;
-    bool JointsXYZVelocityEnable = true;
-
-    void SensorDataHandle(double* Message, double Time)  override;
-    void LoadedWeightCheck(double* Message, double Time);
-
-    bool FootfallPositionRecordIsInitiated[MAX_CONTACT_CHAIN] = {0}, FootIsOnGround[MAX_CONTACT_CHAIN] = {0}, FootWasOnGround[MAX_CONTACT_CHAIN] = {0}, FootLastMotion[MAX_CONTACT_CHAIN] = {0}, FootLanding[MAX_CONTACT_CHAIN] = {0}, CalculateWeightEnable = false;
-    double FootBodyEff_BF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyEff_WF[MAX_CONTACT_CHAIN][3] = {0}, FeetEffort2BodyMotion[MAX_CONTACT_CHAIN][6] = {0};
-    double FootBodyPos_BF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyPos_WF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyVel_WF[MAX_CONTACT_CHAIN][3] = {0}, FootfallPositionRecord[MAX_CONTACT_CHAIN][4] = {0}, FootfallAveragePosition[3] = {0}, FootfallProbability[MAX_CONTACT_CHAIN] = {0}, WheelAnglePrev[MAX_CONTACT_CHAIN] = {0};
-
-    double MinimumWeight = 25.0, TimelyWeight = 25.0;
-    
-    bool SlopeModeEnable = true;
-    double SlopeModeTimeThreshold  = 1.0;
-    double SlopeModeAngleThreshold = 5.0 / 180.0 * M_PI;
-    double SlopeModeStepHeightThreshold  = 0.03;
-    double SlopeModeFootForceAccept  = 0.5;
-
     protected:
+    
+    enum TFJointAxis
+    {
+      TF_AXIS_FIXED = -1,
+      TF_AXIS_X = 0,
+      TF_AXIS_Y = 1,
+      TF_AXIS_Z = 2
+    };
+
+    // ---------------- Joint axis enumeration for kinematic TF nodes ----------------
+    // ---------------- 运动学 TF 节点的关节轴枚举 ----------------
+    struct TFNode
+    {
+      // parent node index, -1 means the body frame
+      // 父节点编号，-1 表示机体坐标系（body）
+      int parent = -1;
+
+      // index of q in joint[0..15], -1 means this node is fixed
+      // q 在 joint[0..15] 中的索引，-1 表示该节点没有主动关节
+      int q_index = -1;
+
+      // index of dq in joint[16..31], -1 means unavailable
+      // dq 在 joint[16..31] 中的索引，-1 表示该节点没有可用角速度输入
+      int dq_index = -1;
+
+      // index of tau in joint[32..47], -1 means unavailable
+      // tau 在 joint[32..47] 中的索引，-1 表示该节点没有可用力矩输入
+      int tau_index = -1;
+
+      // rotation axis of this joint
+      // 该关节的转轴方向
+      int axis = TF_AXIS_FIXED;
+
+      // fixed translation from parent frame to this node, expressed in parent frame
+      // 从父节点到当前节点的固定平移，表达在父节点坐标系下
+      double t[3] = {0.0, 0.0, 0.0};
+
+      // fixed installation rotation from parent to this node
+      // 从父节点到当前节点的固定安装旋转
+      double q_fix[4] = {1.0, 0.0, 0.0, 0.0};
+
+      TFNode() = default;
+
+      TFNode(int parent_, int q_index_, int dq_index_, int tau_index_, int axis_, double x, double y, double z, double roll, double pitch, double yaw)
+          : parent(parent_), q_index(q_index_), dq_index(dq_index_), tau_index(tau_index_), axis(axis_)
+      {
+        t[0] = x; t[1] = y; t[2] = z;
+        eulerZYX_to_quat(roll, pitch, yaw, q_fix);
+      }
+    };
+
+    // ---------------- One contact chain / one leg kinematic description ----------------
+    // ---------------- 单条接触链 / 单条腿的运动学描述 ----------------
+    struct LegTFChain
+    {
+      // number of active TF nodes used by this chain
+      // 当前链实际使用的 TF 节点数量
+      int node_num = 0;
+
+      // TF nodes from body to end-effector
+      // 从机体到末端的 TF 节点序列
+      TFNode node[MAX_CHAIN_NODE];
+
+      // fixed transform from the last joint node to the end-effector / contact point
+      // 从最后一个关节节点到末端 / 接触点的固定变换
+      TFNode ee;
+
+      // wheel radius for wheel-foot models
+      // 轮足模型的轮半径
+      double wheel_radius = 0.0;
+
+      // wheel angle index in joint[0..15]
+      // 轮电机角度在 joint[0..15] 中的索引
+      int wheel_q_index = -1;
+
+      // wheel velocity index in joint[16..31]
+      // 轮电机角速度在 joint[16..31] 中的索引
+      int wheel_dq_index = -1;
+
+      // number of pitch-related joints used for wheel swing compensation
+      // 用于轮滚动摆角补偿的 pitch 相关关节数量
+      int pitch_joint_num = 0;
+
+      int pitch_q_index[MAX_PITCH_SUM_JOINT]  = {-1,-1,-1,-1,-1,-1,-1,-1};
+      int pitch_dq_index[MAX_PITCH_SUM_JOINT] = {-1,-1,-1,-1,-1,-1,-1,-1};
+
+      // node[n] origin position/orientation in body frame
+      // node[n] 在身体坐标系地位置和角度
+      double node_pos_b[MAX_CHAIN_NODE][3] = {{0.0}};
+      double node_quat_b[MAX_CHAIN_NODE][4] = {{0.0}};
+    };
+    
+    LegTFChain LegChains_[MAX_CONTACT_CHAIN];
 
     void Joint2HipFoot(double *Message, int LegNumber);
     void FootFallPositionRecord(double *Message);

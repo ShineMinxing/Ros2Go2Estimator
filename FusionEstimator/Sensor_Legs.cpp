@@ -394,7 +394,7 @@ namespace DataFusion
                 ShankPitchPrev[LegNumber] = body_pitch;
                 for (int k = 0; k < LegChains_[LegNumber].pitch_joint_num; ++k)
                     if (LegChains_[LegNumber].pitch_q_index[k] >= 0)
-                        ShankPitchPrev[LegNumber] += Message[LegChains_[LegNumber].pitch_q_index[k]];
+                        ShankPitchPrev[LegNumber] -= SidewayMotionForwardCompensationRate*Message[LegChains_[LegNumber].pitch_q_index[k]];
 
             }
             else if(FootLanding[LegNumber])
@@ -412,7 +412,7 @@ namespace DataFusion
                 ShankPitchPrev[LegNumber] = body_pitch;
                 for (int k = 0; k < LegChains_[LegNumber].pitch_joint_num; ++k)
                     if (LegChains_[LegNumber].pitch_q_index[k] >= 0)
-                        ShankPitchPrev[LegNumber] += Message[LegChains_[LegNumber].pitch_q_index[k]];
+                        ShankPitchPrev[LegNumber] -= SidewayMotionForwardCompensationRate*Message[LegChains_[LegNumber].pitch_q_index[k]];
 
                 static double MapHeightStore[3][1000] = {0};
                 static int MapHeightStoreMax = 0;
@@ -529,7 +529,7 @@ namespace DataFusion
                 for (int k = 0; k < LegChains_[LegNumber].pitch_joint_num; ++k)
                 {
                     if (LegChains_[LegNumber].pitch_q_index[k] >= 0)
-                        ShankRotationAngle += Message[LegChains_[LegNumber].pitch_q_index[k]];
+                        ShankRotationAngle -= SidewayMotionForwardCompensationRate*Message[LegChains_[LegNumber].pitch_q_index[k]];
                     if (LegChains_[LegNumber].pitch_dq_index[k] >= 0)
                         WheelRotationVelocityEff -= Message[LegChains_[LegNumber].pitch_dq_index[k]];
                 }
@@ -706,8 +706,8 @@ namespace DataFusion
         if(!JointsRPYEnable)
             return;
         
-        double P_body[MAX_CONTACT_CHAIN][3];
-        double P_world[MAX_CONTACT_CHAIN][3];
+        double P_body[4][3];
+        double P_world[4][3];
         static double TimeRecord = Time;
         int LegNumber, i;
 

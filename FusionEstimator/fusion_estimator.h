@@ -247,7 +247,6 @@ public:
                 status[IndexStatusOK] = 1;
             sensors[0]->EstimatedState[0] = 0;
             sensors[0]->EstimatedState[3] = 0;
-            sensors[0]->EstimatedState[6] = 0;
             yaw_correct = yaw_correct - sensors[1]->EstimatedState[6];
             legs_pos->FootfallPositionRecordIsInitiated[0] = false;
             legs_pos->FootfallPositionRecordIsInitiated[1] = false;

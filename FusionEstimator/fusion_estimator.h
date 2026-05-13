@@ -178,7 +178,7 @@ public:
     FusionEstimatorCore(FusionEstimatorCore&&) noexcept = default;
     FusionEstimatorCore& operator=(FusionEstimatorCore&&) noexcept = default;
 
-    void fusion_estimator_status(double status[200])
+    void fusion_estimator_status(double status[100])
     {
         if (status[IndexInOrOut] == 1) 
         {

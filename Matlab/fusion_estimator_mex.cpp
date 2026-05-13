@@ -32,13 +32,13 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     if (!g_core) g_core = new FusionEstimatorCore();
 
     if (std::strcmp(cmd, "status") == 0) {
-        double status[200];
+        double status[100];
         std::memcpy(status, mxGetPr(prhs[1]), sizeof(status));  // 不检查长度/类型
 
         g_core->fusion_estimator_status(status);
 
         if (nlhs > 0) {
-            plhs[0] = mxCreateDoubleMatrix(200, 1, mxREAL);
+            plhs[0] = mxCreateDoubleMatrix(100, 1, mxREAL);
             std::memcpy(mxGetPr(plhs[0]), status, sizeof(status));
         }
         return;

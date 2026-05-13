@@ -4,9 +4,14 @@ fusion_estimator_node:
     # "Leg" or "Wheel"
     RobotType: "Leg"
 
-    # 订阅Go2传感器Topic
-    sub_imu_topic: "SMX/Go2IMU"
-    sub_joint_topic: "SMX/Go2Joint"  # msg type: float64_multi_array
+    # subscribe sensor topics
+    sub_imu_topic: "SMX/Go2IMU"  # msg type: sensor_msgs::msg::Imu
+    sub_joint_topic: "SMX/Go2Joint"  
+    # msg type: float64_multi_array
+    # A[ 0 ~ 15] should be motor radian of FL_Hip, FL_Thigh, FL_Calf, FL_Wheel, FR_Hip,..., RL_Hip,..., RR_Hip,...; if don't have Wheel, give 0.0 to [3 7 11 15];
+    # A[16 ~ 31] should be motor angular velocity of FL_Hip, , , , FR_Hip, , , , RL_Hip, , , , RR_Hip; if don't have Wheel, give 0.0 to [19 23 27 31];
+    # A[32 ~ 48] should be motor torque of FL_Hip, , , , FR_Hip, , , , RL_Hip, , , , RR_Hip; if don't have Wheel, give 0.0 to A[34 38 42 46];
+    #            if you use contact sensor, give data to A[34 38 42 46];
 
     # 订阅复位/模式命令的 ROS2 Topic
     sub_mode_topic: "SMX/SportCmd"
@@ -36,7 +41,8 @@ fusion_estimator_node:
     # 运动学估计使能
     leg_pos_enable: true
     leg_vel_enable: true
-    foot_force_threshold: 20.0  # only useful for legged robot without wheel
+    contact_sensor_threshold: 20.0  # set this if you use contact sensor and give data to SMX/Go2Joint[34 38 42 46], or use 0.0
+    foot_force_threshold:      0.0  # set 0.0  if you use contact sensor and give data to SMX/Go2Joint[34 38 42 46], or modify it
     min_stair_height: 0.08
     stair_height_fogotten: 60.0
     leg_ori_enable: false

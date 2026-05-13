@@ -58,14 +58,7 @@ namespace DataFusion
             FeetEffort2Body(LegNumber);
         }
         
-        bool BoolTemp = false;
-        for(LegNumber = 0; LegNumber< ContactChainNum; LegNumber++)
-            if(FootIsOnGround[LegNumber])
-            {
-                BoolTemp = true;
-                break;
-            }
-        if(BoolTemp)
+        if(FootIsOnGround[0]||FootIsOnGround[1]||FootIsOnGround[2]||FootIsOnGround[3])
         {
             for(i = 0; i < 9; i++)
             {
@@ -325,14 +318,14 @@ namespace DataFusion
 
         quat_rot_vec3(Est_Quaternion, FootBodyEff_BF[LegNumber], FootBodyEff_WF[LegNumber]);
 
-        if(FootBodyEff_WF[LegNumber][2] > 0.3 * FootEffortThreshold)
+        if(FootBodyEff_WF[LegNumber][2] >= 0.3 * FootEffortThreshold)
             FootfallProbability[LegNumber] = 0.0;
-        else if(FootBodyEff_WF[LegNumber][2] < 1.3 * FootEffortThreshold)
+        else if(FootBodyEff_WF[LegNumber][2] <= 1.3 * FootEffortThreshold)
             FootfallProbability[LegNumber] = 1.0;
         else
             FootfallProbability[LegNumber] = (FootBodyEff_WF[LegNumber][2] - 0.3 * FootEffortThreshold) / (FootEffortThreshold);
 
-        if(FootBodyEff_WF[LegNumber][2] <= FootEffortThreshold)
+        if(FootBodyEff_WF[LegNumber][2] < FootEffortThreshold)
             FootIsOnGround[LegNumber] = true;
         else
             FootIsOnGround[LegNumber] = false;
@@ -558,7 +551,7 @@ namespace DataFusion
 
                 temp = ShankRollAngle;
                 ShankRollAngle -= ShankRollPrev[LegNumber];
-                while (ShankRollAngle > M_PI) ShankRollAngle -= 2.0 * M_PI;
+                while (ShankRollAngle >  M_PI) ShankRollAngle -= 2.0 * M_PI;
                 while (ShankRollAngle < -M_PI) ShankRollAngle += 2.0 * M_PI;
                 ShankRollPrev[LegNumber] = temp;
 
@@ -633,7 +626,7 @@ namespace DataFusion
 
         for (int LegNumber = 0; LegNumber < ContactChainNum; ++LegNumber)
         {
-            if (FootBodyEff_WF[LegNumber][2] > FootEffortThreshold * SlopeModeFootForceAccept)
+            if (FootBodyEff_WF[LegNumber][2] >= FootEffortThreshold * SlopeModeFootForceAccept)
                 continue;
                 
             if (!FootfallPositionRecordIsInitiated[LegNumber])

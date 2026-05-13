@@ -40,7 +40,8 @@ public:
         this->get_parameter_or("imu_data_enable", imu_data_enable, true);
         this->get_parameter_or("leg_pos_enable", leg_pos_enable, true);
         this->get_parameter_or("leg_vel_enable", leg_vel_enable, true);
-        this->get_parameter_or("foot_force_threshold", foot_force_threshold, 20.0);
+        this->get_parameter_or("contact_sensor_threshold", contact_sensor_threshold, 20.0);
+        this->get_parameter_or("foot_force_threshold", foot_force_threshold, -30.0);
         this->get_parameter_or("min_stair_height", min_stair_height, 0.08);
         this->get_parameter_or("stair_height_fogotten", stair_height_fogotten, 60.0);
 
@@ -59,20 +60,19 @@ public:
             RCLCPP_INFO(get_logger(), "leg_ori_time_wight to %lf", leg_ori_time_wight);
         }
 
-
         /* ────────────── Configure estimator status ────────────── */
-        double status[200] = {0};
+        double status[100] = {0};
         status[IndexInOrOut] = 1;
         // enable
-        status[IndexIMUAccEnable]         = imu_data_enable ? 1.0 : 0.0;
-        status[IndexIMUQuaternionEnable]  = imu_data_enable ? 1.0 : 0.0;
-        status[IndexIMUGyroEnable]        = imu_data_enable ? 1.0 : 0.0;
-        status[IndexJointsXYZEnable]          = leg_pos_enable ? 1.0 : 0.0;
-        status[IndexJointsVelocityXYZEnable]  = leg_vel_enable ? 1.0 : 0.0;
-        status[IndexJointsRPYEnable]          = leg_ori_enable ? 1.0 : 0.0;
+        status[IndexIMUAccEnable]                = imu_data_enable ? 1.0 : 0.0;
+        status[IndexIMUQuaternionEnable]         = imu_data_enable ? 1.0 : 0.0;
+        status[IndexIMUGyroEnable]               = imu_data_enable ? 1.0 : 0.0;
+        status[IndexJointsXYZEnable]             = leg_pos_enable ? 1.0 : 0.0;
+        status[IndexJointsVelocityXYZEnable]     = leg_vel_enable ? 1.0 : 0.0;
+        status[IndexJointsRPYEnable]             = leg_ori_enable ? 1.0 : 0.0;
         status[IndexSlopeEstimationEnable]       = slope_mode_enable ? 1.0 : 0.0;
         // Threshold/Weight
-        status[IndexLegFootForceThreshold]       = -40.0;
+        status[IndexLegFootForceThreshold]       = foot_force_threshold;
         status[IndexLegMinStairHeight]           = min_stair_height;
         status[IndexStairHeightFogotten]         = stair_height_fogotten;
         status[IndexLegOrientationInitialWeight] = leg_ori_init_weight;
@@ -177,7 +177,7 @@ private:
     bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable, slope_mode_enable, pub_body_joint_marker_enable;
     bool msg_received[2] = {0,0};
 
-    double foot_force_threshold, min_stair_height, stair_height_fogotten;
+    double contact_sensor_threshold, foot_force_threshold, min_stair_height, stair_height_fogotten;
     double leg_ori_init_weight, leg_ori_time_wight;
     
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr go2_imu_sub;
@@ -254,7 +254,7 @@ private:
                 if (n == 36)
                 {
                     const int leg = i / 4;
-                    const bool on = (arr[32 + leg] >= foot_force_threshold);
+                    const bool on = (arr[32 + leg] >= contact_sensor_threshold);
                     st_.motorState[mid].tauEst = on ? 100.0 : 0.0;
                 }
                 else // n == 48
@@ -293,7 +293,7 @@ private:
                 if (n == 28)
                 {
                     const int leg = i / 3;
-                    const bool on = (arr[24 + leg] >= foot_force_threshold);
+                    const bool on = (arr[24 + leg] >= contact_sensor_threshold);
                     st_.motorState[mid].tauEst = on ? 100.0 : 0.0;
                 }
                 else // n == 36
@@ -344,7 +344,7 @@ private:
 
     void BodyJointMarkerPublish()
     {
-        double status[200] = {0};
+        double status[100] = {0};
         status[IndexInOrOut] = 2;
         fe_.fusion_estimator_status(status);
 
@@ -457,7 +457,7 @@ private:
     {
         if (msg->data[0] == 25140000)
         {
-            double status[200] = {0};
+            double status[100] = {0};
             status[IndexInOrOut] = 3;
             fe_.fusion_estimator_status(status);
         }

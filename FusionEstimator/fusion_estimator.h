@@ -253,28 +253,33 @@ public:
             legs_pos->FootfallPositionRecordIsInitiated[2] = false;
             legs_pos->FootfallPositionRecordIsInitiated[3] = false;
         }
-
         else if (status[IndexInOrOut] == 4){
             status[IndexInOrOut] = 0;
             status[IndexStatusOK] = status[IndexStatusOK] + 40;
             if (status[IndexStatusOK] > 999)
                 status[IndexStatusOK] = 1;
             legs_pos->UseMP();
-
         }
         else if (status[IndexInOrOut] == 5){
             status[IndexInOrOut] = 0;
-            status[IndexStatusOK] = status[IndexStatusOK] + 80;
+            status[IndexStatusOK] = status[IndexStatusOK] + 60;
             if (status[IndexStatusOK] > 999)
                 status[IndexStatusOK] = 1;
             legs_pos->UseLW();
         }
         else if (status[IndexInOrOut] == 6){
             status[IndexInOrOut] = 0;
-            status[IndexStatusOK] = status[IndexStatusOK] + 120;
+            status[IndexStatusOK] = status[IndexStatusOK] + 80;
             if (status[IndexStatusOK] > 999)
                 status[IndexStatusOK] = 1;
             legs_pos->UseMW();
+        }
+        else if (status[IndexInOrOut] == 7){
+            status[IndexInOrOut] = 0;
+            status[IndexStatusOK] = status[IndexStatusOK] + 100;
+            if (status[IndexStatusOK] > 999)
+                status[IndexStatusOK] = 1;
+            legs_pos->UseSP();
         }
         else if (status[IndexInOrOut] == 98){
             status[IndexInOrOut] = 0;

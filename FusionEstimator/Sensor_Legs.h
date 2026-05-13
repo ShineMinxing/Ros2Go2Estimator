@@ -76,7 +76,6 @@ namespace DataFusion
     {  
       for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
 
-      ContactChainNum = 4;
       Environement_Height_Scope = 0.08;
       FootEffortThreshold = -1.0;
 
@@ -110,13 +109,17 @@ namespace DataFusion
       LegChains_[3].node[1] = TFNode( 0, 13, 29, 45, TF_AXIS_Y,  0.0000, -0.0955,  0.0000, 0.0, 0.0, 0.0);
       LegChains_[3].node[2] = TFNode( 1, 14, 30, 46, TF_AXIS_Y,  0.0000,  0.0000, -0.2130, 0.0, 0.0, 0.0);
       LegChains_[3].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2350, 0.0, 0.0, 0.0);
+      
+      for (int LegNumber = 0; LegNumber < ContactChainNum; ++LegNumber)
+      {
+        LegChains_[LegNumber].wheel_radius = 0.0;
+      }
     }
 
     void UseMP()
     {
       for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
 
-      ContactChainNum = 4;
       Environement_Height_Scope = 0.08;
       FootEffortThreshold = -80.0;
 
@@ -143,6 +146,48 @@ namespace DataFusion
       LegChains_[3].node[1] = TFNode( 0, 13, 29, 45, TF_AXIS_Y,  0.0000, -0.1709,  0.0000, 0.0, 0.0, 0.0);
       LegChains_[3].node[2] = TFNode( 1, 14, 30, 46, TF_AXIS_Y,  0.0000,  0.0000, -0.2600, 0.0, 0.0, 0.0);
       LegChains_[3].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.0000, -0.2900, 0.0, 0.0, 0.0);
+      
+      for (int LegNumber = 0; LegNumber < ContactChainNum; ++LegNumber)
+      {
+        LegChains_[LegNumber].wheel_radius = 0.0;
+      }
+    }
+    
+    void UseSP()
+    {
+      for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
+
+      Environement_Height_Scope = 0.08;
+      FootEffortThreshold = -40.0;
+
+      LegChains_[0].node_num = 3;
+      LegChains_[0].node[0] = TFNode(-1,  0, 16, 32, TF_AXIS_X,  0.22495,   0.06800,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[0].node[1] = TFNode( 0,  1, 17, 33, TF_AXIS_Y,  0.0000,    0.13145,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[0].node[2] = TFNode( 1,  2, 18, 34, TF_AXIS_Y,  0.0000,    0.00000, -0.2200, 0.0, 0.0, 0.0);
+      LegChains_[0].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.00000, -0.2640, 0.0, 0.0, 0.0);
+
+      LegChains_[1].node_num = 3;
+      LegChains_[1].node[0] = TFNode(-1,  4, 20, 36, TF_AXIS_X,  0.22495,  -0.06800,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[1].node[1] = TFNode( 0,  5, 21, 37, TF_AXIS_Y,  0.0000,   -0.13145,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[1].node[2] = TFNode( 1,  6, 22, 38, TF_AXIS_Y,  0.0000,    0.00000, -0.2200, 0.0, 0.0, 0.0);
+      LegChains_[1].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.00000, -0.2640, 0.0, 0.0, 0.0);
+
+      LegChains_[2].node_num = 3;
+      LegChains_[2].node[0] = TFNode(-1,  8, 24, 40, TF_AXIS_X, -0.22495,   0.06800,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[2].node[1] = TFNode( 0,  9, 25, 41, TF_AXIS_Y,  0.0000,    0.13145,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[2].node[2] = TFNode( 1, 10, 26, 42, TF_AXIS_Y,  0.0000,    0.00000, -0.2200, 0.0, 0.0, 0.0);
+      LegChains_[2].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.00000, -0.2640, 0.0, 0.0, 0.0);
+
+      LegChains_[3].node_num = 3;
+      LegChains_[3].node[0] = TFNode(-1, 12, 28, 44, TF_AXIS_X, -0.22495,  -0.06800,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[3].node[1] = TFNode( 0, 13, 29, 45, TF_AXIS_Y,  0.0000,   -0.13145,  0.0000, 0.0, 0.0, 0.0);
+      LegChains_[3].node[2] = TFNode( 1, 14, 30, 46, TF_AXIS_Y,  0.0000,    0.00000, -0.2200, 0.0, 0.0, 0.0);
+      LegChains_[3].ee      = TFNode( 2, -1, -1, -1, TF_AXIS_FIXED, 0.0000, 0.00000, -0.2640, 0.0, 0.0, 0.0);
+      
+      for (int LegNumber = 0; LegNumber < ContactChainNum; ++LegNumber)
+      {
+        LegChains_[LegNumber].wheel_radius = 0.0;
+      }
     }
     
     // ---------------- LW wheel-foot preset ----------------
@@ -169,7 +214,6 @@ namespace DataFusion
     {
       for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
 
-      ContactChainNum = 4;
       Environement_Height_Scope = 0.10;
       FootEffortThreshold = -125.0;
 
@@ -220,7 +264,6 @@ namespace DataFusion
     {
       for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
 
-      ContactChainNum = 4;
       Environement_Height_Scope = 0.05;
       FootEffortThreshold = -85.0;
 
@@ -270,7 +313,6 @@ namespace DataFusion
     {
       for (int i = 0; i < MAX_CONTACT_CHAIN; ++i) LegChains_[i] = LegTFChain();
 
-      ContactChainNum = 4;
       Environement_Height_Scope = 0.08;
       FootEffortThreshold = -30.0;
       SlopeModeTimeThreshold  = 0.25;

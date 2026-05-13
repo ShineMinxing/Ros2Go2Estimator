@@ -368,7 +368,9 @@ namespace DataFusion
         double p_sum[3] = {0}, v_sum[3] = {0};
         int    leg_cnt = 0;
         static double ShankPitchPrev[MAX_CONTACT_CHAIN] = {0};
+        static double ShankRollPrev[MAX_CONTACT_CHAIN] = {0};
         double body_roll=0.0, body_pitch=0.0, body_yaw=0.0;
+
         quat_to_eulerZYX(Est_Quaternion, body_roll, body_pitch, body_yaw);
 
         double move_dir_x = 1.0, move_dir_y = 0.0, move_dir_z = 0.0;
@@ -394,7 +396,11 @@ namespace DataFusion
                 ShankPitchPrev[LegNumber] = body_pitch;
                 for (int k = 0; k < LegChains_[LegNumber].pitch_joint_num; ++k)
                     if (LegChains_[LegNumber].pitch_q_index[k] >= 0)
-                        ShankPitchPrev[LegNumber] -= SidewayMotionForwardCompensationRate*Message[LegChains_[LegNumber].pitch_q_index[k]];
+                        ShankPitchPrev[LegNumber] -= Message[LegChains_[LegNumber].pitch_q_index[k]];
+                ShankRollPrev[LegNumber] = body_roll;
+                for (int k = 0; k < LegChains_[LegNumber].roll_joint_num; ++k)
+                    if (LegChains_[LegNumber].roll_q_index[k] >= 0)
+                        ShankRollPrev[LegNumber] -= Message[LegChains_[LegNumber].roll_q_index[k]];
 
             }
             else if(FootLanding[LegNumber])
@@ -412,7 +418,11 @@ namespace DataFusion
                 ShankPitchPrev[LegNumber] = body_pitch;
                 for (int k = 0; k < LegChains_[LegNumber].pitch_joint_num; ++k)
                     if (LegChains_[LegNumber].pitch_q_index[k] >= 0)
-                        ShankPitchPrev[LegNumber] -= SidewayMotionForwardCompensationRate*Message[LegChains_[LegNumber].pitch_q_index[k]];
+                        ShankPitchPrev[LegNumber] -= Message[LegChains_[LegNumber].pitch_q_index[k]];
+                ShankRollPrev[LegNumber] = body_roll;
+                for (int k = 0; k < LegChains_[LegNumber].roll_joint_num; ++k)
+                    if (LegChains_[LegNumber].roll_q_index[k] >= 0)
+                        ShankRollPrev[LegNumber] -= Message[LegChains_[LegNumber].roll_q_index[k]];
 
                 static double MapHeightStore[3][1000] = {0};
                 static int MapHeightStoreMax = 0;
@@ -515,6 +525,7 @@ namespace DataFusion
 
             // 轮子转动角度
             double WheelMove = 0.0;
+            double WheelSidewayMove = 0.0;
             double WheelVel = 0.0;
 
             if (LegChains_[LegNumber].wheel_radius > 0.0 && LegChains_[LegNumber].wheel_q_index >= 0 && LegChains_[LegNumber].wheel_dq_index >= 0)
@@ -524,28 +535,40 @@ namespace DataFusion
                 while (WheelRotationAngle < -M_PI) WheelRotationAngle += 2.0*M_PI;
                 WheelAnglePrev[LegNumber] = Message[LegChains_[LegNumber].wheel_q_index];
 
-                double ShankRotationAngle = body_pitch;
+                double ShankPitchAngle = body_pitch;
+                double ShankRollAngle = body_roll;
                 double WheelRotationVelocityEff = Message[LegChains_[LegNumber].wheel_dq_index];
+
                 for (int k = 0; k < LegChains_[LegNumber].pitch_joint_num; ++k)
                 {
                     if (LegChains_[LegNumber].pitch_q_index[k] >= 0)
-                        ShankRotationAngle -= SidewayMotionForwardCompensationRate*Message[LegChains_[LegNumber].pitch_q_index[k]];
+                        ShankPitchAngle -= Message[LegChains_[LegNumber].pitch_q_index[k]];
                     if (LegChains_[LegNumber].pitch_dq_index[k] >= 0)
                         WheelRotationVelocityEff -= Message[LegChains_[LegNumber].pitch_dq_index[k]];
                 }
+                for (int k = 0; k < LegChains_[LegNumber].roll_joint_num; ++k)
+                    if (LegChains_[LegNumber].roll_q_index[k] >= 0)
+                        ShankRollAngle -= Message[LegChains_[LegNumber].roll_q_index[k]];
 
-                double temp = ShankRotationAngle;
-                ShankRotationAngle -= ShankPitchPrev[LegNumber];
-                while (ShankRotationAngle >  M_PI) ShankRotationAngle -= 2.0*M_PI;
-                while (ShankRotationAngle < -M_PI) ShankRotationAngle += 2.0*M_PI;
+                double temp = ShankPitchAngle;
+                ShankPitchAngle -= ShankPitchPrev[LegNumber];
+                while (ShankPitchAngle >  M_PI) ShankPitchAngle -= 2.0*M_PI;
+                while (ShankPitchAngle < -M_PI) ShankPitchAngle += 2.0*M_PI;
                 ShankPitchPrev[LegNumber] = temp;
 
-                WheelMove = LegChains_[LegNumber].wheel_radius * (WheelRotationAngle - ShankRotationAngle);
+                temp = ShankRollAngle;
+                ShankRollAngle -= ShankRollPrev[LegNumber];
+                while (ShankRollAngle > M_PI) ShankRollAngle -= 2.0 * M_PI;
+                while (ShankRollAngle < -M_PI) ShankRollAngle += 2.0 * M_PI;
+                ShankRollPrev[LegNumber] = temp;
+
+                WheelMove = LegChains_[LegNumber].wheel_radius * (WheelRotationAngle - ShankPitchAngle);
+                WheelSidewayMove = LegChains_[LegNumber].wheel_radius * 2.0 * std::sin(0.5 * ShankRollAngle);
                 WheelVel = LegChains_[LegNumber].wheel_radius * WheelRotationVelocityEff;
             }
 
-            FootfallPositionRecord[LegNumber][0] += WheelMove * move_dir_x;
-            FootfallPositionRecord[LegNumber][1] += WheelMove * move_dir_y;
+            FootfallPositionRecord[LegNumber][0] += WheelMove * move_dir_x + WheelSidewayMove * (-move_dir_y);
+            FootfallPositionRecord[LegNumber][1] += WheelMove * move_dir_y + WheelSidewayMove * ( move_dir_x);
             FootfallPositionRecord[LegNumber][2] += WheelMove * move_dir_z;
 
             p_sum[0] += FootfallPositionRecord[LegNumber][0] - FootBodyPos_WF[LegNumber][0];

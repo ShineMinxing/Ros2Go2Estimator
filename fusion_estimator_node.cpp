@@ -312,14 +312,14 @@ private:
                 marker.pose.position.z = z;
                 marker.pose.orientation.w = 1.0;
 
-                marker.scale.x = 0.04;
-                marker.scale.y = 0.04;
-                marker.scale.z = 0.04;
+                marker.scale.x = 0.15;
+                marker.scale.y = 0.15;
+                marker.scale.z = 0.15;
 
                 if (node == 0)
                 {
                     marker.color.r = 1.0;
-                    marker.color.g = 0.0;
+                    marker.color.g = 1.0;
                     marker.color.b = 0.0;
                 }
                 else if (node == 1)
@@ -330,22 +330,34 @@ private:
                 }
                 else if (node == 2)
                 {
-                    marker.color.r = 1.0;
+                    marker.color.r = 0.0;
                     marker.color.g = 1.0;
-                    marker.color.b = 0.0;
+                    marker.color.b = 1.0;
                 }
                 else
                 {
-                    marker.color.r = 0.0;
-                    marker.color.g = 0.0;
+                    marker.color.r = 1.0;
                     if(leg==0)
-                        marker.color.b = odom_.FLFootLanded;
+                    {
+                        marker.color.g = 1.0 - odom_.FLFootLanded;
+                        marker.color.b = 1.0 - odom_.FLFootLanded;
+                    }
                     else if(leg==1)
-                        marker.color.b = odom_.FRFootLanded;
+                    {
+                        marker.color.g = 1.0 - odom_.FRFootLanded;
+                        marker.color.b = 1.0 - odom_.FRFootLanded;
+                    }
                     else if(leg==2)
-                        marker.color.b = odom_.RLFootLanded;
+                    {
+                        marker.color.g = 1.0 - odom_.RLFootLanded;
+                        marker.color.b = 1.0 - odom_.RLFootLanded;
+                    }
                     else
-                        marker.color.b = odom_.RRFootLanded;
+                    {
+                        marker.color.g = 1.0 - odom_.RRFootLanded;
+                        marker.color.b = 1.0 - odom_.RRFootLanded;
+                    }
+                        
                 }
 
                 marker.color.a = 1.0;

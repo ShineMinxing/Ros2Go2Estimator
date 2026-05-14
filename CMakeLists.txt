@@ -35,6 +35,7 @@ ament_target_dependencies(fusion_estimator_node
   nav_msgs
   tf2
   tf2_geometry_msgs
+  visualization_msgs
 )
 
 install(TARGETS fusion_estimator_node

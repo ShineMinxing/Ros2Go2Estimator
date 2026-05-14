@@ -62,6 +62,19 @@ public:
 
         /* ────────────── Configure estimator status ────────────── */
         double status[100] = {0};
+        
+        fe_.fusion_estimator_status(status);
+        
+        if (robot_type_ == "Wheel")
+        {
+            status[IndexInOrOut] = 98;
+            fe_.fusion_estimator_status(status);
+        }
+        else{
+            status[IndexInOrOut] = 99;
+            fe_.fusion_estimator_status(status);
+        }
+
         status[IndexInOrOut] = 1;
         // enable
         status[IndexIMUAccEnable]                = imu_data_enable ? 1.0 : 0.0;
@@ -74,22 +87,8 @@ public:
         // Threshold/Weight
         status[IndexLegFootForceThreshold]       = foot_force_threshold;
         status[IndexLegMinStairHeight]           = min_stair_height;
-        status[IndexStairHeightFogotten]         = stair_height_fogotten;
-        status[IndexLegOrientationInitialWeight] = leg_ori_init_weight;
-        status[IndexLegOrientationTimeWeight]    = leg_ori_time_wight;
 
 
-        fe_.fusion_estimator_status(status);
-        
-        if (robot_type_ == "Wheel")
-        {
-            status[IndexInOrOut] = 98;
-            fe_.fusion_estimator_status(status);
-        }
-        else{
-            status[IndexInOrOut] = 99;
-            fe_.fusion_estimator_status(status);
-        }
 
         /* ────────────── Create ROS communication interfaces ────────────── */
         go2_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(sub_imu_topic, 10, std::bind(&FusionEstimatorNode::imu_callback, this, std::placeholders::_1));
@@ -376,7 +375,7 @@ private:
 
                 const double x = status[40 + pos_id + 0];
                 const double y = status[40 + pos_id + 1];
-                const double z = status[40 + pos_id + 2] + 0.5;
+                const double z = status[40 + pos_id + 2];
 
                 visualization_msgs::msg::Marker marker;
 

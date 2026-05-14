@@ -34,18 +34,14 @@ fusion_estimator_node:
 
     # 各关节的身体坐标系连线
     pub_body_joint_marker_enable: true
-    pub_body_joint_marker_topic: "body_joint_markers"
+    pub_body_joint_marker_topic: "SMX/Joints_Marker"
 
     # IMU使能
     imu_data_enable: true
     # 运动学估计使能
     leg_pos_enable: true
     leg_vel_enable: true
-    contact_sensor_threshold: 20.0  # set this if you use contact sensor and give data to SMX/Go2Joint[34 38 42 46], or use 0.0
-    foot_force_threshold:      0.0  # set 0.0  if you use contact sensor and give data to SMX/Go2Joint[34 38 42 46], or modify it
+    contact_sensor_threshold: 20.0  # set this if you use contact sensor and give data to SMX/Go2Joint[34 38 42 46], or use 0.0, suggest 20.0 for unitree Go2
+    foot_force_threshold:    -30.0  # set 0.0  if you use contact sensor and give data to SMX/Go2Joint[34 38 42 46], or modify it. suggest -30.0 for unitree Go2W
     min_stair_height: 0.08
-    stair_height_fogotten: 60.0
-    leg_ori_enable: false
-    leg_ori_init_weight: 0.001
-    leg_ori_time_wight: 1000.0
     slope_mode_enable: true

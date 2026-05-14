@@ -31,15 +31,13 @@ namespace DataFusion
             
             for(i = 0; i < 3; i++)
             {
-                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 0 * 3 + i] = LegChains_[LegNumber].node_pos_b[0][i];
-                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 1 * 3 + i] = LegChains_[LegNumber].node_pos_b[1][i];
-                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 2 * 3 + i] = LegChains_[LegNumber].node_pos_b[2][i];
-                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 3 * 3 + i] = FootBodyPos_BF[LegNumber][i];
+                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 0 * 3 + i] = LegChains_[LegNumber].node_pos_wf[0][i];
+                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 1 * 3 + i] = LegChains_[LegNumber].node_pos_wf[1][i];
+                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 2 * 3 + i] = LegChains_[LegNumber].node_pos_wf[2][i];
+                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 3 * 3 + i] = FootBodyPos_WF[LegNumber][i];
             }
 
             if(JointsXYZEnable){
-                ObservationCorrect_Position();
-
                 for(i = 0; i < 3; i++)
                 {
                     FootBodyPos_WF[LegNumber][i] = Observation[3 * i];
@@ -47,15 +45,11 @@ namespace DataFusion
             }
 
             if(JointsXYZVelocityEnable){
-                ObservationCorrect_Velocity();
-
                 for(i = 0; i < 3; i++)
                 {
                     FootBodyVel_WF[LegNumber][i] = Observation[3 * i + 1];
                 }
             }
-
-            FeetEffort2Body(LegNumber);
         }
         
         if(FootIsOnGround[0]||FootIsOnGround[1]||FootIsOnGround[2]||FootIsOnGround[3])
@@ -178,29 +172,28 @@ namespace DataFusion
         int joint_num = 0;
 
         const double p_zero[3] = {0.0, 0.0, 0.0};
-        const double q_id[4]   = {1.0, 0.0, 0.0, 0.0};
 
         for (int n = 0; n < LegChains_[LegNumber].node_num; ++n)
         {
             const double* p_parent =
                 (LegChains_[LegNumber].node[n].parent < 0) ?
                 p_zero :
-                LegChains_[LegNumber].node_pos_b[LegChains_[LegNumber].node[n].parent];
+                LegChains_[LegNumber].node_pos_wf[LegChains_[LegNumber].node[n].parent];
 
             const double* q_parent =
                 (LegChains_[LegNumber].node[n].parent < 0) ?
-                q_id :
-                LegChains_[LegNumber].node_quat_b[LegChains_[LegNumber].node[n].parent];
+                Est_Quaternion :
+                LegChains_[LegNumber].node_quat_wf[LegChains_[LegNumber].node[n].parent];
 
             quat_rot_vec3(
                 q_parent,
                 LegChains_[LegNumber].node[n].t,
-                LegChains_[LegNumber].node_pos_b[n]
+                LegChains_[LegNumber].node_pos_wf[n]
             );
 
-            LegChains_[LegNumber].node_pos_b[n][0] += p_parent[0];
-            LegChains_[LegNumber].node_pos_b[n][1] += p_parent[1];
-            LegChains_[LegNumber].node_pos_b[n][2] += p_parent[2];
+            LegChains_[LegNumber].node_pos_wf[n][0] += p_parent[0];
+            LegChains_[LegNumber].node_pos_wf[n][1] += p_parent[1];
+            LegChains_[LegNumber].node_pos_wf[n][2] += p_parent[2];
 
             double q_pre[4];
             quat_mul(q_parent, LegChains_[LegNumber].node[n].q_fix, q_pre);
@@ -214,9 +207,9 @@ namespace DataFusion
                     (LegChains_[LegNumber].node[n].axis == TF_AXIS_Z) ? 1.0 : 0.0
                 };
 
-                joint_org[joint_num][0] = LegChains_[LegNumber].node_pos_b[n][0];
-                joint_org[joint_num][1] = LegChains_[LegNumber].node_pos_b[n][1];
-                joint_org[joint_num][2] = LegChains_[LegNumber].node_pos_b[n][2];
+                joint_org[joint_num][0] = LegChains_[LegNumber].node_pos_wf[n][0];
+                joint_org[joint_num][1] = LegChains_[LegNumber].node_pos_wf[n][1];
+                joint_org[joint_num][2] = LegChains_[LegNumber].node_pos_wf[n][2];
 
                 quat_rot_vec3(q_pre, axis_local, joint_axis[joint_num]);
 
@@ -240,36 +233,33 @@ namespace DataFusion
                     axis_local[2] * s
                 };
 
-                quat_mul(q_pre, q_joint, LegChains_[LegNumber].node_quat_b[n]);
-                quat_normalize(LegChains_[LegNumber].node_quat_b[n]);
+                quat_mul(q_pre, q_joint, LegChains_[LegNumber].node_quat_wf[n]);
+                quat_normalize(LegChains_[LegNumber].node_quat_wf[n]);
 
                 joint_num++;
             }
             else
             {
-                LegChains_[LegNumber].node_quat_b[n][0] = q_pre[0];
-                LegChains_[LegNumber].node_quat_b[n][1] = q_pre[1];
-                LegChains_[LegNumber].node_quat_b[n][2] = q_pre[2];
-                LegChains_[LegNumber].node_quat_b[n][3] = q_pre[3];
+                LegChains_[LegNumber].node_quat_wf[n][0] = q_pre[0];
+                LegChains_[LegNumber].node_quat_wf[n][1] = q_pre[1];
+                LegChains_[LegNumber].node_quat_wf[n][2] = q_pre[2];
+                LegChains_[LegNumber].node_quat_wf[n][3] = q_pre[3];
             }
         }
 
-        const double* p_ee_parent = LegChains_[LegNumber].node_pos_b[LegChains_[LegNumber].ee.parent];
-        const double* q_ee_parent = LegChains_[LegNumber].node_quat_b[LegChains_[LegNumber].ee.parent];
-
         quat_rot_vec3(
-            q_ee_parent,
+            LegChains_[LegNumber].node_quat_wf[LegChains_[LegNumber].ee.parent],
             LegChains_[LegNumber].ee.t,
-            FootBodyPos_BF[LegNumber]
+            FootBodyPos_WF[LegNumber]
         );
 
-        FootBodyPos_BF[LegNumber][0] += p_ee_parent[0];
-        FootBodyPos_BF[LegNumber][1] += p_ee_parent[1];
-        FootBodyPos_BF[LegNumber][2] += p_ee_parent[2];
+        FootBodyPos_WF[LegNumber][0] += LegChains_[LegNumber].node_pos_wf[LegChains_[LegNumber].ee.parent][0];
+        FootBodyPos_WF[LegNumber][1] += LegChains_[LegNumber].node_pos_wf[LegChains_[LegNumber].ee.parent][1];
+        FootBodyPos_WF[LegNumber][2] += LegChains_[LegNumber].node_pos_wf[LegChains_[LegNumber].ee.parent][2];
 
-        Observation[0] = FootBodyPos_BF[LegNumber][0] - SensorPosition[0];
-        Observation[3] = FootBodyPos_BF[LegNumber][1] - SensorPosition[1];
-        Observation[6] = FootBodyPos_BF[LegNumber][2] - SensorPosition[2];
+        Observation[0] = FootBodyPos_WF[LegNumber][0];
+        Observation[3] = FootBodyPos_WF[LegNumber][1];
+        Observation[6] = FootBodyPos_WF[LegNumber][2];
 
         Observation[1] = 0.0;
         Observation[4] = 0.0;
@@ -281,9 +271,9 @@ namespace DataFusion
 
         for (int j = 0; j < joint_num; ++j)
         {
-            const double rx = FootBodyPos_BF[LegNumber][0] - joint_org[j][0];
-            const double ry = FootBodyPos_BF[LegNumber][1] - joint_org[j][1];
-            const double rz = FootBodyPos_BF[LegNumber][2] - joint_org[j][2];
+            const double rx = FootBodyPos_WF[LegNumber][0] - joint_org[j][0];
+            const double ry = FootBodyPos_WF[LegNumber][1] - joint_org[j][1];
+            const double rz = FootBodyPos_WF[LegNumber][2] - joint_org[j][2];
 
             const double J0 = joint_axis[j][1] * rz - joint_axis[j][2] * ry;
             const double J1 = joint_axis[j][2] * rx - joint_axis[j][0] * rz;
@@ -305,18 +295,30 @@ namespace DataFusion
             JJT[2][2] += J2 * J2;
         }
 
+        Observation[1] = -Observation[1];
+        Observation[4] = -Observation[4];
+        Observation[7] = -Observation[7];
+
         JJT[1][0] = JJT[0][1];
         JJT[2][0] = JJT[0][2];
         JJT[2][1] = JJT[1][2];
 
-        FootBodyEff_BF[LegNumber][0] = 0.0;
-        FootBodyEff_BF[LegNumber][1] = 0.0;
-        FootBodyEff_BF[LegNumber][2] = 0.0;
-
+        FootBodyEff_WF[LegNumber][0] = 0.0;
+        FootBodyEff_WF[LegNumber][1] = 0.0;
+        FootBodyEff_WF[LegNumber][2] = 0.0;
+        
         if (mat3_inv(JJT, JJT_inv))
-            mat3_mul_vec(JJT_inv, Jtau, FootBodyEff_BF[LegNumber]);
+            mat3_mul_vec(JJT_inv, Jtau, FootBodyEff_WF[LegNumber]);
 
-        quat_rot_vec3(Est_Quaternion, FootBodyEff_BF[LegNumber], FootBodyEff_WF[LegNumber]);
+        const double tau_w[3] = {
+            FootBodyPos_WF[LegNumber][1] * FootBodyEff_WF[LegNumber][2] - FootBodyPos_WF[LegNumber][2] * FootBodyEff_WF[LegNumber][1],
+            FootBodyPos_WF[LegNumber][2] * FootBodyEff_WF[LegNumber][0] - FootBodyPos_WF[LegNumber][0] * FootBodyEff_WF[LegNumber][2],
+            FootBodyPos_WF[LegNumber][0] * FootBodyEff_WF[LegNumber][1] - FootBodyPos_WF[LegNumber][1] * FootBodyEff_WF[LegNumber][0]
+        };
+
+        for(int i = 0; i < 3; i++)
+            StateSpaceModel->Double_Par[LegNumber * 3 + i] = tau_w[i];
+
 
         if(FootBodyEff_WF[LegNumber][2] >= 0.3 * FootEffortThreshold)
             FootfallProbability[LegNumber] = 0.0;
@@ -349,7 +351,7 @@ namespace DataFusion
             for(count = 0; count < ContactChainNum; count++)
                 if(FootIsOnGround[count])
                     break;
-            if(count == ContactChainNum && Observation[6] > -0.25)
+            if(count == ContactChainNum && std::abs(Message[LegChains_[3].node[2].q_index]) < 0.25 * M_PI)
                 FootIsOnGround[LegNumber] = true;
         }
 
@@ -583,31 +585,6 @@ namespace DataFusion
         Observation[7] = v_sum[2] / (double)leg_cnt;
     }
 
-    void SensorLegsPos::FeetEffort2Body(int LegNumber)
-    {
-        // -------- body frame: torque = r x f --------
-        const double tau_b[3] = {
-            FootBodyPos_BF[LegNumber][1]*FootBodyEff_BF[LegNumber][2] - FootBodyPos_BF[LegNumber][2]*FootBodyEff_BF[LegNumber][1],  // Mx  (roll moment about x)
-            FootBodyPos_BF[LegNumber][2]*FootBodyEff_BF[LegNumber][0] - FootBodyPos_BF[LegNumber][0]*FootBodyEff_BF[LegNumber][2],  // My  (pitch moment about y)
-            FootBodyPos_BF[LegNumber][0]*FootBodyEff_BF[LegNumber][1] - FootBodyPos_BF[LegNumber][1]*FootBodyEff_BF[LegNumber][0]   // Mz  (yaw moment about z)
-        };
-
-        // -------- world frame: rotate both --------
-        double tau_w[3];
-        quat_rot_vec3(Est_Quaternion, tau_b, tau_w);  // body -> world
-
-        // 3) 写入：XYZ 力 + XYZ 力矩（把它当作 roll/pitch/yaw 的力矩分量）
-        FeetEffort2BodyMotion[LegNumber][0] = FootBodyEff_WF[LegNumber][0];
-        FeetEffort2BodyMotion[LegNumber][1] = FootBodyEff_WF[LegNumber][1];
-        FeetEffort2BodyMotion[LegNumber][2] = FootBodyEff_WF[LegNumber][2];
-        FeetEffort2BodyMotion[LegNumber][3] = tau_w[0];
-        FeetEffort2BodyMotion[LegNumber][4] = tau_w[1];
-        FeetEffort2BodyMotion[LegNumber][5] = tau_w[2];
-        
-        for(int i = 0; i < 3; i++)
-            StateSpaceModel->Double_Par[LegNumber * 3 + i] = FeetEffort2BodyMotion[LegNumber][i]; 
-    }
-
     void SensorLegsPos::EstimateGroundPitchAlongHeading(double& move_dir_x, double& move_dir_y, double& move_dir_z)
     {
         // 默认输出：平地前进
@@ -722,17 +699,8 @@ namespace DataFusion
         if(!JointsRPYEnable)
             return;
         
-        double P_body[4][3];
-        double P_world[4][3];
         static double TimeRecord = Time;
         int LegNumber, i;
-
-        for (LegNumber = 0; LegNumber < legs_pos_ref_->ContactChainNum; ++LegNumber) {
-            for (i = 0; i < 3; i++){
-                P_body[LegNumber][i] = legs_pos_ref_->FootBodyPos_BF[LegNumber][i];
-                P_world[LegNumber][i] = legs_pos_ref_->FootfallPositionRecord[LegNumber][i];
-            }
-        }
 
         int n_ground = 0;
         for (LegNumber = 0; LegNumber < legs_pos_ref_->ContactChainNum; LegNumber++) {
@@ -753,11 +721,10 @@ namespace DataFusion
                 legori_current_weight = 1.0;
         }
 
-        const double roll  = StateSpaceModel->EstimatedState[0];
-        const double pitch = StateSpaceModel->EstimatedState[3];
+        const double yaw_now = StateSpaceModel->EstimatedState[6];
 
-        double q_rp[4];
-        eulerZYX_to_quat(roll, pitch, 0.0, q_rp);
+        double q_yaw_inv[4];
+        eulerZYX_to_quat(0.0, 0.0, -yaw_now, q_yaw_inv);
 
         double sx = 0.0, sy = 0.0;
         for (i = 0; i < legs_pos_ref_->ContactChainNum; ++i) {
@@ -768,18 +735,18 @@ namespace DataFusion
                 if(!legs_pos_ref_->FootIsOnGround[j])
                     continue;
 
-                double vb_x = P_body[j][0] - P_body[i][0];
-                double vb_y = P_body[j][1] - P_body[i][1];
-                double vb_z = P_body[j][2] - P_body[i][2];
+                double v_wf[3] = {
+                    legs_pos_ref_->FootBodyPos_WF[j][0] - legs_pos_ref_->FootBodyPos_WF[i][0],
+                    legs_pos_ref_->FootBodyPos_WF[j][1] - legs_pos_ref_->FootBodyPos_WF[i][1],
+                    legs_pos_ref_->FootBodyPos_WF[j][2] - legs_pos_ref_->FootBodyPos_WF[i][2]
+                };
 
-                double v_body[3] = { vb_x, vb_y, vb_z };
                 double v_rp[3];
-                quat_rot_vec3(q_rp, v_body, v_rp);
+                quat_rot_vec3(q_yaw_inv, v_wf, v_rp);
 
-
-                double vw_x = P_world[j][0] - P_world[i][0];
-                double vw_y = P_world[j][1] - P_world[i][1];
-                double vw_z = P_world[j][2] - P_world[i][2];
+                double vw_x = legs_pos_ref_->FootfallPositionRecord[j][0] - legs_pos_ref_->FootfallPositionRecord[i][0];
+                double vw_y = legs_pos_ref_->FootfallPositionRecord[j][1] - legs_pos_ref_->FootfallPositionRecord[i][1];
+                double vw_z = legs_pos_ref_->FootfallPositionRecord[j][2] - legs_pos_ref_->FootfallPositionRecord[i][2];
 
                 const double ang_rp = std::atan2(v_rp[1], v_rp[0]);
                 const double ang_w  = std::atan2(vw_y,     vw_x);

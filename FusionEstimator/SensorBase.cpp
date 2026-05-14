@@ -63,8 +63,7 @@ namespace DataFusion
         Est_BodyAngleVel[2] = Observation[7];
         cross3(Est_BodyAngleVel, Est_SensorWorldPosition, Est_SensorWorldVelocity);
 
-
-        //3. Calculate Body Velocity with  Angular Velocity  Compensation
+        //3. Calculate Body Velocity with Angular Velocity Compensation
         Est_Vector3dTemp1[0] -= Est_SensorWorldVelocity[0];
         Est_Vector3dTemp1[1] -= Est_SensorWorldVelocity[1];
         Est_Vector3dTemp1[2] -= Est_SensorWorldVelocity[2];

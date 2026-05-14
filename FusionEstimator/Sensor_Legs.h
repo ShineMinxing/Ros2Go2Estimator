@@ -35,8 +35,7 @@ namespace DataFusion
     void LoadedWeightCheck(double* Message, double Time);
 
     bool FootfallPositionRecordIsInitiated[MAX_CONTACT_CHAIN] = {0}, FootIsOnGround[MAX_CONTACT_CHAIN] = {0}, FootWasOnGround[MAX_CONTACT_CHAIN] = {0}, FootLastMotion[MAX_CONTACT_CHAIN] = {0}, FootLanding[MAX_CONTACT_CHAIN] = {0}, CalculateWeightEnable = false;
-    double FootBodyEff_BF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyEff_WF[MAX_CONTACT_CHAIN][3] = {0}, FeetEffort2BodyMotion[MAX_CONTACT_CHAIN][6] = {0};
-    double FootBodyPos_BF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyPos_WF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyVel_WF[MAX_CONTACT_CHAIN][3] = {0}, FootfallPositionRecord[MAX_CONTACT_CHAIN][4] = {0}, FootfallAveragePosition[3] = {0}, FootfallProbability[MAX_CONTACT_CHAIN] = {0}, WheelAnglePrev[MAX_CONTACT_CHAIN] = {0};
+    double FootBodyEff_WF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyPos_WF[MAX_CONTACT_CHAIN][3] = {0}, FootBodyVel_WF[MAX_CONTACT_CHAIN][3] = {0}, FootfallPositionRecord[MAX_CONTACT_CHAIN][4] = {0}, FootfallAveragePosition[3] = {0}, FootfallProbability[MAX_CONTACT_CHAIN] = {0}, WheelAnglePrev[MAX_CONTACT_CHAIN] = {0};
 
     double FootEffortThreshold = -80.0, Environement_Height_Scope = 0.08, Data_Fading_Time = 1200.0;
     double MinimumWeight = 25.0, TimelyWeight = 25.0;
@@ -454,17 +453,16 @@ namespace DataFusion
       int roll_joint_num = 0;
       int roll_q_index[MAX_PITCH_SUM_JOINT] = {-1,-1,-1,-1,-1,-1,-1,-1};
 
-      // node[n] origin position/orientation in body frame
-      // node[n] 在身体坐标系地位置和角度
-      double node_pos_b[MAX_CHAIN_NODE][3] = {{0.0}};
-      double node_quat_b[MAX_CHAIN_NODE][4] = {{0.0}};
+      // node[n] origin position/orientation relative to body origin in world frame,
+      // node[n] 在世界坐标系中相对于身体的位置和角度
+      double node_pos_wf[MAX_CHAIN_NODE][3] = {{0.0}};
+      double node_quat_wf[MAX_CHAIN_NODE][4] = {{0.0}};
     };
     
     LegTFChain LegChains_[MAX_CONTACT_CHAIN];
 
     void Joint2HipFoot(double *Message, int LegNumber);
     void FootFallPositionRecord(double *Message);
-    void FeetEffort2Body(int LegNumber);
     void EstimateGroundPitchAlongHeading(double& move_dir_x, double& move_dir_y, double& move_dir_z);
   };
 

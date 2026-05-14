@@ -19,6 +19,8 @@ public:
     : Node("fusion_estimator_node", options)
     {        
         /* ────────────── Read ROS2 parameters ────────────── */
+        this->get_parameter_or("RobotType", robot_type_id, 99.0);
+
         std::string sub_imu_topic;
         this->get_parameter_or("sub_imu_topic", sub_imu_topic, std::string("NoYamlRead/Go2IMU"));
         std::string sub_joint_topic;
@@ -32,7 +34,6 @@ public:
         this->get_parameter_or("odom_frame", odom_frame_id, std::string("odom"));
         this->get_parameter_or("base_frame", child_frame_id, std::string("base_link"));
         this->get_parameter_or("base_frame_2d", child_frame_2d_id, std::string("base_link_2D"));
-        this->get_parameter_or("RobotType", robot_type_, std::string("Leg"));
 
         this->get_parameter_or("pub_body_joint_marker_enable", pub_body_joint_marker_enable, false);
         this->get_parameter_or("pub_body_joint_marker_topic", pub_body_joint_marker_topic, std::string("body_joint_markers"));
@@ -65,15 +66,8 @@ public:
         
         fe_.fusion_estimator_status(status);
         
-        if (robot_type_ == "Wheel")
-        {
-            status[IndexInOrOut] = 98;
-            fe_.fusion_estimator_status(status);
-        }
-        else{
-            status[IndexInOrOut] = 99;
-            fe_.fusion_estimator_status(status);
-        }
+        status[IndexInOrOut] = robot_type_id;
+        fe_.fusion_estimator_status(status);
 
         status[IndexInOrOut] = 1;
         // enable
@@ -87,7 +81,6 @@ public:
         // Threshold/Weight
         status[IndexLegFootForceThreshold]       = foot_force_threshold;
         status[IndexLegMinStairHeight]           = min_stair_height;
-
 
 
         /* ────────────── Create ROS communication interfaces ────────────── */
@@ -171,12 +164,12 @@ private:
     nav_msgs::msg::Odometry SMXFE_odom;
     nav_msgs::msg::Odometry SMXFE_odom_2D;
 
-    std::string odom_frame_id, child_frame_id, child_frame_2d_id, robot_type_, pub_body_joint_marker_topic;
+    std::string odom_frame_id, child_frame_id, child_frame_2d_id, pub_body_joint_marker_topic;
 
     bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable, slope_mode_enable, pub_body_joint_marker_enable;
     bool msg_received[2] = {0,0};
 
-    double contact_sensor_threshold, foot_force_threshold, min_stair_height, stair_height_fogotten;
+    double robot_type_id, contact_sensor_threshold, foot_force_threshold, min_stair_height, stair_height_fogotten;
     double leg_ori_init_weight, leg_ori_time_wight;
     
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr go2_imu_sub;
@@ -220,86 +213,27 @@ private:
         const auto& arr = msg->data;
         const size_t n = arr.size();
 
-        if (robot_type_ == "Wheel")
+        // Wheel Type:
+        // data[0..15]   : q
+        // data[16..31]  : dq
+        // data[32..47]  : motor tau
+        if (n != 48)
         {
-            // Wheel Type:
-            // data[0..15]   : q
-            // data[16..31]  : dq
-            // data[32..35]  : foot force / contact 
-            // or
-            // data[32..47]  : motor tau
-            if (n != 36 && n != 48)
-            {
-                RCLCPP_WARN(this->get_logger(),
-                            "Wheel mode expects joint array size 36 or 48, but got %zu",
-                            n);
-                return;
-            }
-
-            static const int desired_joints[] = {
-                0, 1, 2, 3,
-                4, 5, 6, 7,
-                8, 9, 10, 11,
-                12, 13, 14, 15
-            };
-
-            for (int i = 0; i < 16; ++i)
-            {
-                const int mid = desired_joints[i];
-
-                st_.motorState[mid].q = arr[i];
-                st_.motorState[mid].dq = arr[16 + i];
-
-                if (n == 36)
-                {
-                    const int leg = i / 4;
-                    const bool on = (arr[32 + leg] >= contact_sensor_threshold);
-                    st_.motorState[mid].tauEst = on ? 100.0 : 0.0;
-                }
-                else // n == 48
-                {
-                    st_.motorState[mid].tauEst = arr[32 + i];
-                }
-            }
+            RCLCPP_ERROR(this->get_logger(),"Wheel mode expects joint array size 48, but got %zu",n);
+            return;
         }
-        else
+
+        for (int i = 0; i < 16; ++i)
         {
-            // Leg Type:
-            // data[0..11]   : q
-            // data[12..23]  : dq
-            // data[24..27]  : foot force / contact
-            if (n != 28 && n != 36)
-            {
-                RCLCPP_WARN(this->get_logger(),
-                            "Leg mode expects joint array size 26 or 36, but got %zu",
-                            n);
-                return;
-            }
-
-            static const int desired_joints[] = {
-                0, 1, 2,
-                4, 5, 6,
-                8, 9, 10,
-                12, 13, 14
-            };
-
-            for (int i = 0; i < 12; ++i)
-            {
-                const int mid = desired_joints[i];
-                st_.motorState[mid].q = arr[i];
-                st_.motorState[mid].dq = arr[12 + i];
-                
-                if (n == 28)
-                {
-                    const int leg = i / 3;
-                    const bool on = (arr[24 + leg] >= contact_sensor_threshold);
-                    st_.motorState[mid].tauEst = on ? 100.0 : 0.0;
-                }
-                else // n == 36
-                {
-                    st_.motorState[mid].tauEst = arr[24 + i];
-                }
-            }
+            st_.motorState[i].q      = arr[i];
+            st_.motorState[i].dq     = arr[16 + i];
+            st_.motorState[i].tauEst = arr[32 + i];
+        }
+        
+        for (int leg = 0; leg < 4; ++leg)
+        {
+            if(contact_sensor_threshold!=0&&st_.motorState[4*leg+0].tauEst==0&&st_.motorState[4*leg+1].tauEst==0&&st_.motorState[4*leg+3].tauEst==0)
+                st_.motorState[4*leg+2].tauEst = (st_.motorState[4*leg+2].tauEst >= contact_sensor_threshold) ? 100.0 : 0.0;
         }
 
         // ---------------- Estimation is triggered only by the joint callback ----------------
@@ -373,9 +307,9 @@ private:
             {
                 const int pos_id = 12 + leg * 12 + node * 3;
 
-                const double x = status[40 + pos_id + 0];
-                const double y = status[40 + pos_id + 1];
-                const double z = status[40 + pos_id + 2];
+                const double x = status[40 + pos_id + 0] + odom_.XPos;
+                const double y = status[40 + pos_id + 1] + odom_.YPos;
+                const double z = status[40 + pos_id + 2] + odom_.ZPos;
 
                 visualization_msgs::msg::Marker marker;
 
@@ -409,15 +343,22 @@ private:
                 }
                 else if (node == 2)
                 {
-                    marker.color.r = 0.0;
-                    marker.color.g = 0.0;
-                    marker.color.b = 1.0;
-                }
-                else
-                {
                     marker.color.r = 1.0;
                     marker.color.g = 1.0;
                     marker.color.b = 0.0;
+                }
+                else
+                {
+                    marker.color.r = 0.0;
+                    marker.color.g = 0.0;
+                    if(leg==0)
+                        marker.color.b = odom_.FLFootLanded;
+                    else if(leg==1)
+                        marker.color.b = odom_.FRFootLanded;
+                    else if(leg==2)
+                        marker.color.b = odom_.RLFootLanded;
+                    else
+                        marker.color.b = odom_.RRFootLanded;
                 }
 
                 marker.color.a = 1.0;

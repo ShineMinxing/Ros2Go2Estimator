@@ -51,9 +51,10 @@ public:
         /* ────────────── Configure estimator status ────────────── */
         double status[100] = {0};
         
+        status[IndexInOrOut] = robot_type_id;
         fe_.fusion_estimator_status(status);
         
-        status[IndexInOrOut] = robot_type_id;
+        status[IndexInOrOut] = 2;
         fe_.fusion_estimator_status(status);
 
         status[IndexInOrOut] = 1;

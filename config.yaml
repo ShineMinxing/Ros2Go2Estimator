@@ -1,7 +1,7 @@
 fusion_estimator_node:
   ros__parameters:
     # 98.0~Unitree Go2W; 99.0~Unitree Go2;
-    RobotType: 99.0 
+    RobotType: 99.0
 
     # subscribe sensor topics
     sub_imu_topic: "SMX/Go2IMU"  # msg type: sensor_msgs::msg::Imu
@@ -46,9 +46,9 @@ fusion_estimator_node:
     leg_vel_enable: true
     # yaw漂移修正使能，会降低运动的位置估计精度，但避免长时间站立的yaw漂移
     leg_ori_enable: false
-    # 斜坡模式使能，会降低爬楼梯的高度估计精度
-    slope_mode_enable: false
+    # 轮足狗斜坡模式使能，会降低爬楼梯的高度估计精度
+    slope_mode_enable: true
 
     contact_sensor_threshold: 20.0  # set this if you use contact sensor, or use 0.0, suggest 20.0 for unitree Go2
-    foot_force_threshold:      0.0  # set 0.0  if you use contact sensor, or modify it. suggest -30.0 for unitree Go2W
+    foot_force_threshold:    -30.0  # set 0.0  if you use contact sensor, or modify it. suggest -30.0 for unitree Go2W
     min_stair_height: 0.08

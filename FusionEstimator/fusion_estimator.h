@@ -31,7 +31,7 @@ Main entry:
 
     3. Runtime status/config interface:
        运行时状态/参数接口：
-           double status[200] = {0};
+           double status[100] = {0};
            Robot_Estimation.fusion_estimator_status(status);
 
 Configuration index meaning:

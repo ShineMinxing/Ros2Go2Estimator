@@ -1,6 +1,5 @@
 fusion_estimator_node:
   ros__parameters:
-
     # 98.0~Unitree Go2W; 99.0~Unitree Go2;
     RobotType: 99.0 
 
@@ -8,16 +7,20 @@ fusion_estimator_node:
     sub_imu_topic: "SMX/Go2IMU"  # msg type: sensor_msgs::msg::Imu
     sub_joint_topic: "SMX/Go2Joint"  
     # msg type: float64_multi_array
-    # A[ 0 ~ 15] should be motor radian of FL_Hip, FL_Thigh, FL_Calf, FL_Wheel, FR_Hip,..., RL_Hip,..., RR_Hip,...; if don't have Wheel, give 0.0 to [3 7 11 15];
-    # A[16 ~ 31] should be motor angular velocity of FL_Hip, , , , FR_Hip, , , , RL_Hip, , , , RR_Hip; if don't have Wheel, give 0.0 to [19 23 27 31];
-    # A[32 ~ 48] should be motor torque of FL_Hip, , , , FR_Hip, , , , RL_Hip, , , , RR_Hip; if don't have Wheel, give 0.0 to A[34 38 42 46];
-    #            if you use contact sensor, give data to A[34 38 42 46],  give 0.0 to others in A[32 ~ 48];
+    # A[ 0 ~ 15] should be motor radian           of FL_Hip, FL_Thigh, FL_Calf, FL_Wheel, FR_Hip,..., RL_Hip,..., RR_Hip,...;
+    # A[16 ~ 31] should be motor angular velocity of FL_Hip, , , , FR_Hip, , , , RL_Hip, , , , RR_Hip;
+    # A[32 ~ 47] should be motor torque           of FL_Hip, , , , FR_Hip, , , , RL_Hip, , , , RR_Hip;
+    # if you do not have wheel motors, set wheel slots to 0:
+    #   q:   A[3 7 11 15]
+    #   dq:  A[19 23 27 31]
+    #   tau: A[35 39 43 47]
+    #
+    # if you use contact sensor instead of motor torque, put contact data into:
+    #   A[34 38 42 46]
+    # and set other torque slots A[32 ~ 47] to 0.
 
     # 订阅复位/模式命令的 ROS2 Topic
     sub_mode_topic: "SMX/SportCmd"
-
-    # 发布融合结果的 Topic
-    pub_estimation_topic: "SMX/Estimation"
 
     # 发布全 3D 里程计的 Topic
     pub_odom_topic: "SMX/Odom"
@@ -41,7 +44,11 @@ fusion_estimator_node:
     # 运动学估计使能
     leg_pos_enable: true
     leg_vel_enable: true
-    contact_sensor_threshold: 20.0  # set this if you use contact sensor and give data to SMX/Go2Joint[34 38 42 46], or use 0.0, suggest 20.0 for unitree Go2
-    foot_force_threshold:    -30.0  # set 0.0  if you use contact sensor and give data to SMX/Go2Joint[34 38 42 46], or modify it. suggest -30.0 for unitree Go2W
+    # yaw漂移修正使能，会降低运动的位置估计精度，但避免长时间站立的yaw漂移
+    leg_ori_enable: false
+    # 斜坡模式使能，会降低爬楼梯的高度估计精度
+    slope_mode_enable: false
+
+    contact_sensor_threshold: 20.0  # set this if you use contact sensor, or use 0.0, suggest 20.0 for unitree Go2
+    foot_force_threshold:      0.0  # set 0.0  if you use contact sensor, or modify it. suggest -30.0 for unitree Go2W
     min_stair_height: 0.08
-    slope_mode_enable: true

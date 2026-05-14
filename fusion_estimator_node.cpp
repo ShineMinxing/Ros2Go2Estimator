@@ -41,25 +41,12 @@ public:
         this->get_parameter_or("imu_data_enable", imu_data_enable, true);
         this->get_parameter_or("leg_pos_enable", leg_pos_enable, true);
         this->get_parameter_or("leg_vel_enable", leg_vel_enable, true);
+        this->get_parameter_or("leg_ori_enable", leg_ori_enable, false);
+        this->get_parameter_or("slope_mode_enable", slope_mode_enable, false);
+        
         this->get_parameter_or("contact_sensor_threshold", contact_sensor_threshold, 20.0);
         this->get_parameter_or("foot_force_threshold", foot_force_threshold, -30.0);
         this->get_parameter_or("min_stair_height", min_stair_height, 0.08);
-        this->get_parameter_or("stair_height_fogotten", stair_height_fogotten, 60.0);
-
-        this->get_parameter_or("leg_ori_enable", leg_ori_enable, true);
-        this->get_parameter_or("leg_ori_init_weight", leg_ori_init_weight, 0.001);
-        this->get_parameter_or("leg_ori_time_wight", leg_ori_time_wight, 100.0);
-        this->get_parameter_or("slope_mode_enable", slope_mode_enable, false);
-        if(!(leg_ori_init_weight>-1.0 && leg_ori_init_weight<=1.0))
-        {
-            leg_ori_init_weight = 0.001;
-            RCLCPP_INFO(get_logger(), "leg_ori_init_weight to %lf",leg_ori_init_weight);
-        }
-        if(!(leg_ori_time_wight>0.0 && leg_ori_time_wight<=1000000.0))
-        {
-            leg_ori_time_wight = 100.0;
-            RCLCPP_INFO(get_logger(), "leg_ori_time_wight to %lf", leg_ori_time_wight);
-        }
 
         /* ────────────── Configure estimator status ────────────── */
         double status[100] = {0};
@@ -81,7 +68,7 @@ public:
         // Threshold/Weight
         status[IndexLegFootForceThreshold]       = foot_force_threshold;
         status[IndexLegMinStairHeight]           = min_stair_height;
-
+        fe_.fusion_estimator_status(status);
 
         /* ────────────── Create ROS communication interfaces ────────────── */
         go2_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(sub_imu_topic, 10, std::bind(&FusionEstimatorNode::imu_callback, this, std::placeholders::_1));
@@ -169,8 +156,7 @@ private:
     bool imu_data_enable, leg_pos_enable, leg_vel_enable, leg_ori_enable, slope_mode_enable, pub_body_joint_marker_enable;
     bool msg_received[2] = {0,0};
 
-    double robot_type_id, contact_sensor_threshold, foot_force_threshold, min_stair_height, stair_height_fogotten;
-    double leg_ori_init_weight, leg_ori_time_wight;
+    double robot_type_id, contact_sensor_threshold, foot_force_threshold, min_stair_height;
     
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr go2_imu_sub;
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr go2_joint_sub;

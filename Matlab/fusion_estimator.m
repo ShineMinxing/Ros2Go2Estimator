@@ -4,7 +4,7 @@ cd(fileparts(mfilename('fullpath')));
 % CSV_PATH = 'Data/GO2Stairs'; DogMode = 99;
 % CSV_PATH = 'Data/GO2Flat'; DogMode = 99;
 
-CSV_PATH = 'Data/SP_XY80.csv';  DogMode = 7;
+% CSV_PATH = 'Data/SP_XY85.csv';  DogMode = 7;
 
 % CSV_PATH = 'Data/MP_XY150Z10.csv'; DogMode = 4;
 % CSV_PATH = 'Data/MW_XY150Z10.csv'; DogMode = 6;
@@ -13,9 +13,9 @@ CSV_PATH = 'Data/SP_XY80.csv';  DogMode = 7;
 % CSV_PATH = 'Data/LW_XY150Z10_3.csv';  DogMode = 5;
 % CSV_PATH = 'Data/LW_Flat.csv'; DogMode = 5;
 % CSV_PATH = 'Data/LW_YCheck.csv';  DogMode = 5;
-% CSV_PATH = 'Data/LW_Outdoor.csv';  DogMode = 5;
+CSV_PATH = 'Data/LW_Outdoor.csv';  DogMode = 5;
 
-used_lines = 65000;
+used_lines = 300000;
 
 data = readmatrix(CSV_PATH);
 N = size(data, 1);
@@ -54,7 +54,6 @@ status_ = fusion_estimator_mex('status',status_);
 status_(1) = 2;
 status_ = fusion_estimator_mex('status',status_);
 status_(1:7) = 1;
-status_(11) = -40;
 status_ = fusion_estimator_mex('status',status_);
 
 odom_log = nan(N, 27);

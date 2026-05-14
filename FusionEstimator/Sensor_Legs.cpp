@@ -19,9 +19,6 @@ namespace DataFusion
             for(i = 0; i < 3; i++){
                 FootBodyEff_WF[LegNumber][i] = 0;
             }
-            for(i = 0; i < 6; i++){
-                FeetEffort2BodyMotion[LegNumber][i] = 0;
-            }
             for(i = 0; i < 3; i++)
             {
                 SensorPosition[i] = LegChains_[LegNumber].node[0].t[i];
@@ -319,7 +316,6 @@ namespace DataFusion
         for(int i = 0; i < 3; i++)
             StateSpaceModel->Double_Par[LegNumber * 3 + i] = tau_w[i];
 
-
         if(FootBodyEff_WF[LegNumber][2] >= 0.3 * FootEffortThreshold)
             FootfallProbability[LegNumber] = 0.0;
         else if(FootBodyEff_WF[LegNumber][2] <= 1.3 * FootEffortThreshold)
@@ -351,7 +347,7 @@ namespace DataFusion
             for(count = 0; count < ContactChainNum; count++)
                 if(FootIsOnGround[count])
                     break;
-            if(count == ContactChainNum && std::abs(Message[LegChains_[3].node[2].q_index]) < 0.25 * M_PI)
+            if(count == ContactChainNum && FootBodyPos_WF[LegNumber][2] > -0.25)
                 FootIsOnGround[LegNumber] = true;
         }
 

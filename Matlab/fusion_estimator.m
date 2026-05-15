@@ -9,11 +9,11 @@ CSV_PATH = '../../../Data/SP_XY85.csv';  DogMode = 120.0; ZoomTime = [0,135];
 % CSV_PATH = '../../../Data/MP_XY150Z10.csv'; DogMode = 140.0; ZoomTime = [0,415];
 % CSV_PATH = '../../../Data/MW_XY150Z10.csv'; DogMode = 140.1; ZoomTime = [0,294];
 
-% CSV_PATH = '../../../Data/LW_XY150Z10_1.csv';  DogMode = 160.0; ZoomTime = [0,330];
-% CSV_PATH = '../../../Data/LW_XY150Z10_3.csv';  DogMode = 160.0; ZoomTime = [0,420];
-% CSV_PATH = '../../../Data/LW_Flat.csv'; DogMode = 160.0; ZoomTime = [0,690];
-% CSV_PATH = '../../../Data/LW_YCheck.csv';  DogMode = 160.0; ZoomTime = [0,280];
-% CSV_PATH = '../../../Data/LW_Outdoor.csv';  DogMode = 160.0; ZoomTime = [0,520];
+% CSV_PATH = '../../../Data/LW_XY150Z10_1.csv';  DogMode = 160.1; ZoomTime = [0,330];
+% CSV_PATH = '../../../Data/LW_XY150Z10_3.csv';  DogMode = 160.1; ZoomTime = [0,420];
+% CSV_PATH = '../../../Data/LW_Flat.csv'; DogMode = 160.1; ZoomTime = [0,690];
+% CSV_PATH = '../../../Data/LW_YCheck.csv';  DogMode = 160.1; ZoomTime = [0,280];
+% CSV_PATH = '../../../Data/LW_Outdoor.csv';  DogMode = 160.1; ZoomTime = [0,520];
 
 used_lines = 300000;
 

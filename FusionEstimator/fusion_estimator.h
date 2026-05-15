@@ -283,9 +283,9 @@ public:
                 status[IndexStatusOK] = 1;
             legs_pos->UseMW();
         }
-        else if (status[IndexInOrOut] == 160.0){
+        else if (status[IndexInOrOut] == 160.1){
             status[IndexInOrOut] = 0;
-            status[IndexStatusOK] = status[IndexStatusOK] + 160.0;
+            status[IndexStatusOK] = status[IndexStatusOK] + 160.1;
             if (status[IndexStatusOK] > 999)
                 status[IndexStatusOK] = 1;
             legs_pos->UseLW();

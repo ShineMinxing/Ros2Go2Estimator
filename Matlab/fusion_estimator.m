@@ -1,19 +1,21 @@
-clear all;clc;
+clear all;
 cd(fileparts(mfilename('fullpath')));
 
 % CSV_PATH = '../../../Data/GO2Stairs'; DogMode = 99;
 % CSV_PATH = '../../../Data/GO2Flat'; DogMode = 99;
 
-CSV_PATH = '../../../Data/SP_XY85.csv';  DogMode = 120.0; ZoomTime = [0,135];
+% CSV_PATH = '../../../Data/SP_XY85.csv';  DogMode = 120.0; ZoomTime = [0,135]; % 回环误差： x-0.3 y-0.3 z-0.0
 
-% CSV_PATH = '../../../Data/MP_XY150Z10.csv'; DogMode = 140.0; ZoomTime = [0,415];
-% CSV_PATH = '../../../Data/MW_XY150Z10.csv'; DogMode = 140.1; ZoomTime = [0,294];
+% CSV_PATH = '../../../Data/MP_XY150Z10.csv'; DogMode = 140.0; ZoomTime = [0,415]; % 回环误差： x-0.2 y-0.15 z-0.25
+% CSV_PATH = '../../../Data/MW_XY150Z10.csv'; DogMode = 140.1; ZoomTime = [0,294]; % 回环误差： x-0.15 y-0.32 z-0.5
 
-% CSV_PATH = '../../../Data/LW_XY150Z10_1.csv';  DogMode = 160.1; ZoomTime = [0,330];
-% CSV_PATH = '../../../Data/LW_XY150Z10_3.csv';  DogMode = 160.1; ZoomTime = [0,420];
-% CSV_PATH = '../../../Data/LW_Flat.csv'; DogMode = 160.1; ZoomTime = [0,690];
-% CSV_PATH = '../../../Data/LW_YCheck.csv';  DogMode = 160.1; ZoomTime = [0,280];
+% CSV_PATH = '../../../Data/LW_XY150Z10_1.csv';  DogMode = 160.1; ZoomTime = [0,330]; % 回环误差： x-0.15 y-0.35 z-1.1
+% CSV_PATH = '../../../Data/LW_XY150Z10_3.csv';  DogMode = 160.1; ZoomTime = [0,420]; % 回环误差： x-0.55 y-0.9 z-0.05
+% CSV_PATH = '../../../Data/LW_Flat.csv'; DogMode = 160.1; ZoomTime = [0,690]; % 回环误差： x-3.5 y-6.5 z-0.0
+% CSV_PATH = '../../../Data/LW_YCheck.csv';  DogMode = 160.1; ZoomTime = [0,280]; % 横向30米回环误差： x-1.05 y-0.25 z-0.0
 % CSV_PATH = '../../../Data/LW_Outdoor.csv';  DogMode = 160.1; ZoomTime = [0,520];
+CSV_PATH = '../../../Data/LW_Stairs2.csv';  DogMode = 160.1; ZoomTime = [0,280]; % 横向30米回环误差： x-1.05 y-0.25 z-0.0
+
 
 used_lines = 300000;
 
@@ -123,53 +125,55 @@ xlabel('Time /s','FontSize', WordSize);
 ylabel('Estimated State /m','FontSize', WordSize);
 title('CAPO Method XYZ Accuracy Check','FontSize', WordSize);
 
-figure(30); clf;
-% set(gcf,'position',[100 50 1000 800]);
-
-tabs_leg = uitabgroup;
-tab_vel = uitab(tabs_leg, 'Title', 'Velocity');
-tab1 = uitab(tabs_leg, 'Title', 'FL');
-tab2 = uitab(tabs_leg, 'Title', 'FR');
-tab3 = uitab(tabs_leg, 'Title', 'RL');
-tab4 = uitab(tabs_leg, 'Title', 'RR');
-
-subplot(1,1,1,'Parent',tab_vel);
-hold on; grid on;
-plot(t_plot, odom_log(range,5),'r');
-plot(t_plot, odom_log(range,6),'g');
-plot(t_plot, odom_log(range,7),'b');
-xlim(ZoomTime);
-legend('vX','vY','vZ','Location','best','FontSize', WordSize);
-xlabel('Time /s','FontSize', WordSize);
-ylabel('Estimated Velocity /m/s','FontSize', WordSize);
-title('CAPO Method Velocity Check','FontSize', WordSize);
-
-tab_list = [tab1, tab2, tab3, tab4];
-for leg = 0:3
-    for xyz = 0:2
-        subplot(3,1,xyz+1,'Parent',tab_list(leg+1));
-        hold on; grid on;
-
-        ylim([-1,1]);
-
-        for node = 0:3
-            pos_id = leg*12 + node*3 + xyz;
-            plot(t_plot, status_record(1 + pos_id, range));
-        end
-
-        h = plot(t_plot, status_record(97 + leg, range) / 1000);
-        h.Color(4) = 0.3;
-
-        xlim(ZoomTime);
-        ylabel(xyz_names{xyz+1});
-
-        if xyz == 0
-            title([leg_names{leg+1}, ' leg nodes position and force/100']);
-            legend('hip','thigh','calf','foot','force/100','Location','best');
-        end
-
-        if xyz == 2
-            xlabel('t / s');
-        end
-    end
-end
+% figure(30); clf;
+% % set(gcf,'position',[100 50 1000 800]);
+% 
+% tabs_leg = uitabgroup;
+% tab1 = uitab(tabs_leg, 'Title', 'FL');
+% tab2 = uitab(tabs_leg, 'Title', 'FR');
+% tab3 = uitab(tabs_leg, 'Title', 'RL');
+% tab4 = uitab(tabs_leg, 'Title', 'RR');
+% 
+% tab_list = [tab1, tab2, tab3, tab4];
+% for leg = 0:3
+%     for xyz = 0:2
+%         subplot(3,1,xyz+1,'Parent',tab_list(leg+1));
+%         hold on; grid on;
+% 
+%         ylim([-0.5,0.5]);
+% 
+%         for node = 0:3
+%             pos_id = leg*12 + node*3 + xyz;
+%             plot(t_plot, status_record(1 + pos_id, range));
+%         end
+% 
+%         h = plot(t_plot, (status_record(97 + leg, range) / 1000) .* (status_record(97 + leg, range) < -125));
+%         h.Color(4) = 0.3;
+% 
+%         plot(t_plot, q16(range, leg * 4 + 4) / ( 4 * pi),'b');
+% 
+%         xlim(ZoomTime);
+%         ylabel(xyz_names{xyz+1});
+% 
+%         if xyz == 0
+%             title([leg_names{leg+1}, ' leg nodes position and force/100']);
+%             legend('hip','thigh','calf','foot','force/100','Location','best');
+%         end
+% 
+%         if xyz == 2
+%             xlabel('t / s');
+%         end
+%     end
+% end
+% 
+% tab_vel = uitab(tabs_leg, 'Title', 'Velocity');
+% subplot(1,1,1,'Parent',tab_vel);
+% hold on; grid on;
+% plot(t_plot, odom_log(range,5),'r');
+% plot(t_plot, odom_log(range,6),'g');
+% plot(t_plot, odom_log(range,7),'b');
+% xlim(ZoomTime);
+% legend('vX','vY','vZ','Location','best','FontSize', WordSize);
+% xlabel('Time /s','FontSize', WordSize);
+% ylabel('Estimated Velocity /m/s','FontSize', WordSize);
+% title('CAPO Method Velocity Check','FontSize', WordSize);

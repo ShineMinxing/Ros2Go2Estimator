@@ -559,7 +559,7 @@ namespace DataFusion
                 ShankRollPrev[LegNumber] = temp;
 
                 WheelMove = LegChains_[LegNumber].wheel_radius * (WheelRotationAngle - ShankPitchAngle);
-                WheelSidewayMove = LegChains_[LegNumber].wheel_radius * 2.0 * std::sin(0.5 * ShankRollAngle);
+                WheelSidewayMove = (LegChains_[LegNumber].wheel_radius + LegChains_[LegNumber].wheel_width) * 2.0 * std::sin(0.5 * ShankRollAngle);
                 WheelVel = LegChains_[LegNumber].wheel_radius * WheelRotationVelocityEff;
             }
 

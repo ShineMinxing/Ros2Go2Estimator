@@ -28,10 +28,16 @@ namespace DataFusion
             
             for(i = 0; i < 3; i++)
             {
-                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 0 * 3 + i] = LegChains_[LegNumber].node_pos_wf[0][i];
-                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 1 * 3 + i] = LegChains_[LegNumber].node_pos_wf[1][i];
-                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 2 * 3 + i] = LegChains_[LegNumber].node_pos_wf[2][i];
-                StateSpaceModel->Double_Par[12 + LegNumber * 12 + 3 * 3 + i] = FootBodyPos_WF[LegNumber][i];
+                StateSpaceModel->Double_Par[0 + LegNumber * 12 + 0 * 3 + i] = LegChains_[LegNumber].node_pos_wf[0][i];
+                StateSpaceModel->Double_Par[0 + LegNumber * 12 + 1 * 3 + i] = LegChains_[LegNumber].node_pos_wf[1][i];
+                StateSpaceModel->Double_Par[0 + LegNumber * 12 + 2 * 3 + i] = LegChains_[LegNumber].node_pos_wf[2][i];
+                StateSpaceModel->Double_Par[0 + LegNumber * 12 + 3 * 3 + i] = FootBodyPos_WF[LegNumber][i];
+            }
+            for(i = 0; i < 4; i++)
+            {
+                StateSpaceModel->Double_Par[48 + LegNumber * 12 + 0 * 4 + i] = LegChains_[LegNumber].node_quat_wf[0][i];
+                StateSpaceModel->Double_Par[48 + LegNumber * 12 + 1 * 4 + i] = LegChains_[LegNumber].node_quat_wf[1][i];
+                StateSpaceModel->Double_Par[48 + LegNumber * 12 + 2 * 4 + i] = LegChains_[LegNumber].node_quat_wf[2][i];
             }
 
             if(JointsXYZEnable){
@@ -313,8 +319,7 @@ namespace DataFusion
             FootBodyPos_WF[LegNumber][0] * FootBodyEff_WF[LegNumber][1] - FootBodyPos_WF[LegNumber][1] * FootBodyEff_WF[LegNumber][0]
         };
 
-        for(int i = 0; i < 3; i++)
-            StateSpaceModel->Double_Par[LegNumber * 3 + i] = tau_w[i];
+        StateSpaceModel->Double_Par[96 + LegNumber] = FootBodyEff_WF[LegNumber][2];
 
         if(FootBodyEff_WF[LegNumber][2] >= 0.3 * FootEffortThreshold)
             FootfallProbability[LegNumber] = 0.0;

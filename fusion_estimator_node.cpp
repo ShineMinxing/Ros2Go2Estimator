@@ -265,7 +265,7 @@ private:
     void BodyJointMarkerPublish()
     {
         double status[100] = {0};
-        status[IndexInOrOut] = 2;
+        status[IndexInOrOut] = 4.0;
         fe_.fusion_estimator_status(status);
 
         visualization_msgs::msg::MarkerArray markers;
@@ -294,9 +294,9 @@ private:
             {
                 const int pos_id = 12 + leg * 12 + node * 3;
 
-                const double x = status[40 + pos_id + 0] + odom_.XPos;
-                const double y = status[40 + pos_id + 1] + odom_.YPos;
-                const double z = status[40 + pos_id + 2] + odom_.ZPos;
+                const double x = status[pos_id + 0] + odom_.XPos;
+                const double y = status[pos_id + 1] + odom_.YPos;
+                const double z = status[pos_id + 2] + odom_.ZPos;
 
                 visualization_msgs::msg::Marker marker;
 
